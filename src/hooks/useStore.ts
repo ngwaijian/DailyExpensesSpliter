@@ -1,19 +1,19 @@
 import { useState, useEffect, useCallback } from 'react';
-import { AppData, Trip, Expense, Exchange, CATEGORIES } from '../types';
+import { AppData, Group, Expense, Exchange, CATEGORIES } from '../types';
 import { GITHUB_TOKEN } from '../config';
 
 const STORAGE_KEY = 'sw_app_data';
-const CURRENT_TRIP_KEY = 'sw_current_trip';
+const CURRENT_GROUP_KEY = 'sw_current_group';
 const SYNC_KEY = 'sw_needs_sync';
 const GITHUB_TOKEN_KEY = 'sw_github_token';
 
 const DEFAULT_DATA: AppData = {
-  trips: [{ id: 'trip_' + Date.now(), name: 'My First Trip', users: [], expenses: [], exchanges: [] }]
+  groups: [{ id: 'group_' + Date.now(), name: 'My First Group', users: [], expenses: [], exchanges: [] }]
 };
 
 export function useStore() {
   const [appData, setAppData] = useState<AppData>(DEFAULT_DATA);
-  const [currentTripId, setCurrentTripId] = useState<string>('');
+  const [currentGroupId, setCurrentGroupId] = useState<string>('');
   const [isSyncing, setIsSyncing] = useState(false);
   const [needsSync, setNeedsSync] = useState(false);
   const [githubToken, setGithubToken] = useState(GITHUB_TOKEN);
@@ -35,18 +35,18 @@ export function useStore() {
   // Load initial data
   useEffect(() => {
     const storedData = localStorage.getItem(STORAGE_KEY);
-    const storedTripId = localStorage.getItem(CURRENT_TRIP_KEY);
+    const storedGroupId = localStorage.getItem(CURRENT_GROUP_KEY);
     const storedToken = localStorage.getItem(GITHUB_TOKEN_KEY);
     const storedSync = localStorage.getItem(SYNC_KEY) === 'true';
 
     if (storedData) {
       setAppData(JSON.parse(storedData));
     }
-    if (storedTripId) {
-      setCurrentTripId(storedTripId);
+    if (storedGroupId) {
+      setCurrentGroupId(storedGroupId);
     } else if (storedData) {
       const parsed = JSON.parse(storedData);
-      if (parsed.trips.length > 0) setCurrentTripId(parsed.trips[0].id);
+      if (parsed.groups.length > 0) setCurrentGroupId(parsed.groups[0].id);
     }
 
     if (storedToken) setGithubToken(storedToken);
@@ -138,19 +138,19 @@ export function useStore() {
     localStorage.setItem(GITHUB_TOKEN_KEY, githubToken);
   }, [githubToken]);
 
-  const currentTrip = appData.trips.find(t => t.id === currentTripId) || appData.trips[0];
+  const currentGroup = appData.groups.find(t => t.id === currentGroupId) || appData.groups[0];
 
-  const updateTrip = (updatedTrip: Trip) => {
+  const updateGroup = (updatedGroup: Group) => {
     setAppData(prev => ({
       ...prev,
-      trips: prev.trips.map(t => t.id === updatedTrip.id ? updatedTrip : t)
+      groups: prev.groups.map(t => t.id === updatedGroup.id ? updatedGroup : t)
     }));
     setNeedsSync(true);
   };
 
-  const addTrip = (name: string) => {
-    const newTrip: Trip = {
-      id: 'trip_' + Date.now(),
+  const addGroup = (name: string) => {
+    const newGroup: Group = {
+      id: 'group_' + Date.now(),
       name,
       users: [],
       expenses: [],
@@ -158,30 +158,30 @@ export function useStore() {
       categories: CATEGORIES,
       budgets: []
     };
-    setAppData(prev => ({ ...prev, trips: [...prev.trips, newTrip] }));
-    setCurrentTripId(newTrip.id);
+    setAppData(prev => ({ ...prev, groups: [...prev.groups, newGroup] }));
+    setCurrentGroupId(newGroup.id);
     setNeedsSync(true);
   };
 
-  const deleteTrip = (id: string) => {
-    if (appData.trips.length <= 1) return;
-    const newTrips = appData.trips.filter(t => t.id !== id);
-    setAppData(prev => ({ ...prev, trips: newTrips }));
-    setCurrentTripId(newTrips[0].id);
+  const deleteGroup = (id: string) => {
+    if (appData.groups.length <= 1) return;
+    const newGroups = appData.groups.filter(t => t.id !== id);
+    setAppData(prev => ({ ...prev, groups: newGroups }));
+    setCurrentGroupId(newGroups[0].id);
     setNeedsSync(true);
   };
 
-  const renameTrip = (id: string, name: string) => {
+  const renameGroup = (id: string, name: string) => {
     setAppData(prev => ({
       ...prev,
-      trips: prev.trips.map(t => t.id === id ? { ...t, name } : t)
+      groups: prev.groups.map(t => t.id === id ? { ...t, name } : t)
     }));
     setNeedsSync(true);
   };
 
-  // Cloud Sync Logic (Per Trip)
+  // Cloud Sync Logic (Per Group)
   const fetchFromCloud = useCallback(async (overrideGistId?: string | any) => {
-    const targetGistId = typeof overrideGistId === 'string' ? overrideGistId : currentTrip?.gistId;
+    const targetGistId = typeof overrideGistId === 'string' ? overrideGistId : currentGroup?.syncId;
     if (!targetGistId) return;
     if (!navigator.onLine) {
       setSyncError("Offline: Cannot pull data.");
@@ -197,20 +197,20 @@ export function useStore() {
       if (!res.ok) throw new Error("Failed to fetch gist");
       const data = await res.json();
       
-      // Check for new per-trip format first
-      const tripContent = data.files['trip.json']?.content;
-      if (tripContent) {
-        const parsedTrip = JSON.parse(tripContent);
-        parsedTrip.gistId = targetGistId; // Ensure gistId is set
+      // Check for new per-group format first
+      const groupContent = data.files['trip.json']?.content;
+      if (groupContent) {
+        const parsedGroup = JSON.parse(groupContent);
+        parsedGroup.syncId = targetGistId; // Ensure syncId is set
         setAppData(prev => {
-          const exists = prev.trips.some(t => t.id === parsedTrip.id);
+          const exists = prev.groups.some(t => t.id === parsedGroup.id);
           if (exists) {
-            return { ...prev, trips: prev.trips.map(t => t.id === parsedTrip.id ? parsedTrip : t) };
+            return { ...prev, groups: prev.groups.map(t => t.id === parsedGroup.id ? parsedGroup : t) };
           } else {
-            return { ...prev, trips: [...prev.trips, parsedTrip] };
+            return { ...prev, groups: [...prev.groups, parsedGroup] };
           }
         });
-        if (typeof overrideGistId === 'string') setCurrentTripId(parsedTrip.id);
+        if (typeof overrideGistId === 'string') setCurrentGroupId(parsedGroup.id);
         setNeedsSync(false);
       } else {
         // Fallback for legacy global data format
@@ -220,8 +220,8 @@ export function useStore() {
           if (parsed.appData) {
             setAppData(parsed.appData);
             setNeedsSync(false);
-            if (!parsed.appData.trips.find((t: Trip) => t.id === currentTripId)) {
-               if (parsed.appData.trips.length > 0) setCurrentTripId(parsed.appData.trips[0].id);
+            if (!parsed.appData.groups.find((t: Group) => t.id === currentGroupId)) {
+               if (parsed.appData.groups.length > 0) setCurrentGroupId(parsed.appData.groups[0].id);
             }
           }
         }
@@ -232,10 +232,10 @@ export function useStore() {
     } finally {
       setIsSyncing(false);
     }
-  }, [githubToken, currentTrip?.gistId, currentTripId]);
+  }, [githubToken, currentGroup?.syncId, currentGroupId]);
 
   const pushToCloud = useCallback(async () => {
-    if (!githubToken || !currentTrip?.gistId) return;
+    if (!githubToken || !currentGroup?.syncId) return;
     if (!navigator.onLine) {
       setSyncError(null); 
       return;
@@ -243,8 +243,8 @@ export function useStore() {
     setIsSyncing(true);
     setSyncError(null);
     try {
-      const payload = { files: { 'trip.json': { content: JSON.stringify(currentTrip, null, 2) } } };
-      const res = await fetch(`https://api.github.com/gists/${currentTrip.gistId}`, {
+      const payload = { files: { 'trip.json': { content: JSON.stringify(currentGroup, null, 2) } } };
+      const res = await fetch(`https://api.github.com/gists/${currentGroup.syncId}`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${githubToken}`,
@@ -260,9 +260,9 @@ export function useStore() {
     } finally {
       setIsSyncing(false);
     }
-  }, [githubToken, currentTrip]);
+  }, [githubToken, currentGroup]);
 
-  const fetchAllTripsFromCloud = useCallback(async () => {
+  const fetchAllGroupsFromCloud = useCallback(async () => {
     if (!githubToken) return;
     if (!navigator.onLine) {
       setSyncError("Offline: Cannot pull data.");
@@ -279,7 +279,7 @@ export function useStore() {
       if (!res.ok) throw new Error("Failed to fetch gists");
       const gists = await res.json();
       
-      const newTrips: Trip[] = [];
+      const newGroups: Group[] = [];
       for (const gist of gists) {
         if (gist.files['trip.json']) {
           const gistRes = await fetch(gist.url, {
@@ -287,49 +287,49 @@ export function useStore() {
           });
           if (gistRes.ok) {
             const gistData = await gistRes.json();
-            const tripContent = gistData.files['trip.json']?.content;
-            if (tripContent) {
-              const parsedTrip = JSON.parse(tripContent);
-              parsedTrip.gistId = gist.id;
-              newTrips.push(parsedTrip);
+            const groupContent = gistData.files['trip.json']?.content;
+            if (groupContent) {
+              const parsedGroup = JSON.parse(groupContent);
+              parsedGroup.syncId = gist.id;
+              newGroups.push(parsedGroup);
             }
           }
         }
       }
 
-      if (newTrips.length > 0) {
+      if (newGroups.length > 0) {
         setAppData(prev => {
-          const updatedTrips = [...prev.trips];
-          newTrips.forEach(newTrip => {
-            const index = updatedTrips.findIndex(t => t.id === newTrip.id);
+          const updatedGroups = [...prev.groups];
+          newGroups.forEach(newGroup => {
+            const index = updatedGroups.findIndex(t => t.id === newGroup.id);
             if (index >= 0) {
-              updatedTrips[index] = newTrip;
+              updatedGroups[index] = newGroup;
             } else {
-              updatedTrips.push(newTrip);
+              updatedGroups.push(newGroup);
             }
           });
-          return { ...prev, trips: updatedTrips };
+          return { ...prev, groups: updatedGroups };
         });
         setNeedsSync(false);
       }
     } catch (error) {
-      console.error("Fetch all trips error:", error);
-      setSyncError("Failed to pull all trips from cloud.");
+      console.error("Fetch all groups error:", error);
+      setSyncError("Failed to pull all groups from cloud.");
     } finally {
       setIsSyncing(false);
     }
   }, [githubToken]);
 
-  const createGistForTrip = useCallback(async () => {
-    if (!githubToken || !currentTrip) return;
+  const createGistForGroup = useCallback(async () => {
+    if (!githubToken || !currentGroup) return;
     setIsSyncing(true);
     setSyncError(null);
     try {
       const payload = {
-        description: `DailyExpensesSpliter Group: ${currentTrip.name}`,
+        description: `DailyExpensesSpliter Group: ${currentGroup.name}`,
         public: false,
         files: {
-          'trip.json': { content: JSON.stringify(currentTrip, null, 2) }
+          'trip.json': { content: JSON.stringify(currentGroup, null, 2) }
         }
       };
       const res = await fetch(`https://api.github.com/gists`, {
@@ -343,7 +343,7 @@ export function useStore() {
       if (!res.ok) throw new Error("Failed to create gist");
       const data = await res.json();
       if (data.id) {
-        updateTrip({ ...currentTrip, gistId: data.id });
+        updateGroup({ ...currentGroup, syncId: data.id });
       }
     } catch (error) {
       console.error("Create gist error:", error);
@@ -351,14 +351,14 @@ export function useStore() {
     } finally {
       setIsSyncing(false);
     }
-  }, [githubToken, currentTrip]);
+  }, [githubToken, currentGroup]);
 
-  // Handle URL parameters for shared trips
+  // Handle URL parameters for shared groups
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const tripGistId = params.get('tripGistId');
-    if (tripGistId) {
-      fetchFromCloud(tripGistId);
+    const groupSyncId = params.get('groupSyncId');
+    if (groupSyncId) {
+      fetchFromCloud(groupSyncId);
       // Clean up URL
       window.history.replaceState({}, document.title, window.location.pathname);
     }
@@ -367,40 +367,40 @@ export function useStore() {
   // Auto-sync on network connection
   useEffect(() => {
     const handleOnline = () => {
-      if (needsSync && currentTrip?.gistId) {
+      if (needsSync && currentGroup?.syncId) {
         pushToCloud();
-      } else if (currentTrip?.gistId) {
+      } else if (currentGroup?.syncId) {
         fetchFromCloud();
       }
     };
     window.addEventListener('online', handleOnline);
     return () => window.removeEventListener('online', handleOnline);
-  }, [needsSync, pushToCloud, fetchFromCloud, currentTrip?.gistId]);
+  }, [needsSync, pushToCloud, fetchFromCloud, currentGroup?.syncId]);
 
   // Initial sync on mount/credential change if online
   useEffect(() => {
-    if (navigator.onLine && currentTrip?.gistId && !isSyncing) {
+    if (navigator.onLine && currentGroup?.syncId && !isSyncing) {
         if (needsSync) {
             pushToCloud();
         } else {
             fetchFromCloud();
         }
     }
-  }, [githubToken, currentTrip?.gistId]); // Run when credentials change or trip changes
+  }, [githubToken, currentGroup?.syncId]); // Run when credentials change or group changes
 
   // Auto-push on data change (debounced)
   useEffect(() => {
-    if (needsSync && githubToken && currentTrip?.gistId && !isSyncing && isOnline) {
+    if (needsSync && githubToken && currentGroup?.syncId && !isSyncing && isOnline) {
       const timer = setTimeout(() => {
         pushToCloud();
       }, 2000); // 2 second debounce
       return () => clearTimeout(timer);
     }
-  }, [needsSync, githubToken, currentTrip?.gistId, appData, isSyncing, pushToCloud, isOnline]);
+  }, [needsSync, githubToken, currentGroup?.syncId, appData, isSyncing, pushToCloud, isOnline]);
 
   // Background polling (Auto-pull)
   useEffect(() => {
-    if (!currentTrip?.gistId || !isOnline) return;
+    if (!currentGroup?.syncId || !isOnline) return;
 
     const interval = setInterval(() => {
       if (!needsSync && !isSyncing) {
@@ -410,21 +410,21 @@ export function useStore() {
     }, 5000); // Poll every 5 seconds
 
     return () => clearInterval(interval);
-  }, [currentTrip?.gistId, isOnline, needsSync, isSyncing, fetchFromCloud]);
+  }, [currentGroup?.syncId, isOnline, needsSync, isSyncing, fetchFromCloud]);
 
-  const getTripCategories = useCallback((trip: Trip) => {
-    return trip.categories || CATEGORIES;
+  const getGroupCategories = useCallback((group: Group) => {
+    return group.categories || CATEGORIES;
   }, []);
 
   return {
     appData,
-    currentTrip,
-    currentTripId,
-    setCurrentTripId,
-    addTrip,
-    deleteTrip,
-    renameTrip,
-    updateTrip,
+    currentGroup,
+    currentGroupId,
+    setCurrentGroupId,
+    addGroup,
+    deleteGroup,
+    renameGroup,
+    updateGroup,
     isSyncing,
     needsSync,
     syncError,
@@ -433,8 +433,8 @@ export function useStore() {
     setGithubToken,
     fetchFromCloud,
     pushToCloud,
-    createGistForTrip,
-    fetchAllTripsFromCloud,
-    getTripCategories
+    createGistForGroup,
+    fetchAllGroupsFromCloud,
+    getGroupCategories
   };
 }

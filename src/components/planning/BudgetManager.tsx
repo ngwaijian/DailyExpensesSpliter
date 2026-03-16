@@ -15,7 +15,7 @@ export function BudgetManager({ trip, onUpdateTrip }: BudgetManagerProps) {
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  const [category, setCategory] = useState<string | 'All'>('All');
+  const [categories, setCategories] = useState<string[]>(['All']);
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState('MYR');
   const [period, setPeriod] = useState<'trip' | 'monthly'>('trip');
@@ -30,7 +30,7 @@ export function BudgetManager({ trip, onUpdateTrip }: BudgetManagerProps) {
 
     return trip.expenses.reduce((acc, exp) => {
       // Filter by category
-      if (budget.category !== 'All' && exp.category !== budget.category) return acc;
+      if (!budget.categories.includes('All') && !budget.categories.includes(exp.category)) return acc;
 
       // Filter by period
       if (budget.period === 'monthly') {
@@ -46,11 +46,11 @@ export function BudgetManager({ trip, onUpdateTrip }: BudgetManagerProps) {
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!amount) return;
+    if (!amount || categories.length === 0) return;
 
     const newBudget: Budget = {
       id: editingId || Date.now().toString(),
-      category,
+      categories,
       amount: parseFloat(amount),
       currency,
       period,
@@ -69,7 +69,7 @@ export function BudgetManager({ trip, onUpdateTrip }: BudgetManagerProps) {
 
   const handleEdit = (budget: Budget) => {
     setEditingId(budget.id);
-    setCategory(budget.category);
+    setCategories(budget.categories);
     setAmount(budget.amount.toString());
     setCurrency(budget.currency);
     setPeriod(budget.period);
@@ -85,7 +85,7 @@ export function BudgetManager({ trip, onUpdateTrip }: BudgetManagerProps) {
   const resetForm = () => {
     setIsAdding(false);
     setEditingId(null);
-    setCategory('All');
+    setCategories(['All']);
     setAmount('');
     setCurrency('MYR');
     setPeriod('trip');
@@ -113,17 +113,34 @@ export function BudgetManager({ trip, onUpdateTrip }: BudgetManagerProps) {
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Category</label>
-                <select
-                  value={category}
-                  onChange={e => setCategory(e.target.value)}
-                  className="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none text-gray-900 dark:text-white"
-                >
-                  <option value="All">All Categories</option>
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Categories</label>
+                <div className="max-h-40 overflow-y-auto p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm">
+                  <label className="flex items-center gap-2 p-1 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={categories.includes('All')}
+                      onChange={() => setCategories(['All'])}
+                      className="rounded text-emerald-600 focus:ring-emerald-500"
+                    />
+                    <span className="text-gray-900 dark:text-white">All Categories</span>
+                  </label>
                   {tripCategories.map(c => (
-                    <option key={c} value={c}>{c}</option>
+                    <label key={c} className="flex items-center gap-2 p-1 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={!categories.includes('All') && categories.includes(c)}
+                        onChange={() => {
+                          setCategories(prev => {
+                            const next = prev.includes('All') ? [] : [...prev];
+                            return next.includes(c) ? next.filter(i => i !== c) : [...next, c];
+                          });
+                        }}
+                        className="rounded text-emerald-600 focus:ring-emerald-500"
+                      />
+                      <span className="text-gray-900 dark:text-white">{c}</span>
+                    </label>
                   ))}
-                </select>
+                </div>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Period</label>
@@ -193,7 +210,7 @@ export function BudgetManager({ trip, onUpdateTrip }: BudgetManagerProps) {
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-bold text-gray-800 dark:text-white">
-                      {budget.category === 'All' ? 'Total Budget' : budget.category}
+                      {budget.categories.includes('All') ? 'Total Budget' : budget.categories.map(c => c.split(' ')[0]).join(', ')}
                     </span>
                     <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded uppercase font-bold tracking-wider">
                       {budget.period}

@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useStore } from './hooks/useStore';
 import { useTheme } from './hooks/useTheme';
 import { useLanguage } from './contexts/LanguageContext';
-import { TripSelector } from './components/trip/TripSelector';
+import { GroupSelector } from './components/trip/GroupSelector';
 import { SettingsModal } from './components/settings/SettingsModal';
 import { ExpenseForm } from './components/expenses/ExpenseForm';
 import { ExpenseList } from './components/expenses/ExpenseList';
@@ -18,11 +18,11 @@ import { cn } from './lib/utils';
 
 function App() {
   const { 
-    appData, currentTrip, currentTripId, setCurrentTripId, 
-    addTrip, deleteTrip, renameTrip, updateTrip,
+    appData, currentGroup, currentGroupId, setCurrentGroupId, 
+    addGroup, deleteGroup, renameGroup, updateGroup,
     isSyncing, needsSync, syncError, isOnline,
     githubToken, setGithubToken, 
-    fetchFromCloud, pushToCloud, createGistForTrip, fetchAllTripsFromCloud
+    fetchFromCloud, pushToCloud, createGistForGroup, fetchAllGroupsFromCloud
   } = useStore();
 
   const { theme, setTheme, resolvedTheme } = useTheme();
@@ -172,19 +172,19 @@ function App() {
           </div>
 
           <TripSelector 
-            trips={appData.trips}
-            currentTripId={currentTripId}
-            onSelect={setCurrentTripId}
+            groups={appData.groups}
+            currentGroupId={currentGroupId}
+            onSelect={setCurrentGroupId}
             onAdd={() => {
-              const name = prompt(t('app_new_trip_prompt'));
-              if (name) addTrip(name);
+              const name = prompt(t('app_new_group_prompt'));
+              if (name) addGroup(name);
             }}
             onDelete={() => {
-              if (confirm(t('app_delete_trip_confirm'))) deleteTrip(currentTripId);
+              if (confirm(t('app_delete_group_confirm'))) deleteGroup(currentGroupId);
             }}
             onRename={() => {
-              const name = prompt(t('app_rename_trip_prompt'), currentTrip.name);
-              if (name) renameTrip(currentTripId, name);
+              const name = prompt(t('app_rename_group_prompt'), currentGroup.name);
+              if (name) renameGroup(currentGroupId, name);
             }}
           />
 
@@ -269,14 +269,14 @@ function App() {
           )}>
             <div key={editingExpenseId || 'new'} ref={formRef}>
               <ExpenseForm 
-                trip={currentTrip} 
+                group={currentGroup} 
                 onSubmit={handleAddExpense}
                 onCancel={() => setEditingExpenseId(null)}
-                initialData={editingExpenseId ? currentTrip.expenses.find(e => e.id === editingExpenseId) : undefined}
+                initialData={editingExpenseId ? currentGroup.expenses.find(e => e.id === editingExpenseId) : undefined}
               />
             </div>
             <ExpenseList 
-              trip={currentTrip}
+              group={currentGroup}
               onEdit={handleEditExpenseId}
               onView={setViewingExpenseId}
               onDelete={handleDeleteExpense}
@@ -286,32 +286,32 @@ function App() {
 
           {/* Desktop: Right Sidebar (Stats & Planning) */}
           <div className="hidden lg:block lg:col-span-3 space-y-6">
-            <Summary trip={currentTrip} onUpdateTrip={updateTrip} />
-            <Balances trip={currentTrip} />
-            <BudgetManager trip={currentTrip} onUpdateTrip={updateTrip} />
-            <Goals trip={currentTrip} onUpdateTrip={updateTrip} />
-            <RecurringTransactions trip={currentTrip} onUpdateTrip={updateTrip} />
+            <Summary group={currentGroup} onUpdateGroup={updateGroup} />
+            <Balances group={currentGroup} />
+            <BudgetManager group={currentGroup} onUpdateGroup={updateGroup} />
+            <Goals group={currentGroup} onUpdateGroup={updateGroup} />
+            <RecurringTransactions group={currentGroup} onUpdateGroup={updateGroup} />
           </div>
 
           {/* Mobile Only Views */}
           <div className={cn("lg:hidden", activeTab === 'dashboard' ? 'block' : 'hidden')}>
             <div className="space-y-6">
-              <Summary trip={currentTrip} onUpdateTrip={updateTrip} />
-              <Balances trip={currentTrip} />
+              <Summary group={currentGroup} onUpdateGroup={updateGroup} />
+              <Balances group={currentGroup} />
             </div>
           </div>
 
           <div className={cn("lg:hidden", activeTab === 'planning' ? 'block' : 'hidden')}>
             <div className="space-y-6">
-              <BudgetManager trip={currentTrip} onUpdateTrip={updateTrip} />
-              <Goals trip={currentTrip} onUpdateTrip={updateTrip} />
-              <RecurringTransactions trip={currentTrip} onUpdateTrip={updateTrip} />
+              <BudgetManager group={currentGroup} onUpdateGroup={updateGroup} />
+              <Goals group={currentGroup} onUpdateGroup={updateGroup} />
+              <RecurringTransactions group={currentGroup} onUpdateGroup={updateGroup} />
             </div>
           </div>
 
           <div className={cn("lg:hidden", activeTab === 'people' ? 'block' : 'hidden')}>
             <PeopleWallet 
-              trip={currentTrip} 
+              group={currentGroup} 
               onAddPerson={handleAddPerson}
               onEditPerson={handleEditPerson}
               onRemovePerson={handleRemovePerson}
