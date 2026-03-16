@@ -191,7 +191,7 @@ function App() {
               disabled={isSyncing || !isOnline || !currentTrip.gistId}
               className={cn(
                 "p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors",
-                isSyncing && "animate-spin text-emerald-500",
+                isSyncing && "animate-spin text-blue-500",
                 !currentTrip.gistId && "opacity-50 cursor-not-allowed"
               )}
               title={t('app_sync_data')}
@@ -213,7 +213,7 @@ function App() {
                 className={cn(
                   "px-2.5 py-1 text-xs font-bold rounded-lg transition-all",
                   language === 'en' 
-                    ? "bg-white dark:bg-gray-600 text-emerald-600 dark:text-emerald-400 shadow-sm" 
+                    ? "bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm" 
                     : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                 )}
               >
@@ -224,7 +224,7 @@ function App() {
                 className={cn(
                   "px-2.5 py-1 text-xs font-bold rounded-lg transition-all",
                   language === 'zh' 
-                    ? "bg-white dark:bg-gray-600 text-emerald-600 dark:text-emerald-400 shadow-sm" 
+                    ? "bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm" 
                     : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                 )}
               >
@@ -317,11 +317,18 @@ function App() {
             className={cn(
               "p-4 flex flex-col items-center gap-1 text-xs font-medium transition-colors", 
               activeTab === 'expenses' 
-                ? "text-emerald-600 dark:text-emerald-400" 
+                ? "text-blue-600 dark:text-blue-400" 
                 : "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
             )}
           >
-            <List className="w-6 h-6" />
+            <img 
+              src={resolvedTheme === 'dark' ? "/icon-dark.svg" : "/icon.svg"} 
+              alt="" 
+              className={cn(
+                "w-6 h-6 object-contain transition-opacity",
+                activeTab === 'expenses' ? "opacity-100" : "opacity-40 grayscale"
+              )} 
+            />
             {t('nav_expenses')}
           </button>
           <button 
@@ -329,7 +336,7 @@ function App() {
             className={cn(
               "p-4 flex flex-col items-center gap-1 text-xs font-medium transition-colors", 
               activeTab === 'dashboard' 
-                ? "text-emerald-600 dark:text-emerald-400" 
+                ? "text-blue-600 dark:text-blue-400" 
                 : "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
             )}
           >
@@ -341,7 +348,7 @@ function App() {
             className={cn(
               "p-4 flex flex-col items-center gap-1 text-xs font-medium transition-colors", 
               activeTab === 'people' 
-                ? "text-emerald-600 dark:text-emerald-400" 
+                ? "text-blue-600 dark:text-blue-400" 
                 : "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
             )}
           >
@@ -377,7 +384,7 @@ function App() {
       <button
         onClick={scrollToForm}
         className={cn(
-          "fixed z-40 bg-emerald-600 text-white p-4 rounded-full shadow-lg hover:bg-emerald-700 hover:shadow-xl transition-all duration-300 flex items-center justify-center",
+          "fixed z-40 bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 hover:shadow-xl transition-all duration-300 flex items-center justify-center",
           "bottom-24 right-4 lg:bottom-8 lg:right-8",
           showFab ? "translate-y-0 opacity-100" : "translate-y-16 opacity-0 pointer-events-none"
         )}

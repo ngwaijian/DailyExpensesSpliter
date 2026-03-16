@@ -212,7 +212,7 @@ export function Summary({ trip }: SummaryProps) {
     overlay.style.alignItems = 'center';
     overlay.style.justifyContent = 'center';
     overlay.innerHTML = `
-      <div style="width: 40px; height: 40px; border: 4px solid #e5e7eb; border-top-color: #059669; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+      <div style="width: 40px; height: 40px; border: 4px solid #e5e7eb; border-top-color: #2563eb; border-radius: 50%; animation: spin 1s linear infinite;"></div>
       <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
       <div style="margin-top: 20px; font-size: 20px; font-weight: 600; color: #111827; font-family: sans-serif;">${t('dash_generating_pdf')}</div>
       <div style="margin-top: 8px; font-size: 14px; color: #6b7280; font-family: sans-serif;">${t('dash_preparing_receipt')}</div>
@@ -301,7 +301,7 @@ export function Summary({ trip }: SummaryProps) {
     <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-colors duration-200">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-gray-800 dark:text-white flex items-center gap-2">
-          <TrendingUp className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+          <TrendingUp className="w-5 h-5 text-blue-600 dark:text-blue-400" />
           {t('dash_summary')}
         </h3>
         
@@ -328,7 +328,7 @@ export function Summary({ trip }: SummaryProps) {
                 onClick={exportCSV}
                 className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-left border-t border-gray-100 dark:border-gray-700"
               >
-                <Table className="w-4 h-4 text-emerald-500" />
+                <Table className="w-4 h-4 text-blue-500" />
                 {t('dash_export_csv')}
               </button>
             </div>
@@ -337,9 +337,9 @@ export function Summary({ trip }: SummaryProps) {
       </div>
 
       <div className="grid grid-cols-2 gap-4 mb-6">
-        <div className="bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-xl text-center">
-          <div className="text-xs text-emerald-800 dark:text-emerald-300 font-medium uppercase tracking-wide mb-1">{t('dash_total_spent')}</div>
-          <div className="text-xl font-bold text-emerald-900 dark:text-emerald-100 break-words" title={formatCurrency(totalMYR)}>{formatCurrency(totalMYR)}</div>
+        <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl text-center">
+          <div className="text-xs text-blue-800 dark:text-blue-300 font-medium uppercase tracking-wide mb-1">{t('dash_total_spent')}</div>
+          <div className="text-xl font-bold text-blue-900 dark:text-blue-100 break-words" title={formatCurrency(totalMYR)}>{formatCurrency(totalMYR)}</div>
         </div>
         <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl text-center">
           <div className="text-xs text-blue-800 dark:text-blue-300 font-medium uppercase tracking-wide mb-1">{t('dash_per_person')}</div>
@@ -420,7 +420,7 @@ export function Summary({ trip }: SummaryProps) {
               {sortedPeople.map(([name, stats]) => (
                 <div key={name} className="flex items-center justify-between text-sm">
                   <div className="flex items-center gap-2 min-w-0">
-                    <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 flex items-center justify-center text-xs font-bold shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 flex items-center justify-center text-xs font-bold shrink-0">
                       {name.charAt(0).toUpperCase()}
                     </div>
                     <span className="text-gray-700 dark:text-gray-300 truncate font-medium">{name}</span>
@@ -454,7 +454,7 @@ export function Summary({ trip }: SummaryProps) {
         <div className="flex items-center justify-between mb-6 pb-4" style={{ borderBottom: '1px solid #e5e7eb' }}>
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-2" style={{ color: '#111827' }}>
-              <span style={{ color: '#059669' }}>📈</span>
+              <span style={{ color: '#2563eb' }}>📈</span>
               {trip.name} - {t('dash_summary')}
             </h1>
             <p className="mt-2 flex items-center gap-1" style={{ color: '#6b7280' }}>
@@ -464,7 +464,7 @@ export function Summary({ trip }: SummaryProps) {
           </div>
           <div className="text-right">
             <div className="text-sm" style={{ color: '#6b7280' }}>{t('dash_total_spent')}</div>
-            <div className="text-3xl font-bold" style={{ color: '#059669' }}>{formatCurrency(totalMYR)}</div>
+            <div className="text-3xl font-bold" style={{ color: '#2563eb' }}>{formatCurrency(totalMYR)}</div>
           </div>
         </div>
 
@@ -519,7 +519,7 @@ export function Summary({ trip }: SummaryProps) {
                     <td className="p-3 font-medium" style={{ border: '1px solid #e5e7eb' }}>{name}</td>
                     <td className="p-3" style={{ border: '1px solid #e5e7eb' }}>{formatCurrency(stats.paid)}</td>
                     <td className="p-3" style={{ border: '1px solid #e5e7eb' }}>{formatCurrency(stats.share)}</td>
-                    <td className="p-3 font-bold" style={{ border: '1px solid #e5e7eb', color: balance > 0.01 ? '#059669' : balance < -0.01 ? '#dc2626' : '#6b7280' }}>
+                    <td className="p-3 font-bold" style={{ border: '1px solid #e5e7eb', color: balance > 0.01 ? '#2563eb' : balance < -0.01 ? '#dc2626' : '#6b7280' }}>
                       {balance > 0.01 ? `+${formatCurrency(balance)} (${t('bal_gets_back')})` : balance < -0.01 ? `${formatCurrency(balance)} (${t('bal_owes')})` : t('bal_settled')}
                     </td>
                   </tr>

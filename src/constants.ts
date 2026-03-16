@@ -1,6 +1,6 @@
 export const CATEGORY_COLORS: { [key: string]: string } = {
   "🍽️ Meals & Dining": "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 border-orange-200 dark:border-orange-800",
-  "🏨 Accommodation": "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800",
+  "🏨 Accommodation": "bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400 border-sky-200 dark:border-sky-800",
   "🚕 Transport & Fuel": "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200 dark:border-blue-800",
   "✈️ Flights": "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200 dark:border-blue-800",
   "🎢 Activities & Tours": "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-red-200 dark:border-red-800",
@@ -11,7 +11,7 @@ export const CATEGORY_COLORS: { [key: string]: string } = {
 
 export const CATEGORY_STRIP_COLORS: { [key: string]: string } = {
   "🍽️ Meals & Dining": "bg-orange-500",
-  "🏨 Accommodation": "bg-emerald-500",
+  "🏨 Accommodation": "bg-sky-500",
   "🚕 Transport & Fuel": "bg-blue-500",
   "✈️ Flights": "bg-blue-500",
   "🎢 Activities & Tours": "bg-red-500",

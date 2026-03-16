@@ -5,6 +5,7 @@ import { getAverageRates, formatCurrency } from '../../utils/currency';
 import { Edit2, Trash2, Calendar, User, MapPin, Gift, Handshake, Filter, ArrowUpDown, X, Search } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useTheme } from '../../hooks/useTheme';
 
 interface ExpenseListProps {
   trip: Trip;
@@ -16,6 +17,7 @@ interface ExpenseListProps {
 
 export function ExpenseList({ trip, onEdit, onView, onDelete, lastUpdatedId }: ExpenseListProps) {
   const { t } = useLanguage();
+  const { resolvedTheme } = useTheme();
   const rates = getAverageRates(trip);
   const [filterCategory, setFilterCategory] = useState<string>('All');
   const [sortOrder, setSortOrder] = useState<'date-desc' | 'date-asc' | 'amount-desc' | 'amount-asc'>('date-desc');
@@ -117,8 +119,15 @@ export function ExpenseList({ trip, onEdit, onView, onDelete, lastUpdatedId }: E
 
   if (trip.expenses.length === 0) {
     return (
-      <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-2xl border border-dashed border-gray-300 dark:border-gray-700 transition-colors duration-200">
-        <p className="text-gray-400 dark:text-gray-500">{t('list_no_expenses')}</p>
+      <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-3xl border border-dashed border-gray-300 dark:border-gray-700 transition-colors duration-200 flex flex-col items-center gap-4">
+        <div className="w-20 h-20 bg-gray-50 dark:bg-gray-900 rounded-2xl flex items-center justify-center shadow-inner">
+          <img 
+            src={resolvedTheme === 'dark' ? "/icon-dark.svg" : "/icon.svg"} 
+            alt="" 
+            className="w-12 h-12 object-contain opacity-20 grayscale" 
+          />
+        </div>
+        <p className="text-gray-400 dark:text-gray-500 font-medium">{t('list_no_expenses')}</p>
       </div>
     );
   }
@@ -131,7 +140,7 @@ export function ExpenseList({ trip, onEdit, onView, onDelete, lastUpdatedId }: E
           onClick={() => setShowFilters(!showFilters)}
           className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
             showFilters || activeFilterCount > 0
-              ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+              ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
               : 'bg-white text-gray-600 dark:bg-gray-800 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
           }`}
         >
@@ -155,7 +164,7 @@ export function ExpenseList({ trip, onEdit, onView, onDelete, lastUpdatedId }: E
                   value={searchKeyword}
                   onChange={e => setSearchKeyword(e.target.value)}
                   placeholder={t('list_search_placeholder')}
-                  className="w-full pl-9 pr-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-gray-900 dark:text-white text-sm transition-colors"
+                  className="w-full pl-9 pr-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white text-sm transition-colors"
                 />
                 <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
                 {searchKeyword && (
@@ -177,7 +186,7 @@ export function ExpenseList({ trip, onEdit, onView, onDelete, lastUpdatedId }: E
               <select 
                 value={filterCategory}
                 onChange={e => setFilterCategory(e.target.value)}
-                className="w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-gray-900 dark:text-white text-sm transition-colors"
+                className="w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white text-sm transition-colors"
               >
                 <option value="All">{t('list_all_categories')}</option>
                 {CATEGORIES.map(c => <option key={c} value={c}>{t(`cat_${c}`, c)}</option>)}
@@ -193,7 +202,7 @@ export function ExpenseList({ trip, onEdit, onView, onDelete, lastUpdatedId }: E
                   type="date"
                   value={startDate}
                   onChange={e => setStartDate(e.target.value)}
-                  className="w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-gray-900 dark:text-white text-sm transition-colors"
+                  className="w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white text-sm transition-colors"
                 />
               </div>
               <div className="flex-1">
@@ -202,7 +211,7 @@ export function ExpenseList({ trip, onEdit, onView, onDelete, lastUpdatedId }: E
                   type="date"
                   value={endDate}
                   onChange={e => setEndDate(e.target.value)}
-                  className="w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-gray-900 dark:text-white text-sm transition-colors"
+                  className="w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white text-sm transition-colors"
                 />
               </div>
             </div>
@@ -214,7 +223,7 @@ export function ExpenseList({ trip, onEdit, onView, onDelete, lastUpdatedId }: E
               <select 
                 value={sortOrder}
                 onChange={e => setSortOrder(e.target.value as any)}
-                className="w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-gray-900 dark:text-white text-sm transition-colors"
+                className="w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white text-sm transition-colors"
               >
                 <option value="date-desc">{t('list_date_desc')}</option>
                 <option value="date-asc">{t('list_date_asc')}</option>
@@ -278,7 +287,7 @@ export function ExpenseList({ trip, onEdit, onView, onDelete, lastUpdatedId }: E
                   className={cn(
                     "group p-4 rounded-2xl shadow-sm border transition-all relative duration-500 cursor-pointer overflow-hidden",
                     highlightedId === exp.id
-                      ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-300 dark:border-emerald-700 ring-2 ring-emerald-500/50"
+                      ? "bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700 ring-2 ring-blue-500/50"
                       : "bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700 hover:shadow-md"
                   )}
                 >
@@ -349,7 +358,7 @@ export function ExpenseList({ trip, onEdit, onView, onDelete, lastUpdatedId }: E
                             </span>
                           )}
                           <User className="w-3 h-3 shrink-0" />
-                          <span className="text-emerald-600 dark:text-emerald-400 font-medium break-words">{exp.paidBy}</span>
+                          <span className="text-blue-600 dark:text-blue-400 font-medium break-words">{exp.paidBy}</span>
                           <span className="shrink-0">{exp.type === 'sponsorship' ? t('list_sponsored') : exp.type === 'settlement' ? t('list_paid_to') : t('list_paid')}</span>
                           {exp.type === 'settlement' && (
                             <span className="text-blue-600 dark:text-blue-400 font-medium break-words">{exp.splitAmong[0]}</span>

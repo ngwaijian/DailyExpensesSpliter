@@ -62,7 +62,7 @@ export function SettingsModal({
               type="password" 
               value={githubToken}
               onChange={(e) => setGithubToken(e.target.value)}
-              className="w-full p-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-gray-900 dark:text-white"
+              className="w-full p-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white"
               placeholder="ghp_..."
             />
           </div>
@@ -77,7 +77,7 @@ export function SettingsModal({
               <button
                 onClick={createGistForTrip}
                 disabled={isSyncing || !githubToken}
-                className="w-full flex items-center justify-center gap-2 bg-emerald-100 dark:bg-emerald-900/30 hover:bg-emerald-200 dark:hover:bg-emerald-800/50 text-emerald-700 dark:text-emerald-400 py-2.5 rounded-xl font-medium transition-colors disabled:opacity-50"
+                className="w-full flex items-center justify-center gap-2 bg-blue-100 dark:bg-blue-900/30 hover:bg-blue-200 dark:hover:bg-blue-800/50 text-blue-700 dark:text-blue-400 py-2.5 rounded-xl font-medium transition-colors disabled:opacity-50"
               >
                 {isSyncing ? <RefreshCw className="animate-spin w-4 h-4" /> : <Globe className="w-4 h-4" />}
                 Generate Shareable Link
@@ -96,7 +96,7 @@ export function SettingsModal({
                     className="p-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors"
                     title="Copy Share Link"
                   >
-                    {copied ? <span className="text-emerald-600 text-xs font-bold px-1">Copied!</span> : <Copy className="w-5 h-5" />}
+                    {copied ? <span className="text-blue-600 text-xs font-bold px-1">Copied!</span> : <Copy className="w-5 h-5" />}
                   </button>
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -118,7 +118,7 @@ export function SettingsModal({
             <button 
               onClick={onPush}
               disabled={isSyncing || !githubToken || !currentTrip.gistId}
-              className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl font-medium transition-colors disabled:opacity-50"
+              className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl font-medium transition-colors disabled:opacity-50"
             >
               {isSyncing ? <RefreshCw className="animate-spin w-4 h-4" /> : <Save className="w-4 h-4" />}
               {t('set_push_data') || "Push"}

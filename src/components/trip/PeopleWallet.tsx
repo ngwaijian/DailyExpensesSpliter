@@ -67,7 +67,7 @@ export function PeopleWallet({ trip, onAddPerson, onEditPerson, onRemovePerson, 
       {/* People Section */}
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-colors duration-200">
         <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
-          <Users className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+          <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
           {t('trip_people')}
         </h3>
         
@@ -77,9 +77,9 @@ export function PeopleWallet({ trip, onAddPerson, onEditPerson, onRemovePerson, 
             value={newPerson}
             onChange={e => setNewPerson(e.target.value)}
             placeholder={t('trip_name_placeholder')}
-            className="flex-1 p-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-colors"
+            className="flex-1 p-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-colors"
           />
-          <button type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white p-2 rounded-lg transition-colors">
+          <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg transition-colors">
             <Plus size={18} />
           </button>
         </form>
@@ -89,18 +89,18 @@ export function PeopleWallet({ trip, onAddPerson, onEditPerson, onRemovePerson, 
             <li key={user} className="flex justify-between items-center text-sm p-2 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg group transition-colors">
               {editingUser === user ? (
                 <div className="flex items-center gap-2 flex-1 mr-2">
-                  <input
-                    type="text"
-                    value={editName}
-                    onChange={e => setEditName(e.target.value)}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter') saveEdit(user);
-                      if (e.key === 'Escape') cancelEdit();
-                    }}
-                    autoFocus
-                    className="flex-1 p-1 px-2 bg-white dark:bg-gray-800 border border-emerald-500 rounded text-sm outline-none text-gray-900 dark:text-white"
-                  />
-                  <button onClick={() => saveEdit(user)} className="text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300">
+                    <input
+                      type="text"
+                      value={editName}
+                      onChange={e => setEditName(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') saveEdit(user);
+                        if (e.key === 'Escape') cancelEdit();
+                      }}
+                      autoFocus
+                      className="flex-1 p-1 px-2 bg-white dark:bg-gray-800 border border-blue-500 rounded text-sm outline-none text-gray-900 dark:text-white"
+                    />
+                    <button onClick={() => saveEdit(user)} className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
                     <Check size={16} />
                   </button>
                   <button onClick={cancelEdit} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">

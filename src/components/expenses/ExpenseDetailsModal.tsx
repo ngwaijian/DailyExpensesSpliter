@@ -74,7 +74,7 @@ export function ExpenseDetailsModal({ expense, isOpen, onClose, onEdit, onDelete
           {/* Meta Grid */}
           <div className="grid grid-cols-2 gap-4">
             <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-              <div className="p-2 bg-white dark:bg-gray-700 rounded-lg shadow-sm text-emerald-600 dark:text-emerald-400">
+              <div className="p-2 bg-white dark:bg-gray-700 rounded-lg shadow-sm text-blue-600 dark:text-blue-400">
                 <Calendar className="w-4 h-4" />
               </div>
               <div>
@@ -180,7 +180,7 @@ export function ExpenseDetailsModal({ expense, isOpen, onClose, onEdit, onDelete
                     href={expense.location.lat ? `https://www.google.com/maps/search/?api=1&query=${expense.location.lat},${expense.location.lng}` : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(expense.location.name)}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-xs text-emerald-600 dark:text-emerald-400 hover:underline"
+                    className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
                   >
                     {t('detail_open_maps')}
                   </a>
@@ -214,7 +214,7 @@ export function ExpenseDetailsModal({ expense, isOpen, onClose, onEdit, onDelete
                 onEdit(expense.id);
                 onClose();
               }}
-              className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-medium transition-colors shadow-sm shadow-emerald-200 dark:shadow-none"
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-colors shadow-sm shadow-blue-200 dark:shadow-none"
             >
               <Edit2 className="w-4 h-4" />
               {t('detail_edit')}

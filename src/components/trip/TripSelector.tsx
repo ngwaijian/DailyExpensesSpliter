@@ -37,7 +37,7 @@ export function TripSelector({ trips, currentTripId, onSelect, onAdd, onDelete, 
         <select 
           value={currentTripId} 
           onChange={(e) => onSelect(e.target.value)}
-          className="appearance-none bg-gray-100 dark:bg-gray-700 border-none text-gray-900 dark:text-white text-sm font-semibold rounded-xl pl-4 pr-10 py-2.5 min-w-[140px] max-w-[200px] truncate focus:ring-2 focus:ring-emerald-500 cursor-pointer transition-all hover:bg-gray-200 dark:hover:bg-gray-600"
+          className="appearance-none bg-gray-100 dark:bg-gray-700 border-none text-gray-900 dark:text-white text-sm font-semibold rounded-xl pl-4 pr-10 py-2.5 min-w-[140px] max-w-[200px] truncate focus:ring-2 focus:ring-blue-500 cursor-pointer transition-all hover:bg-gray-200 dark:hover:bg-gray-600"
         >
           {trips.map(t => (
             <option key={t.id} value={t.id}>{t.name}</option>
@@ -53,7 +53,7 @@ export function TripSelector({ trips, currentTripId, onSelect, onAdd, onDelete, 
           className={cn(
             "p-2.5 rounded-xl transition-all duration-200",
             isOpen 
-              ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" 
+              ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" 
               : "text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
           )}
         >
@@ -68,7 +68,7 @@ export function TripSelector({ trips, currentTripId, onSelect, onAdd, onDelete, 
                 onClick={() => { onAdd(); setIsOpen(false); }}
                 className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-xl transition-colors text-left"
               >
-                <div className="p-1.5 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg text-emerald-600 dark:text-emerald-400">
+                <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
                   <Plus size={16} />
                 </div>
                 {t('trip_new')}

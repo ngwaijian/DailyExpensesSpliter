@@ -6,6 +6,7 @@ import { cn } from '../../lib/utils';
 import { getAverageRates, formatCurrency } from '../../utils/currency';
 import { calculateBalances, getSimplifiedDebts } from '../../utils/balances';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useTheme } from '../../hooks/useTheme';
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -63,6 +64,7 @@ const formatDateTime = (d?: string) => {
 
 export function ExpenseForm({ trip, onSubmit, onCancel, initialData }: ExpenseFormProps) {
   const { t } = useLanguage();
+  const { resolvedTheme } = useTheme();
   const [type, setType] = useState<'expense' | 'sponsorship' | 'settlement'>(initialData?.type || 'expense');
   const [desc, setDesc] = useState(initialData?.desc || '');
   const [memo, setMemo] = useState(initialData?.memo || '');
@@ -432,7 +434,16 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData }: ExpenseFo
       className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-3 sm:p-6 mb-4 sm:mb-6 transition-colors duration-200"
     >
       <div className="flex justify-between items-center mb-3 sm:mb-4">
-        <h3 className="text-lg font-semibold text-gray-800 dark:text-white">{initialData ? 'Edit Entry' : 'Add New Entry'}</h3>
+        <div className="flex items-center gap-2">
+          {!initialData && (
+            <img 
+              src={resolvedTheme === 'dark' ? "/icon-dark.svg" : "/icon.svg"} 
+              alt="" 
+              className="w-6 h-6 object-contain" 
+            />
+          )}
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-white">{initialData ? 'Edit Entry' : 'Add New Entry'}</h3>
+        </div>
         {initialData && <button onClick={onCancel}><X className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" /></button>}
       </div>
 
@@ -490,7 +501,7 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData }: ExpenseFo
               value={desc}
               onChange={e => setDesc(e.target.value)}
               placeholder={type === 'settlement' ? t('form_desc_settlement') : t('form_desc_placeholder')}
-              className="w-full p-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-colors min-h-[42px]"
+              className="w-full p-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-colors min-h-[42px]"
             />
           </div>
 
@@ -503,7 +514,7 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData }: ExpenseFo
                 type="datetime-local" 
                 value={date}
                 onChange={e => setDate(e.target.value)}
-                className="w-full pl-9 p-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-gray-900 dark:text-white transition-colors text-sm appearance-none min-h-[42px]"
+                className="w-full pl-9 p-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white transition-colors text-sm appearance-none min-h-[42px]"
               />
             </div>
           </div>
@@ -548,7 +559,7 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData }: ExpenseFo
           {/* Amount - Full width on mobile */}
           <div className="col-span-2 md:col-span-7">
             <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{t('form_amount')}</label>
-            <div className="flex rounded-xl bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 focus-within:ring-2 focus-within:ring-emerald-500 overflow-hidden transition-colors">
+            <div className="flex rounded-xl bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 focus-within:ring-2 focus-within:ring-blue-500 overflow-hidden transition-colors">
               <div className="relative border-r border-gray-200 dark:border-gray-600 bg-gray-100 dark:bg-gray-800">
                 <select 
                   value={currency}
@@ -595,7 +606,7 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData }: ExpenseFo
                   className={cn(
                     "absolute right-2 p-1.5 rounded-lg transition-colors",
                     showCalculator 
-                      ? "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400" 
+                      ? "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400" 
                       : "text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600"
                   )}
                 >
@@ -633,7 +644,7 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData }: ExpenseFo
                   <button 
                     type="button"
                     onClick={() => handleCalcInput('=')}
-                    className="col-span-3 h-10 bg-emerald-600 text-white rounded-lg font-bold shadow-sm active:scale-95 transition-all"
+                    className="col-span-3 h-10 bg-blue-600 text-white rounded-lg font-bold shadow-sm active:scale-95 transition-all"
                   >
                     =
                   </button>
@@ -642,7 +653,7 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData }: ExpenseFo
             )}
 
             {currentMyrEquivalent !== null && (
-              <div className="mt-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1 animate-in fade-in">
+              <div className="mt-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 flex items-center gap-1 animate-in fade-in">
                 <span className="text-gray-400 dark:text-gray-500">≈</span> {formatCurrency(currentMyrEquivalent)}
               </div>
             )}
@@ -667,7 +678,7 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData }: ExpenseFo
               value={memo}
               onChange={e => setMemo(e.target.value)}
               placeholder={t('form_memo_placeholder')}
-              className="w-full p-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-colors min-h-[42px]"
+              className="w-full p-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-colors min-h-[42px]"
             />
           </div>
 
@@ -689,13 +700,13 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData }: ExpenseFo
                       }
                     }}
                     placeholder={t('form_location_placeholder')}
-                    className="w-full pl-10 pr-10 p-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-colors"
+                    className="w-full pl-10 pr-10 p-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-colors"
                   />
                   <button
                     type="button"
                     onClick={handleSearchLocation}
                     disabled={isSearchingLocation || !locationName.trim()}
-                    className="absolute right-2 top-2 p-1.5 text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors disabled:opacity-50"
+                    className="absolute right-2 top-2 p-1.5 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors disabled:opacity-50"
                     title={t('form_search_location')}
                   >
                     {isSearchingLocation ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
@@ -708,7 +719,7 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData }: ExpenseFo
                   className={cn(
                     "px-3 rounded-xl border transition-colors flex items-center gap-2",
                     locationCoords 
-                      ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400" 
+                      ? "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400" 
                       : "bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600"
                   )}
                   title={t('form_use_current_location')}
@@ -745,7 +756,7 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData }: ExpenseFo
               )}
               
               {locationCoords && (
-                <div className="mt-1 text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                <div className="mt-1 text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1">
                   <MapPin className="w-3 h-3" />
                   {t('form_coordinates')} {locationCoords.lat.toFixed(4)}, {locationCoords.lng.toFixed(4)}
                 </div>
@@ -763,7 +774,7 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData }: ExpenseFo
             <select 
               value={paidBy}
               onChange={e => setPaidBy(e.target.value)}
-              className="w-full p-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-gray-900 dark:text-white transition-colors"
+              className="w-full p-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white transition-colors"
             >
               <option value="" disabled>{t('form_select_person')}</option>
               {trip.users.map(u => <option key={u} value={u}>{u}</option>)}
@@ -776,7 +787,7 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData }: ExpenseFo
                     type="checkbox" 
                     checked={isSettled}
                     onChange={e => setIsSettled(e.target.checked)}
-                    className="w-4 h-4 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500 dark:border-gray-600 dark:bg-gray-700"
+                    className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
                   />
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                     {t('bal_mark_settled')}
@@ -791,7 +802,7 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData }: ExpenseFo
                     type="checkbox" 
                     checked={isSponsored}
                     onChange={e => setIsSponsored(e.target.checked)}
-                    className="w-4 h-4 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500 dark:border-gray-600 dark:bg-gray-700"
+                    className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
                   />
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                     {t('form_mark_sponsored')}
@@ -807,7 +818,7 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData }: ExpenseFo
                         setSponsoredBy(e.target.value);
                         setPaidBy(e.target.value); // Auto-sync paidBy to match sponsor
                       }}
-                      className="w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-gray-900 dark:text-white transition-colors text-sm"
+                      className="w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white transition-colors text-sm"
                     >
                       {trip.users.map(u => <option key={u} value={u}>{u}</option>)}
                     </select>
@@ -830,7 +841,7 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData }: ExpenseFo
                 <select 
                   value={splitAmong[0] || ''}
                   onChange={e => setSplitAmong([e.target.value])}
-                  className="w-full p-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-gray-900 dark:text-white transition-colors"
+                  className="w-full p-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white transition-colors"
                 >
                   <option value="" disabled>{t('form_select_person')}</option>
                   {trip.users.map(u => <option key={u} value={u}>{u}</option>)}
@@ -842,7 +853,7 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData }: ExpenseFo
                   <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">
                     {type === 'sponsorship' ? t('form_beneficiaries') : t('form_split_among')}
                   </label>
-                  <div className="text-xs space-x-2 text-emerald-600 dark:text-emerald-400 font-medium">
+                  <div className="text-xs space-x-2 text-blue-600 dark:text-blue-400 font-medium">
                     <button type="button" onClick={selectAll} className="hover:underline">{t('form_all')}</button>
                     <button type="button" onClick={selectNone} className="hover:underline">{t('form_none')}</button>
                   </div>
@@ -856,7 +867,7 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData }: ExpenseFo
                       className={cn(
                         "px-3 py-1.5 rounded-full text-sm border transition-colors",
                         splitAmong.includes(user) 
-                          ? "bg-emerald-100 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300" 
+                          ? "bg-blue-100 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-300" 
                           : "bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600"
                       )}
                     >
@@ -922,7 +933,7 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData }: ExpenseFo
                         <div className="space-y-2 animate-in slide-in-from-top-2">
                           <div className="text-xs text-gray-500 dark:text-gray-400 mb-3 bg-gray-50 dark:bg-gray-700/50 p-2 rounded-lg flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
                             <span>{t('form_assign_shares').replace('{maxShares}', maxShares.toString())}</span>
-                            <span className={cn("font-bold", remainingShares > 0 ? "text-orange-500" : "text-emerald-600")}>
+                            <span className={cn("font-bold", remainingShares > 0 ? "text-orange-500" : "text-blue-600")}>
                               {t('form_remaining_shares').replace('{remainingShares}', remainingShares.toString())}
                             </span>
                           </div>
@@ -967,7 +978,7 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData }: ExpenseFo
                                     className="px-3 py-1.5 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
                                   >+</button>
                                 </div>
-                                <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400 ml-auto">
+                                <span className="text-sm font-medium text-blue-600 dark:text-blue-400 ml-auto">
                                   {currency} {(parseFloat(splitDetails[user]?.toString() || '0')).toFixed(2)}
                                 </span>
                               </div>
@@ -995,7 +1006,7 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData }: ExpenseFo
                                     [user]: e.target.value
                                   }));
                                 }}
-                                className="w-full pl-12 pr-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-colors"
+                                className="w-full pl-12 pr-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-colors"
                                 placeholder="0.00"
                               />
                             </div>
@@ -1006,7 +1017,7 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData }: ExpenseFo
                             <button
                               type="button"
                               onClick={handleSplitRemaining}
-                              className="text-[10px] sm:text-xs font-medium bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400 px-2 py-1 rounded hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors"
+                              className="text-[10px] sm:text-xs font-medium bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 px-2 py-1 rounded hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
                             >
                               {t('form_split_remaining')}
                             </button>
@@ -1023,7 +1034,7 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData }: ExpenseFo
                             <span className={cn(
                               "text-sm font-bold",
                               Object.values(splitDetails).reduce<number>((a, b) => a + (parseFloat(b.toString()) || 0), 0).toFixed(2) === (parseFloat(amount) || 0).toFixed(2) 
-                                ? "text-emerald-600" 
+                                ? "text-blue-600" 
                                 : "text-red-500"
                             )}>
                               {Object.values(splitDetails).reduce<number>((a, b) => a + (parseFloat(b.toString()) || 0), 0).toFixed(2)} / {amount || '0.00'}
@@ -1059,7 +1070,7 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData }: ExpenseFo
           )}
           <button 
             type="submit"
-            className="flex-1 py-3 rounded-xl font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-200 dark:shadow-none transition-all active:scale-[0.98]"
+            className="flex-1 py-3 rounded-xl font-semibold text-white bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-200 dark:shadow-none transition-all active:scale-[0.98]"
           >
             {initialData ? t('form_update_entry') : t('form_save_entry')}
           </button>
