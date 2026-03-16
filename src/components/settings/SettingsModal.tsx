@@ -54,7 +54,7 @@ export function SettingsModal({
         
         <div className="p-6 space-y-4">
           <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg text-sm text-blue-800 dark:text-blue-300 mt-4 whitespace-pre-line">
-            {t('set_sync_desc') || "Enter your GitHub token to sync and share trips."}
+            {t('set_sync_desc') || "Enter your GitHub token to sync and share groups."}
           </div>
 
           <div>
@@ -114,7 +114,7 @@ export function SettingsModal({
               className="flex-1 flex items-center justify-center gap-2 bg-purple-100 dark:bg-purple-900/30 hover:bg-purple-200 dark:hover:bg-purple-800/50 text-purple-700 dark:text-purple-400 py-2.5 rounded-xl font-medium transition-colors disabled:opacity-50"
             >
               {isSyncing ? <RefreshCw className="animate-spin w-4 h-4" /> : <Cloud className="w-4 h-4" />}
-              Fetch All My Trips
+              Fetch All My Groups
             </button>
           </div>
 
