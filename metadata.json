@@ -1,0 +1,7 @@
+{
+  "name": "DailyExpensesSpliter",
+  "description": "Expense splitting app",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
