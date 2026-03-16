@@ -65,7 +65,7 @@ export function PeopleWallet({ trip, onAddPerson, onEditPerson, onRemovePerson, 
   return (
     <div className="space-y-6">
       {/* People Section */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-colors duration-200">
+      <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-colors duration-200">
         <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
           <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
           {t('trip_people')}
@@ -135,7 +135,7 @@ export function PeopleWallet({ trip, onAddPerson, onEditPerson, onRemovePerson, 
       </div>
 
       {/* Wallet Section */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-colors duration-200">
+      <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-colors duration-200">
         <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">{t('trip_wallet')}</h3>
         
         <form onSubmit={handleAddExchange} className="space-y-3 mb-6">

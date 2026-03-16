@@ -12,6 +12,7 @@ interface SettingsModalProps {
   createGistForTrip: () => void;
   onSync: () => void;
   onPush: () => void;
+  fetchAllTripsFromCloud: () => void;
   isSyncing: boolean;
   needsSync: boolean;
   syncError?: string | null;
@@ -22,7 +23,7 @@ export function SettingsModal({
   isOpen, onClose, 
   githubToken, setGithubToken, 
   currentTrip, createGistForTrip,
-  onSync, onPush, isSyncing, needsSync, syncError, isOnline
+  onSync, onPush, fetchAllTripsFromCloud, isSyncing, needsSync, syncError, isOnline
 }: SettingsModalProps) {
   const { language, setLanguage, t } = useLanguage();
   const [copied, setCopied] = useState(false);
@@ -41,7 +42,7 @@ export function SettingsModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
       <div 
-        className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md overflow-hidden transition-colors"
+        className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl w-full max-w-md overflow-hidden transition-colors"
       >
         <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
@@ -104,6 +105,17 @@ export function SettingsModal({
                 </p>
               </div>
             )}
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <button 
+              onClick={fetchAllTripsFromCloud}
+              disabled={isSyncing || !githubToken}
+              className="flex-1 flex items-center justify-center gap-2 bg-purple-100 dark:bg-purple-900/30 hover:bg-purple-200 dark:hover:bg-purple-800/50 text-purple-700 dark:text-purple-400 py-2.5 rounded-xl font-medium transition-colors disabled:opacity-50"
+            >
+              {isSyncing ? <RefreshCw className="animate-spin w-4 h-4" /> : <Cloud className="w-4 h-4" />}
+              Fetch All My Trips
+            </button>
           </div>
 
           <div className="flex gap-3 pt-4">

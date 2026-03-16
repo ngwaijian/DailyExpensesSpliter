@@ -151,7 +151,7 @@ export function ExpenseList({ trip, onEdit, onView, onDelete, lastUpdatedId }: E
 
       {/* Filter and Sort Controls */}
       {showFilters && (
-        <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors duration-200 animate-in slide-in-from-top-2">
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors duration-200 animate-in slide-in-from-top-2">
           <div className="flex flex-col gap-4">
             {/* Search Input */}
             <div>
@@ -249,7 +249,7 @@ export function ExpenseList({ trip, onEdit, onView, onDelete, lastUpdatedId }: E
       )}
 
       {filteredAndSortedExpenses.length === 0 ? (
-        <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-2xl border border-dashed border-gray-300 dark:border-gray-700 transition-colors duration-200">
+        <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-3xl border border-dashed border-gray-300 dark:border-gray-700 transition-colors duration-200">
           <p className="text-gray-400 dark:text-gray-500">{t('list_no_match')}</p>
         </div>
       ) : (
@@ -285,7 +285,7 @@ export function ExpenseList({ trip, onEdit, onView, onDelete, lastUpdatedId }: E
                   id={`expense-${exp.id}`}
                   onClick={() => onView(exp.id)}
                   className={cn(
-                    "group p-4 rounded-2xl shadow-sm border transition-all relative duration-500 cursor-pointer overflow-hidden",
+                    "group p-4 rounded-3xl shadow-sm border transition-all relative duration-500 cursor-pointer overflow-hidden",
                     highlightedId === exp.id
                       ? "bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700 ring-2 ring-blue-500/50"
                       : "bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700 hover:shadow-md"

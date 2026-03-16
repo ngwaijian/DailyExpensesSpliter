@@ -114,6 +114,10 @@ const translations: Record<Language, Translations> = {
     dash_original: "Original",
     dash_myr: "MYR",
     
+    // Planning
+    plan_recurring: "Recurring",
+    plan_goals: "Goals",
+    
     // Balances
     bal_title: "Balances",
     bal_settled: "Settled",
@@ -311,6 +315,10 @@ const translations: Record<Language, Translations> = {
     dash_detailed_expenses: "详细支出列表",
     dash_original: "原币种",
     dash_myr: "马币",
+    
+    // Planning
+    plan_recurring: "定期支出",
+    plan_goals: "目标",
     
     // Balances
     bal_title: "结算",

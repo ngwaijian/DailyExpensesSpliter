@@ -1,0 +1,196 @@
+import React, { useState } from 'react';
+import { Trip, Goal } from '../../types';
+import { Target, Plus, Edit2, Trash2, CheckCircle2 } from 'lucide-react';
+import { formatCurrency } from '../../utils/currency';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { cn } from '../../lib/utils';
+
+interface GoalsProps {
+  trip: Trip;
+  onUpdateTrip: (trip: Trip) => void;
+}
+
+export function Goals({ trip, onUpdateTrip }: GoalsProps) {
+  const { t } = useLanguage();
+  const [isAdding, setIsAdding] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [name, setName] = useState('');
+  const [targetAmount, setTargetAmount] = useState('');
+  const [currentAmount, setCurrentAmount] = useState('');
+  const [currency, setCurrency] = useState('MYR');
+
+  const goals = trip.goals || [];
+
+  const handleSave = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name || !targetAmount) return;
+
+    const newGoal: Goal = {
+      id: editingId || Date.now().toString(),
+      name,
+      targetAmount: parseFloat(targetAmount),
+      currentAmount: parseFloat(currentAmount) || 0,
+      currency,
+    };
+
+    let newGoals;
+    if (editingId) {
+      newGoals = goals.map(g => g.id === editingId ? newGoal : g);
+    } else {
+      newGoals = [...goals, newGoal];
+    }
+
+    onUpdateTrip({ ...trip, goals: newGoals });
+    resetForm();
+  };
+
+  const handleEdit = (goal: Goal) => {
+    setEditingId(goal.id);
+    setName(goal.name);
+    setTargetAmount(goal.targetAmount.toString());
+    setCurrentAmount(goal.currentAmount.toString());
+    setCurrency(goal.currency);
+    setIsAdding(true);
+  };
+
+  const handleDelete = (id: string) => {
+    if (confirm(t('app_delete_goal_confirm') || 'Delete this goal?')) {
+      onUpdateTrip({ ...trip, goals: goals.filter(g => g.id !== id) });
+    }
+  };
+
+  const resetForm = () => {
+    setIsAdding(false);
+    setEditingId(null);
+    setName('');
+    setTargetAmount('');
+    setCurrentAmount('');
+    setCurrency('MYR');
+  };
+
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-colors duration-200">
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+          <Target className="w-6 h-6 text-blue-500" />
+          {t('plan_goals') || 'Goals'}
+        </h3>
+        {!isAdding && (
+          <button
+            onClick={() => setIsAdding(true)}
+            className="p-2 bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50 rounded-xl transition-colors"
+          >
+            <Plus className="w-5 h-5" />
+          </button>
+        )}
+      </div>
+
+      {isAdding && (
+        <form onSubmit={handleSave} className="mb-6 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-2xl border border-gray-100 dark:border-gray-600">
+          <div className="space-y-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Goal Name</label>
+              <input
+                type="text"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                className="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white"
+                required
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Target Amount</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={targetAmount}
+                  onChange={e => setTargetAmount(e.target.value)}
+                  className="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Current Amount</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={currentAmount}
+                  onChange={e => setCurrentAmount(e.target.value)}
+                  className="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white"
+                />
+              </div>
+            </div>
+            <div className="flex gap-2 pt-2">
+              <button
+                type="button"
+                onClick={resetForm}
+                className="flex-1 py-2.5 px-4 bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-800 dark:text-white rounded-xl text-sm font-medium transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="flex-1 py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-medium transition-colors"
+              >
+                {editingId ? 'Update' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </form>
+      )}
+
+      <div className="space-y-4">
+        {goals.map(goal => {
+          const progress = Math.min(100, Math.max(0, (goal.currentAmount / goal.targetAmount) * 100));
+          const isCompleted = progress >= 100;
+
+          return (
+            <div key={goal.id} className="p-4 bg-gray-50 dark:bg-gray-700/30 rounded-2xl border border-gray-100 dark:border-gray-700 group">
+              <div className="flex justify-between items-start mb-2">
+                <div>
+                  <h4 className="font-semibold text-gray-800 dark:text-white flex items-center gap-2">
+                    {goal.name}
+                    {isCompleted && <CheckCircle2 className="w-4 h-4 text-green-500" />}
+                  </h4>
+                  <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    <span className={cn("font-medium", isCompleted ? "text-green-600 dark:text-green-400" : "text-blue-600 dark:text-blue-400")}>
+                      {formatCurrency(goal.currentAmount)}
+                    </span>
+                    {' '}of {formatCurrency(goal.targetAmount)}
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button onClick={() => handleEdit(goal)} className="p-1.5 text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                  <button onClick={() => handleDelete(goal.id)} className="p-1.5 text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+              
+              <div className="h-3 w-full bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden mt-3">
+                <div 
+                  className={cn(
+                    "h-full transition-all duration-500 rounded-full",
+                    isCompleted ? "bg-green-500" : "bg-blue-500"
+                  )}
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              <div className="text-right text-xs text-gray-400 dark:text-gray-500 mt-1 font-medium">
+                {progress.toFixed(1)}%
+              </div>
+            </div>
+          );
+        })}
+        {goals.length === 0 && !isAdding && (
+          <div className="text-center py-8 text-gray-400 dark:text-gray-500 italic">
+            No goals set yet. Add one to start tracking!
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

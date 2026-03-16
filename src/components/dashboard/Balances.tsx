@@ -15,7 +15,7 @@ export function Balances({ trip }: BalancesProps) {
   const transactions = getSimplifiedDebts(balances);
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-colors duration-200">
+    <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-colors duration-200">
       <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
         <CheckCircle2 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
         {t('bal_settlements')}

@@ -34,12 +34,38 @@ export interface Expense {
   isSettled?: boolean; // If true, this expense won't affect user balances (just for recording)
 }
 
+export interface Goal {
+  id: string;
+  name: string;
+  targetAmount: number;
+  currentAmount: number;
+  currency: string;
+  deadline?: string;
+  color?: string;
+  icon?: string;
+}
+
+export interface RecurringTransaction {
+  id: string;
+  desc: string;
+  amountOriginal: number;
+  currency: string;
+  category: string;
+  paidBy: string;
+  splitAmong: string[];
+  frequency: 'daily' | 'weekly' | 'monthly' | 'yearly';
+  nextDate: string;
+  endDate?: string;
+}
+
 export interface Trip {
   id: string;
   name: string;
   users: string[]; // names
   expenses: Expense[];
   exchanges: Exchange[];
+  goals?: Goal[];
+  recurringTransactions?: RecurringTransaction[];
   gistId?: string; // For syncing this specific trip
 }
 

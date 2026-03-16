@@ -62,7 +62,7 @@ export function TripSelector({ trips, currentTripId, onSelect, onAdd, onDelete, 
 
         {/* Dropdown Menu */}
         {isOpen && (
-          <div className="absolute top-full right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-100 origin-top-right">
+          <div className="absolute top-full right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-3xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-100 origin-top-right">
             <div className="p-1.5 space-y-0.5">
               <button 
                 onClick={() => { onAdd(); setIsOpen(false); }}

@@ -8,9 +8,11 @@ import { ExpenseForm } from './components/expenses/ExpenseForm';
 import { ExpenseList } from './components/expenses/ExpenseList';
 import { Summary } from './components/dashboard/Summary';
 import { Balances } from './components/dashboard/Balances';
+import { Goals } from './components/dashboard/Goals';
+import { RecurringTransactions } from './components/expenses/RecurringTransactions';
 import { PeopleWallet } from './components/trip/PeopleWallet';
 import { ExpenseDetailsModal } from './components/expenses/ExpenseDetailsModal';
-import { Settings, LayoutGrid, List, Users, Sun, Moon, Monitor, RefreshCw, Plus, Globe } from 'lucide-react';
+import { Settings, LayoutGrid, List, Users, Sun, Moon, Monitor, RefreshCw, Plus, Globe, Target } from 'lucide-react';
 import { cn } from './lib/utils';
 
 function App() {
@@ -19,7 +21,7 @@ function App() {
     addTrip, deleteTrip, renameTrip, updateTrip,
     isSyncing, needsSync, syncError, isOnline,
     githubToken, setGithubToken, 
-    fetchFromCloud, pushToCloud, createGistForTrip
+    fetchFromCloud, pushToCloud, createGistForTrip, fetchAllTripsFromCloud
   } = useStore();
 
   const { theme, setTheme, resolvedTheme } = useTheme();
@@ -32,7 +34,7 @@ function App() {
   const formRef = useRef<HTMLDivElement>(null);
   
   // Mobile Tab State
-  const [activeTab, setActiveTab] = useState<'expenses' | 'dashboard' | 'people'>('expenses');
+  const [activeTab, setActiveTab] = useState<'expenses' | 'dashboard' | 'people' | 'planning'>('expenses');
   const [showFab, setShowFab] = useState(false);
 
   React.useEffect(() => {
@@ -281,10 +283,12 @@ function App() {
             />
           </div>
 
-          {/* Desktop: Right Sidebar (Stats) */}
+          {/* Desktop: Right Sidebar (Stats & Planning) */}
           <div className="hidden lg:block lg:col-span-3 space-y-6">
             <Summary trip={currentTrip} />
             <Balances trip={currentTrip} />
+            <Goals trip={currentTrip} onUpdateTrip={updateTrip} />
+            <RecurringTransactions trip={currentTrip} onUpdateTrip={updateTrip} />
           </div>
 
           {/* Mobile Only Views */}
@@ -292,6 +296,13 @@ function App() {
             <div className="space-y-6">
               <Summary trip={currentTrip} />
               <Balances trip={currentTrip} />
+            </div>
+          </div>
+
+          <div className={cn("lg:hidden", activeTab === 'planning' ? 'block' : 'hidden')}>
+            <div className="space-y-6">
+              <Goals trip={currentTrip} onUpdateTrip={updateTrip} />
+              <RecurringTransactions trip={currentTrip} onUpdateTrip={updateTrip} />
             </div>
           </div>
 
@@ -311,30 +322,11 @@ function App() {
 
       {/* Mobile Bottom Nav */}
       <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 lg:hidden z-40 pb-[env(safe-area-inset-bottom)] transition-colors duration-200">
-        <div className="flex justify-around items-center">
-          <button 
-            onClick={() => setActiveTab('expenses')}
-            className={cn(
-              "p-4 flex flex-col items-center gap-1 text-xs font-medium transition-colors", 
-              activeTab === 'expenses' 
-                ? "text-blue-600 dark:text-blue-400" 
-                : "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
-            )}
-          >
-            <img 
-              src={resolvedTheme === 'dark' ? "/icon-dark.svg" : "/icon.svg"} 
-              alt="" 
-              className={cn(
-                "w-6 h-6 object-contain transition-opacity",
-                activeTab === 'expenses' ? "opacity-100" : "opacity-40 grayscale"
-              )} 
-            />
-            {t('nav_expenses')}
-          </button>
+        <div className="flex justify-around items-center px-2">
           <button 
             onClick={() => setActiveTab('dashboard')}
             className={cn(
-              "p-4 flex flex-col items-center gap-1 text-xs font-medium transition-colors", 
+              "p-3 flex flex-col items-center gap-1 text-xs font-medium transition-colors w-16", 
               activeTab === 'dashboard' 
                 ? "text-blue-600 dark:text-blue-400" 
                 : "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
@@ -344,9 +336,37 @@ function App() {
             {t('nav_dashboard')}
           </button>
           <button 
+            onClick={() => setActiveTab('expenses')}
+            className={cn(
+              "p-3 flex flex-col items-center gap-1 text-xs font-medium transition-colors w-16", 
+              activeTab === 'expenses' 
+                ? "text-blue-600 dark:text-blue-400" 
+                : "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+            )}
+          >
+            <List className="w-6 h-6" />
+            {t('nav_expenses')}
+          </button>
+          
+          {/* Spacer for FAB */}
+          <div className="w-16 h-14" />
+
+          <button 
+            onClick={() => setActiveTab('planning')}
+            className={cn(
+              "p-3 flex flex-col items-center gap-1 text-xs font-medium transition-colors w-16", 
+              activeTab === 'planning' 
+                ? "text-blue-600 dark:text-blue-400" 
+                : "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+            )}
+          >
+            <Target className="w-6 h-6" />
+            {t('nav_planning') || 'Planning'}
+          </button>
+          <button 
             onClick={() => setActiveTab('people')}
             className={cn(
-              "p-4 flex flex-col items-center gap-1 text-xs font-medium transition-colors", 
+              "p-3 flex flex-col items-center gap-1 text-xs font-medium transition-colors w-16", 
               activeTab === 'people' 
                 ? "text-blue-600 dark:text-blue-400" 
                 : "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
@@ -366,6 +386,7 @@ function App() {
         createGistForTrip={createGistForTrip}
         onSync={fetchFromCloud}
         onPush={pushToCloud}
+        fetchAllTripsFromCloud={fetchAllTripsFromCloud}
         isSyncing={isSyncing}
         needsSync={needsSync}
         syncError={syncError}
@@ -384,9 +405,9 @@ function App() {
       <button
         onClick={scrollToForm}
         className={cn(
-          "fixed z-40 bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 hover:shadow-xl transition-all duration-300 flex items-center justify-center",
-          "bottom-24 right-4 lg:bottom-8 lg:right-8",
-          showFab ? "translate-y-0 opacity-100" : "translate-y-16 opacity-0 pointer-events-none"
+          "fixed z-50 bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 hover:shadow-xl transition-all duration-300 flex items-center justify-center border-4 border-white dark:border-gray-800",
+          "bottom-8 left-1/2 -translate-x-1/2 lg:bottom-8 lg:left-auto lg:right-8 lg:translate-x-0 lg:border-none",
+          showFab || activeTab !== 'expenses' ? "translate-y-0 opacity-100" : "lg:translate-y-16 lg:opacity-0"
         )}
         title={t('app_add_new_entry')}
       >

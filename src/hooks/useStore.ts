@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import { AppData, Trip, Expense, Exchange } from '../types';
-import { getAverageRates } from '../utils/currency';
 import { GITHUB_TOKEN } from '../config';
 
 const STORAGE_KEY = 'sw_app_data';
@@ -53,6 +52,74 @@ export function useStore() {
     if (storedToken) setGithubToken(storedToken);
     setNeedsSync(storedSync);
   }, []);
+
+  // Process recurring transactions
+  useEffect(() => {
+    if (appData.trips.length === 0) return;
+    
+    let hasChanges = false;
+    const today = new Date().toISOString().split('T')[0];
+    
+    const newTrips = appData.trips.map(trip => {
+      if (!trip.recurringTransactions || trip.recurringTransactions.length === 0) return trip;
+      
+      let tripChanged = false;
+      const newExpenses = [...trip.expenses];
+      const newRecurring = trip.recurringTransactions.map(tx => {
+        let currentNextDate = tx.nextDate;
+        let txChanged = false;
+
+        let loopCount = 0;
+        while (currentNextDate <= today && loopCount < 100) {
+          loopCount++;
+          tripChanged = true;
+          hasChanges = true;
+          txChanged = true;
+          
+          // Create new expense
+          const newExpense: Expense = {
+            id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+            desc: tx.desc + ' (Recurring)',
+            amountOriginal: tx.amountOriginal,
+            currency: tx.currency,
+            category: tx.category,
+            paidBy: tx.paidBy,
+            splitAmong: tx.splitAmong,
+            date: currentNextDate,
+          };
+          newExpenses.push(newExpense);
+          
+          // Calculate next date
+          const dateObj = new Date(currentNextDate);
+          if (isNaN(dateObj.getTime())) {
+            // Invalid date, break to avoid infinite loop
+            break;
+          }
+          if (tx.frequency === 'daily') dateObj.setDate(dateObj.getDate() + 1);
+          else if (tx.frequency === 'weekly') dateObj.setDate(dateObj.getDate() + 7);
+          else if (tx.frequency === 'monthly') dateObj.setMonth(dateObj.getMonth() + 1);
+          else if (tx.frequency === 'yearly') dateObj.setFullYear(dateObj.getFullYear() + 1);
+          
+          currentNextDate = dateObj.toISOString().split('T')[0];
+        }
+        
+        if (txChanged) {
+          return { ...tx, nextDate: currentNextDate };
+        }
+        return tx;
+      });
+      
+      if (tripChanged) {
+        return { ...trip, expenses: newExpenses, recurringTransactions: newRecurring };
+      }
+      return trip;
+    });
+    
+    if (hasChanges) {
+      setAppData(prev => ({ ...prev, trips: newTrips }));
+      setNeedsSync(true);
+    }
+  }, [appData.trips]);
 
   // Persist data whenever it changes
   useEffect(() => {
@@ -193,6 +260,64 @@ export function useStore() {
     }
   }, [githubToken, currentTrip]);
 
+  const fetchAllTripsFromCloud = useCallback(async () => {
+    if (!githubToken) return;
+    if (!navigator.onLine) {
+      setSyncError("Offline: Cannot pull data.");
+      return;
+    }
+    setIsSyncing(true);
+    setSyncError(null);
+    try {
+      const res = await fetch(`https://api.github.com/gists`, {
+        headers: {
+          'Authorization': `Bearer ${githubToken}`
+        }
+      });
+      if (!res.ok) throw new Error("Failed to fetch gists");
+      const gists = await res.json();
+      
+      const newTrips: Trip[] = [];
+      for (const gist of gists) {
+        if (gist.files['trip.json']) {
+          const gistRes = await fetch(gist.url, {
+            headers: { 'Authorization': `Bearer ${githubToken}` }
+          });
+          if (gistRes.ok) {
+            const gistData = await gistRes.json();
+            const tripContent = gistData.files['trip.json']?.content;
+            if (tripContent) {
+              const parsedTrip = JSON.parse(tripContent);
+              parsedTrip.gistId = gist.id;
+              newTrips.push(parsedTrip);
+            }
+          }
+        }
+      }
+
+      if (newTrips.length > 0) {
+        setAppData(prev => {
+          const updatedTrips = [...prev.trips];
+          newTrips.forEach(newTrip => {
+            const index = updatedTrips.findIndex(t => t.id === newTrip.id);
+            if (index >= 0) {
+              updatedTrips[index] = newTrip;
+            } else {
+              updatedTrips.push(newTrip);
+            }
+          });
+          return { ...prev, trips: updatedTrips };
+        });
+        setNeedsSync(false);
+      }
+    } catch (error) {
+      console.error("Fetch all trips error:", error);
+      setSyncError("Failed to pull all trips from cloud.");
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [githubToken]);
+
   const createGistForTrip = useCallback(async () => {
     if (!githubToken || !currentTrip) return;
     setIsSyncing(true);
@@ -302,6 +427,7 @@ export function useStore() {
     setGithubToken,
     fetchFromCloud,
     pushToCloud,
-    createGistForTrip
+    createGistForTrip,
+    fetchAllTripsFromCloud
   };
 }
