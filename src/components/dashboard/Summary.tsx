@@ -385,30 +385,67 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Target className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-            <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Monthly Budget</span>
+            <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Budget Status</span>
           </div>
-          {isEditingBudget ? (
-            <div className="flex items-center gap-2">
-              <input 
-                type="number" 
-                value={tempBudget}
-                onChange={(e) => setTempBudget(e.target.value)}
-                className="w-20 p-1 text-xs bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded outline-none"
-                autoFocus
-              />
-              <button onClick={handleSaveBudget} className="text-xs text-blue-600 font-bold">Save</button>
-            </div>
-          ) : (
+          {!trip.budgets?.length && !trip.monthlyBudget && (
             <button 
               onClick={() => setIsEditingBudget(true)}
               className="text-xs text-gray-500 hover:text-blue-600 transition-colors"
             >
-              {trip.monthlyBudget ? `${formatCurrency(trip.monthlyBudget)}` : 'Set Budget'}
+              Set Budget
             </button>
           )}
         </div>
         
-        {trip.monthlyBudget ? (
+        {trip.budgets && trip.budgets.length > 0 ? (
+          <div className="space-y-4">
+            {trip.budgets.slice(0, 3).map(budget => {
+              const now = new Date();
+              const currentMonth = now.getMonth();
+              const currentYear = now.getFullYear();
+              
+              const spent = trip.expenses.reduce((acc, exp) => {
+                if (budget.category !== 'All' && exp.category !== budget.category) return acc;
+                if (budget.period === 'monthly') {
+                  const expDate = new Date(exp.date);
+                  if (expDate.getMonth() !== currentMonth || expDate.getFullYear() !== currentYear) return acc;
+                }
+                const rate = rates[exp.currency] || exp.rate || 1;
+                return acc + (exp.amountOriginal * rate);
+              }, 0);
+
+              const percentage = Math.min(100, (spent / budget.amount) * 100);
+              const isOver = spent > budget.amount;
+
+              return (
+                <div key={budget.id} className="space-y-1.5">
+                  <div className="flex justify-between text-[10px]">
+                    <span className="font-bold text-gray-600 dark:text-gray-400">
+                      {budget.category === 'All' ? 'Total' : budget.category.split(' ')[0]} ({budget.period})
+                    </span>
+                    <span className={cn("font-bold", isOver ? "text-red-500" : "text-gray-500")}>
+                      {formatCurrency(spent)} / {formatCurrency(budget.amount)}
+                    </span>
+                  </div>
+                  <div className="h-1.5 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div 
+                      className={cn(
+                        "h-full transition-all duration-500",
+                        isOver ? "bg-red-500" : percentage > 85 ? "bg-amber-500" : "bg-emerald-500"
+                      )}
+                      style={{ width: `${percentage}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+            {trip.budgets.length > 3 && (
+              <div className="text-[10px] text-center text-gray-400 italic">
+                + {trip.budgets.length - 3} more budgets in Planning tab
+              </div>
+            )}
+          </div>
+        ) : trip.monthlyBudget ? (
           <div className="space-y-3">
             <div className="h-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
               <div 
@@ -423,20 +460,9 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
               <span>{((totalMYR / trip.monthlyBudget) * 100).toFixed(1)}% used</span>
               <span className="font-medium text-gray-700 dark:text-gray-300">{formatCurrency(Math.max(0, trip.monthlyBudget - totalMYR))} remaining</span>
             </div>
-            
-            <div className="pt-2 border-t border-gray-100 dark:border-gray-800 grid grid-cols-2 gap-2">
-              <div className="text-center">
-                <div className="text-[10px] text-gray-400 uppercase">Daily Limit</div>
-                <div className="text-xs font-bold text-gray-700 dark:text-gray-300">{formatCurrency(trip.monthlyBudget / 30)}</div>
-              </div>
-              <div className="text-center">
-                <div className="text-[10px] text-gray-400 uppercase">Avg. Spent</div>
-                <div className="text-xs font-bold text-gray-700 dark:text-gray-300">{formatCurrency(totalMYR / Math.max(1, trip.expenses.length > 0 ? (new Set(trip.expenses.map(e => e.date.split('T')[0])).size) : 1))}</div>
-              </div>
-            </div>
           </div>
         ) : (
-          <p className="text-xs text-gray-400 italic">Set a budget to track your spending limit.</p>
+          <p className="text-xs text-gray-400 italic">Set budgets in the Planning tab to track spending limits.</p>
         )}
       </div>
 

@@ -58,6 +58,14 @@ export interface RecurringTransaction {
   endDate?: string;
 }
 
+export interface Budget {
+  id: string;
+  category: string | 'All';
+  amount: number;
+  currency: string;
+  period: 'trip' | 'monthly';
+}
+
 export interface Trip {
   id: string;
   name: string;
@@ -66,7 +74,9 @@ export interface Trip {
   exchanges: Exchange[];
   goals?: Goal[];
   recurringTransactions?: RecurringTransaction[];
+  budgets?: Budget[];
   monthlyBudget?: number;
+  categories?: string[];
   gistId?: string; // For syncing this specific trip
 }
 

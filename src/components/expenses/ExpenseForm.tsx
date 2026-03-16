@@ -70,7 +70,8 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData }: ExpenseFo
   const [memo, setMemo] = useState(initialData?.memo || '');
   const [amount, setAmount] = useState(initialData?.amountOriginal || '');
   const [currency, setCurrency] = useState(initialData?.currency || 'MYR');
-  const [category, setCategory] = useState(initialData?.category || CATEGORIES[0]);
+  const tripCategories = trip.categories || CATEGORIES;
+  const [category, setCategory] = useState(initialData?.category || tripCategories[0]);
   const [date, setDate] = useState(formatDateTime(initialData?.date));
   const [paidBy, setPaidBy] = useState(initialData?.paidBy || (trip.users.includes('Jian') ? 'Jian' : (trip.users.length > 0 ? trip.users[0] : '')));
   const [splitAmong, setSplitAmong] = useState<string[]>(initialData?.splitAmong || trip.users);
@@ -536,7 +537,7 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData }: ExpenseFo
             <div className="col-span-2 md:col-span-12">
               <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">{t('form_category')}</label>
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2">
-                {CATEGORIES.map(c => (
+                {tripCategories.map(c => (
                   <button
                     key={c}
                     type="button"

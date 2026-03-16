@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Trip, RecurringTransaction } from '../../types';
-import { Repeat, Plus, Edit2, Trash2, Calendar } from 'lucide-react';
+import { Trip, RecurringTransaction, CATEGORIES } from '../../types';
+import { Repeat, Plus, Edit2, Trash2, Calendar, Tag } from 'lucide-react';
 import { formatCurrency } from '../../utils/currency';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { cn } from '../../lib/utils';
@@ -12,13 +12,14 @@ interface RecurringTransactionsProps {
 
 export function RecurringTransactions({ trip, onUpdateTrip }: RecurringTransactionsProps) {
   const { t } = useLanguage();
+  const tripCategories = trip.categories || CATEGORIES;
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const [desc, setDesc] = useState('');
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState('MYR');
-  const [category, setCategory] = useState('📝 General / Other');
+  const [category, setCategory] = useState(tripCategories[0]);
   const [paidBy, setPaidBy] = useState(trip.users[0] || '');
   const [frequency, setFrequency] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('monthly');
   const [nextDate, setNextDate] = useState(new Date().toISOString().split('T')[0]);
@@ -76,7 +77,7 @@ export function RecurringTransactions({ trip, onUpdateTrip }: RecurringTransacti
     setDesc('');
     setAmount('');
     setCurrency('MYR');
-    setCategory('📝 General / Other');
+    setCategory(tripCategories[0]);
     setPaidBy(trip.users[0] || '');
     setFrequency('monthly');
     setNextDate(new Date().toISOString().split('T')[0]);
@@ -114,15 +115,16 @@ export function RecurringTransactions({ trip, onUpdateTrip }: RecurringTransacti
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Amount</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={amount}
-                  onChange={e => setAmount(e.target.value)}
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Category</label>
+                <select
+                  value={category}
+                  onChange={e => setCategory(e.target.value)}
                   className="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white"
-                  required
-                />
+                >
+                  {tripCategories.map(c => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Frequency</label>
@@ -140,6 +142,17 @@ export function RecurringTransactions({ trip, onUpdateTrip }: RecurringTransacti
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Amount</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={amount}
+                  onChange={e => setAmount(e.target.value)}
+                  className="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white"
+                  required
+                />
+              </div>
+              <div>
                 <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Next Date</label>
                 <input
                   type="date"
@@ -149,6 +162,8 @@ export function RecurringTransactions({ trip, onUpdateTrip }: RecurringTransacti
                   required
                 />
               </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Paid By</label>
                 <select

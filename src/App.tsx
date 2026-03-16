@@ -10,6 +10,7 @@ import { Summary } from './components/dashboard/Summary';
 import { Balances } from './components/dashboard/Balances';
 import { Goals } from './components/dashboard/Goals';
 import { RecurringTransactions } from './components/expenses/RecurringTransactions';
+import { BudgetManager } from './components/planning/BudgetManager';
 import { PeopleWallet } from './components/trip/PeopleWallet';
 import { ExpenseDetailsModal } from './components/expenses/ExpenseDetailsModal';
 import { Settings, LayoutGrid, List, Users, Sun, Moon, Monitor, RefreshCw, Plus, Globe, Target } from 'lucide-react';
@@ -287,6 +288,7 @@ function App() {
           <div className="hidden lg:block lg:col-span-3 space-y-6">
             <Summary trip={currentTrip} onUpdateTrip={updateTrip} />
             <Balances trip={currentTrip} />
+            <BudgetManager trip={currentTrip} onUpdateTrip={updateTrip} />
             <Goals trip={currentTrip} onUpdateTrip={updateTrip} />
             <RecurringTransactions trip={currentTrip} onUpdateTrip={updateTrip} />
           </div>
@@ -301,6 +303,7 @@ function App() {
 
           <div className={cn("lg:hidden", activeTab === 'planning' ? 'block' : 'hidden')}>
             <div className="space-y-6">
+              <BudgetManager trip={currentTrip} onUpdateTrip={updateTrip} />
               <Goals trip={currentTrip} onUpdateTrip={updateTrip} />
               <RecurringTransactions trip={currentTrip} onUpdateTrip={updateTrip} />
             </div>
@@ -383,6 +386,7 @@ function App() {
         onClose={() => setIsSettingsOpen(false)}
         githubToken={githubToken} setGithubToken={setGithubToken}
         currentTrip={currentTrip}
+        onUpdateTrip={updateTrip}
         createGistForTrip={createGistForTrip}
         onSync={fetchFromCloud}
         onPush={pushToCloud}

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Settings, Cloud, CloudOff, RefreshCw, Save, Globe, Share2, Copy } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Trip } from '../../types';
+import { CategoryManager } from './CategoryManager';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -9,6 +10,7 @@ interface SettingsModalProps {
   githubToken: string;
   setGithubToken: (val: string) => void;
   currentTrip: Trip;
+  onUpdateTrip: (trip: Trip) => void;
   createGistForTrip: () => void;
   onSync: () => void;
   onPush: () => void;
@@ -22,7 +24,7 @@ interface SettingsModalProps {
 export function SettingsModal({ 
   isOpen, onClose, 
   githubToken, setGithubToken, 
-  currentTrip, createGistForTrip,
+  currentTrip, onUpdateTrip, createGistForTrip,
   onSync, onPush, fetchAllTripsFromCloud, isSyncing, needsSync, syncError, isOnline
 }: SettingsModalProps) {
   const { language, setLanguage, t } = useLanguage();
@@ -66,6 +68,10 @@ export function SettingsModal({
               className="w-full p-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white"
               placeholder="ghp_..."
             />
+          </div>
+
+          <div className="pt-4 border-t border-gray-100 dark:border-gray-700">
+            <CategoryManager trip={currentTrip} onUpdateTrip={onUpdateTrip} />
           </div>
 
           <div className="pt-4 border-t border-gray-100 dark:border-gray-700">

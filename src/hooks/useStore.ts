@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { AppData, Trip, Expense, Exchange } from '../types';
+import { AppData, Trip, Expense, Exchange, CATEGORIES } from '../types';
 import { GITHUB_TOKEN } from '../config';
 
 const STORAGE_KEY = 'sw_app_data';
@@ -154,7 +154,9 @@ export function useStore() {
       name,
       users: [],
       expenses: [],
-      exchanges: []
+      exchanges: [],
+      categories: CATEGORIES,
+      budgets: []
     };
     setAppData(prev => ({ ...prev, trips: [...prev.trips, newTrip] }));
     setCurrentTripId(newTrip.id);
@@ -410,6 +412,10 @@ export function useStore() {
     return () => clearInterval(interval);
   }, [currentTrip?.gistId, isOnline, needsSync, isSyncing, fetchFromCloud]);
 
+  const getTripCategories = useCallback((trip: Trip) => {
+    return trip.categories || CATEGORIES;
+  }, []);
+
   return {
     appData,
     currentTrip,
@@ -428,6 +434,7 @@ export function useStore() {
     fetchFromCloud,
     pushToCloud,
     createGistForTrip,
-    fetchAllTripsFromCloud
+    fetchAllTripsFromCloud,
+    getTripCategories
   };
 }
