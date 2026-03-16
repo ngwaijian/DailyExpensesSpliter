@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Settings, Cloud, CloudOff, RefreshCw, Save, Globe, Share2, Copy } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { Group } from '../../types';
+import { Trip } from '../../types';
 import { CategoryManager } from './CategoryManager';
 
 interface SettingsModalProps {
@@ -9,12 +9,12 @@ interface SettingsModalProps {
   onClose: () => void;
   githubToken: string;
   setGithubToken: (val: string) => void;
-  currentGroup: Group;
-  onUpdateGroup: (group: Group) => void;
-  createGistForGroup: () => void;
+  currentTrip: Trip;
+  onUpdateTrip: (trip: Trip) => void;
+  createGistForTrip: () => void;
   onSync: () => void;
   onPush: () => void;
-  fetchAllGroupsFromCloud: () => void;
+  fetchAllTripsFromCloud: () => void;
   isSyncing: boolean;
   needsSync: boolean;
   syncError?: string | null;
@@ -24,8 +24,8 @@ interface SettingsModalProps {
 export function SettingsModal({ 
   isOpen, onClose, 
   githubToken, setGithubToken, 
-  currentGroup, onUpdateGroup, createGistForGroup,
-  onSync, onPush, fetchAllGroupsFromCloud, isSyncing, needsSync, syncError, isOnline
+  currentTrip, onUpdateTrip, createGistForTrip,
+  onSync, onPush, fetchAllTripsFromCloud, isSyncing, needsSync, syncError, isOnline
 }: SettingsModalProps) {
   const { language, setLanguage, t } = useLanguage();
   const [copied, setCopied] = useState(false);
@@ -33,9 +33,9 @@ export function SettingsModal({
   if (!isOpen) return null;
 
   const handleCopyLink = () => {
-    if (!currentGroup.syncId) return;
+    if (!currentTrip.gistId) return;
     const url = new URL(window.location.href);
-    url.searchParams.set('groupSyncId', currentGroup.syncId);
+    url.searchParams.set('tripGistId', currentTrip.gistId);
     navigator.clipboard.writeText(url.toString());
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -71,7 +71,7 @@ export function SettingsModal({
           </div>
 
           <div className="pt-4 border-t border-gray-100 dark:border-gray-700">
-            <CategoryManager group={currentGroup} onUpdateGroup={onUpdateGroup} />
+            <CategoryManager trip={currentTrip} onUpdateTrip={onUpdateTrip} />
           </div>
 
           <div className="pt-4 border-t border-gray-100 dark:border-gray-700">
@@ -80,9 +80,9 @@ export function SettingsModal({
               Share Current Group
             </h3>
             
-            {!currentGroup.syncId ? (
+            {!currentTrip.gistId ? (
               <button
-                onClick={createGistForGroup}
+                onClick={createGistForTrip}
                 disabled={isSyncing || !githubToken}
                 className="w-full flex items-center justify-center gap-2 bg-blue-100 dark:bg-blue-900/30 hover:bg-blue-200 dark:hover:bg-blue-800/50 text-blue-700 dark:text-blue-400 py-2.5 rounded-xl font-medium transition-colors disabled:opacity-50"
               >
@@ -95,7 +95,7 @@ export function SettingsModal({
                   <input 
                     type="text" 
                     readOnly
-                    value={currentGroup.syncId}
+                    value={currentTrip.gistId}
                     className="flex-1 p-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg outline-none text-gray-500 dark:text-gray-400 text-sm font-mono"
                   />
                   <button
@@ -115,7 +115,7 @@ export function SettingsModal({
 
           <div className="flex gap-3 pt-4">
             <button 
-              onClick={fetchAllGroupsFromCloud}
+              onClick={fetchAllTripsFromCloud}
               disabled={isSyncing || !githubToken}
               className="flex-1 flex items-center justify-center gap-2 bg-purple-100 dark:bg-purple-900/30 hover:bg-purple-200 dark:hover:bg-purple-800/50 text-purple-700 dark:text-purple-400 py-2.5 rounded-xl font-medium transition-colors disabled:opacity-50"
             >
@@ -127,7 +127,7 @@ export function SettingsModal({
           <div className="flex gap-3 pt-4">
             <button 
               onClick={onSync}
-              disabled={isSyncing || !githubToken || !currentGroup.syncId}
+              disabled={isSyncing || !githubToken || !currentTrip.gistId}
               className="flex-1 flex items-center justify-center gap-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 py-2.5 rounded-xl font-medium transition-colors disabled:opacity-50"
             >
               {isSyncing ? <RefreshCw className="animate-spin w-4 h-4" /> : <Cloud className="w-4 h-4" />}
@@ -135,18 +135,18 @@ export function SettingsModal({
             </button>
             <button 
               onClick={onPush}
-              disabled={isSyncing || !githubToken || !currentGroup.syncId}
+              disabled={isSyncing || !githubToken || !currentTrip.gistId}
               className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl font-medium transition-colors disabled:opacity-50"
             >
               {isSyncing ? <RefreshCw className="animate-spin w-4 h-4" /> : <Save className="w-4 h-4" />}
               {t('set_push_data') || "Push"}
-              {needsSync && currentGroup.syncId && (
+              {needsSync && currentTrip.gistId && (
                 <span className="w-2 h-2 bg-amber-300 rounded-full animate-pulse ml-1" title="Unsaved changes" />
               )}
             </button>
           </div>
           
-          {needsSync && isOnline && currentGroup.syncId && (
+          {needsSync && isOnline && currentTrip.gistId && (
             <div className="text-center text-amber-600 dark:text-amber-500 text-sm font-medium flex items-center justify-center gap-2">
               <CloudOff className="w-4 h-4" />
               {t('set_unsaved_changes') || "Unsaved changes"}

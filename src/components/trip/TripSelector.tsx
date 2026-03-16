@@ -1,24 +1,24 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Group } from '../../types';
+import { Trip } from '../../types';
 import { Plus, Trash2, Edit2, MoreVertical, ChevronDown, Check } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { getAverageRates } from '../../utils/currency';
 import { useLanguage } from '../../contexts/LanguageContext';
 
-interface GroupSelectorProps {
-  groups: Group[];
-  currentGroupId: string;
+interface TripSelectorProps {
+  trips: Trip[];
+  currentTripId: string;
   onSelect: (id: string) => void;
   onAdd: () => void;
   onDelete: () => void;
   onRename: () => void;
 }
 
-export function GroupSelector({ groups, currentGroupId, onSelect, onAdd, onDelete, onRename }: GroupSelectorProps) {
+export function TripSelector({ trips, currentTripId, onSelect, onAdd, onDelete, onRename }: TripSelectorProps) {
   const { t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const currentGroup = groups.find(g => g.id === currentGroupId);
+  const currentTrip = trips.find(t => t.id === currentTripId);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -32,15 +32,15 @@ export function GroupSelector({ groups, currentGroupId, onSelect, onAdd, onDelet
 
   return (
     <div className="flex items-center gap-2" ref={menuRef}>
-      {/* Group Selector Dropdown */}
+      {/* Trip Selector Dropdown */}
       <div className="relative group">
         <select 
-          value={currentGroupId} 
+          value={currentTripId} 
           onChange={(e) => onSelect(e.target.value)}
           className="appearance-none bg-gray-100 dark:bg-gray-700 border-none text-gray-900 dark:text-white text-sm font-semibold rounded-xl pl-4 pr-10 py-2.5 min-w-[140px] max-w-[200px] truncate focus:ring-2 focus:ring-blue-500 cursor-pointer transition-all hover:bg-gray-200 dark:hover:bg-gray-600"
         >
-          {groups.map(g => (
-            <option key={g.id} value={g.id}>{g.name}</option>
+          {trips.map(t => (
+            <option key={t.id} value={t.id}>{t.name}</option>
           ))}
         </select>
         <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 dark:text-gray-400 pointer-events-none group-hover:text-gray-700 dark:group-hover:text-gray-200 transition-colors" />
@@ -71,7 +71,7 @@ export function GroupSelector({ groups, currentGroupId, onSelect, onAdd, onDelet
                 <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
                   <Plus size={16} />
                 </div>
-                {t('group_new')}
+                {t('trip_new')}
               </button>
 
               <button 
@@ -81,7 +81,7 @@ export function GroupSelector({ groups, currentGroupId, onSelect, onAdd, onDelet
                 <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
                   <Edit2 size={16} />
                 </div>
-                {t('group_rename')}
+                {t('trip_rename')}
               </button>
             </div>
 
@@ -95,7 +95,7 @@ export function GroupSelector({ groups, currentGroupId, onSelect, onAdd, onDelet
                 <div className="p-1.5 bg-red-100 dark:bg-red-900/30 rounded-lg text-red-500 dark:text-red-400">
                   <Trash2 size={16} />
                 </div>
-                {t('group_delete')}
+                {t('trip_delete')}
               </button>
             </div>
           </div>

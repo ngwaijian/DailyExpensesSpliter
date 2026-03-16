@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Group, Expense, CATEGORIES } from '../../types';
+import { Trip, Expense, CATEGORIES } from '../../types';
 import { CATEGORY_COLORS, CATEGORY_STRIP_COLORS } from '../../constants';
 import { getAverageRates, formatCurrency } from '../../utils/currency';
 import { Edit2, Trash2, Calendar, User, MapPin, Gift, Handshake, Filter, ArrowUpDown, X, Search } from 'lucide-react';
@@ -8,17 +8,17 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { useTheme } from '../../hooks/useTheme';
 
 interface ExpenseListProps {
-  group: Group;
+  trip: Trip;
   onEdit: (id: string) => void;
   onView: (id: string) => void;
   onDelete: (id: string) => void;
   lastUpdatedId?: string | null;
 }
 
-export function ExpenseList({ group, onEdit, onView, onDelete, lastUpdatedId }: ExpenseListProps) {
+export function ExpenseList({ trip, onEdit, onView, onDelete, lastUpdatedId }: ExpenseListProps) {
   const { t } = useLanguage();
   const { resolvedTheme } = useTheme();
-  const rates = getAverageRates(group);
+  const rates = getAverageRates(trip);
   const [filterCategory, setFilterCategory] = useState<string>('All');
   const [sortOrder, setSortOrder] = useState<'date-desc' | 'date-asc' | 'amount-desc' | 'amount-asc'>('date-desc');
   const [startDate, setStartDate] = useState<string>('');
@@ -60,7 +60,7 @@ export function ExpenseList({ group, onEdit, onView, onDelete, lastUpdatedId }: 
   const activeFilterCount = (filterCategory !== 'All' ? 1 : 0) + (startDate ? 1 : 0) + (endDate ? 1 : 0) + (sortOrder !== 'date-desc' ? 1 : 0) + (searchKeyword ? 1 : 0);
 
   const filteredAndSortedExpenses = useMemo(() => {
-    let result = [...group.expenses];
+    let result = [...trip.expenses];
 
     // Filter by search keyword
     if (searchKeyword.trim()) {
@@ -115,9 +115,9 @@ export function ExpenseList({ group, onEdit, onView, onDelete, lastUpdatedId }: 
     });
 
     return result;
-  }, [group.expenses, filterCategory, sortOrder, startDate, endDate, rates]);
+  }, [trip.expenses, filterCategory, sortOrder, startDate, endDate, rates]);
 
-  if (group.expenses.length === 0) {
+  if (trip.expenses.length === 0) {
     return (
       <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-3xl border border-dashed border-gray-300 dark:border-gray-700 transition-colors duration-200 flex flex-col items-center gap-4">
         <div className="w-20 h-20 bg-gray-50 dark:bg-gray-900 rounded-2xl flex items-center justify-center shadow-inner">

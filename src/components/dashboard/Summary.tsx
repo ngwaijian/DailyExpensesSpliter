@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Group } from '../../types';
+import { Trip } from '../../types';
 import { getAverageRates, formatCurrency } from '../../utils/currency';
 import { TrendingUp, Download, FileText, Table, Users, PieChart as PieChartIcon, List, Calendar, Target } from 'lucide-react';
 import { cn } from '../../lib/utils';
@@ -10,21 +10,21 @@ import html2canvas from 'html2canvas';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 interface SummaryProps {
-  group: Group;
-  onUpdateGroup?: (group: Group) => void;
+  trip: Trip;
+  onUpdateTrip?: (trip: Trip) => void;
 }
 
 const COLORS = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#6366F1', '#14B8A6'];
 
-export function Summary({ group, onUpdateGroup }: SummaryProps) {
+export function Summary({ trip, onUpdateTrip }: SummaryProps) {
   const { t } = useLanguage();
   const [view, setView] = useState<'category' | 'person'>('category');
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isEditingBudget, setIsEditingBudget] = useState(false);
-  const [tempBudget, setTempBudget] = useState(group.monthlyBudget?.toString() || '');
+  const [tempBudget, setTempBudget] = useState(trip.monthlyBudget?.toString() || '');
   const exportMenuRef = useRef<HTMLDivElement>(null);
-  const rates = getAverageRates(group);
+  const rates = getAverageRates(trip);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -41,11 +41,11 @@ export function Summary({ group, onUpdateGroup }: SummaryProps) {
   const personStats: Record<string, { paid: number; share: number }> = {};
 
   // Initialize stats for current users
-  group.users.forEach(u => {
+  trip.users.forEach(u => {
     personStats[u] = { paid: 0, share: 0 };
   });
 
-  group.expenses.forEach(e => {
+  trip.expenses.forEach(e => {
     const rate = rates[e.currency] || e.rate || 1;
     const myr = e.amountOriginal * rate;
 
@@ -57,7 +57,7 @@ export function Summary({ group, onUpdateGroup }: SummaryProps) {
       if (personStats[e.paidBy]) {
         personStats[e.paidBy].share += myr;
         // Do not add to 'paid' because a sponsorship is a transfer of burden, not a new payment
-      } else if (!group.users.includes(e.paidBy)) {
+      } else if (!trip.users.includes(e.paidBy)) {
         personStats[e.paidBy] = { paid: 0, share: myr };
       }
 
