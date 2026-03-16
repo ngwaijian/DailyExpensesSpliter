@@ -13,6 +13,7 @@ const translations: Record<Language, Translations> = {
     nav_expenses: "Expenses",
     nav_balances: "Balances",
     nav_settings: "Settings",
+    nav_planning: "Planning",
     
     // Header
     header_select_trip: "Select Group",
@@ -215,6 +216,7 @@ const translations: Record<Language, Translations> = {
     nav_expenses: "记账",
     nav_balances: "结算",
     nav_settings: "设置",
+    nav_planning: "计划",
     
     // Header
     header_select_trip: "选择账本",

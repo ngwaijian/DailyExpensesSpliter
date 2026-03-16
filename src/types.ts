@@ -66,6 +66,7 @@ export interface Trip {
   exchanges: Exchange[];
   goals?: Goal[];
   recurringTransactions?: RecurringTransaction[];
+  monthlyBudget?: number;
   gistId?: string; // For syncing this specific trip
 }
 
@@ -74,12 +75,17 @@ export interface AppData {
 }
 
 export const CATEGORIES = [
-  "🍽️ Meals & Dining",
-  "🏨 Accommodation",
-  "🚕 Transport & Fuel",
-  "✈️ Flights",
-  "🎢 Activities & Tours",
+  "🍔 Food & Dining",
+  "🛒 Groceries",
+  "🏠 Rent & Bills",
+  "🚗 Transport",
+  "🚕 Ride Hailing",
   "🛍️ Shopping",
-  "🍻 Drinks & Nightlife",
-  "📝 General / Other",
+  "🎭 Entertainment",
+  "🏥 Health & Medical",
+  "✈️ Travel",
+  "🎁 Gifts & Donations",
+  "🎓 Education",
+  "💼 Work",
+  "📝 Other",
 ];

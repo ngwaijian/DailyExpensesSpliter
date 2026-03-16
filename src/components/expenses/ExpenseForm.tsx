@@ -145,6 +145,12 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData }: ExpenseFo
     return null;
   }, [type, paidBy, splitAmong, trip, currency]);
 
+  // Get unique descriptions from existing expenses for autocomplete
+  const descriptionSuggestions = useMemo(() => {
+    const descs = trip.expenses.map(e => e.desc);
+    return Array.from(new Set(descs)).filter(d => d.length > 0).sort();
+  }, [trip.expenses]);
+
   const [showCalculator, setShowCalculator] = useState(false);
   
   const [locationName, setLocationName] = useState(initialData?.location?.name || '');
@@ -501,8 +507,14 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData }: ExpenseFo
               value={desc}
               onChange={e => setDesc(e.target.value)}
               placeholder={type === 'settlement' ? t('form_desc_settlement') : t('form_desc_placeholder')}
+              list="description-suggestions"
               className="w-full p-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-colors min-h-[42px]"
             />
+            <datalist id="description-suggestions">
+              {descriptionSuggestions.map(suggestion => (
+                <option key={suggestion} value={suggestion} />
+              ))}
+            </datalist>
           </div>
 
           {/* Date - Side-by-side on mobile */}
@@ -519,39 +531,29 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData }: ExpenseFo
             </div>
           </div>
 
-          {/* Category - Side-by-side on mobile */}
+          {/* Category - Full width on mobile */}
           {type === 'expense' && (
-            <div className="col-span-1 md:col-span-5 min-w-0">
-              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{t('form_category')}</label>
-              <div className="relative">
-                <Tag className={cn(
-                  "absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none transition-colors z-10",
-                  CATEGORY_COLORS[category] ? "text-current opacity-70" : "text-gray-400"
-                )} />
-                
-                {/* Custom Display for wrapping text */}
-                <div className={cn(
-                    "w-full pl-9 pr-8 py-2.5 border rounded-xl min-h-[42px] flex items-center text-xs sm:text-sm font-medium transition-colors whitespace-normal leading-tight",
-                    CATEGORY_COLORS[category] 
-                      ? CATEGORY_COLORS[category] 
-                      : "bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white"
-                  )}>
-                  {t(`cat_${category}`, category)}
-                </div>
-
-                {/* Invisible Select for interaction */}
-                <select 
-                  value={category}
-                  onChange={e => setCategory(e.target.value)}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
-                >
-                  {CATEGORIES.map(c => <option key={c} value={c} className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white">{t(`cat_${c}`, c)}</option>)}
-                </select>
-
-                {/* Dropdown Arrow */}
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none z-10 text-gray-400">
-                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                </div>
+            <div className="col-span-2 md:col-span-12">
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">{t('form_category')}</label>
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2">
+                {CATEGORIES.map(c => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setCategory(c)}
+                    className={cn(
+                      "flex flex-col items-center justify-center p-2 rounded-xl border transition-all gap-1",
+                      category === c 
+                        ? "bg-blue-50 dark:bg-blue-900/30 border-blue-500 text-blue-700 dark:text-blue-400 ring-1 ring-blue-500" 
+                        : "bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-gray-400"
+                    )}
+                  >
+                    <span className="text-xl">{c.split(' ')[0]}</span>
+                    <span className="text-[10px] text-center leading-tight truncate w-full">
+                      {t(`cat_${c}`, c).split(' ').slice(1).join(' ') || t(`cat_${c}`, c).split(' ')[1] || t(`cat_${c}`, c)}
+                    </span>
+                  </button>
+                ))}
               </div>
             </div>
           )}

@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Trip } from '../../types';
 import { getAverageRates, formatCurrency } from '../../utils/currency';
-import { TrendingUp, Download, FileText, Table, Users, PieChart as PieChartIcon, List, Calendar } from 'lucide-react';
+import { TrendingUp, Download, FileText, Table, Users, PieChart as PieChartIcon, List, Calendar, Target } from 'lucide-react';
 import { cn } from '../../lib/utils';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
@@ -11,15 +11,18 @@ import { useLanguage } from '../../contexts/LanguageContext';
 
 interface SummaryProps {
   trip: Trip;
+  onUpdateTrip?: (trip: Trip) => void;
 }
 
 const COLORS = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#6366F1', '#14B8A6'];
 
-export function Summary({ trip }: SummaryProps) {
+export function Summary({ trip, onUpdateTrip }: SummaryProps) {
   const { t } = useLanguage();
   const [view, setView] = useState<'category' | 'person'>('category');
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [isEditingBudget, setIsEditingBudget] = useState(false);
+  const [tempBudget, setTempBudget] = useState(trip.monthlyBudget?.toString() || '');
   const exportMenuRef = useRef<HTMLDivElement>(null);
   const rates = getAverageRates(trip);
 
@@ -151,8 +154,38 @@ export function Summary({ trip }: SummaryProps) {
   const sortedCats = Object.entries(categoryTotals).sort((a, b) => b[1] - a[1]);
   const sortedPeople = Object.entries(personStats).sort((a, b) => b[1].share - a[1].share);
 
+  // Prepare daily chart data
+  const last7Days: Record<string, number> = {};
+  const now = new Date();
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(now.getDate() - i);
+    const dateStr = d.toISOString().split('T')[0];
+    last7Days[dateStr] = 0;
+  }
+
+  trip.expenses.forEach(e => {
+    if (e.type === 'settlement') return;
+    if (last7Days[e.date] !== undefined) {
+      const rate = rates[e.currency] || e.rate || 1;
+      last7Days[e.date] += e.amountOriginal * rate;
+    }
+  });
+
+  const dailyData = Object.entries(last7Days).map(([date, value]) => ({
+    date: date.split('-').slice(1).join('/'),
+    value
+  }));
+
   // Prepare chart data
   const chartData = sortedCats.map(([name, value]) => ({ name, value }));
+
+  const handleSaveBudget = () => {
+    if (!onUpdateTrip) return;
+    const budget = parseFloat(tempBudget);
+    onUpdateTrip({ ...trip, monthlyBudget: isNaN(budget) ? undefined : budget });
+    setIsEditingBudget(false);
+  };
 
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr);
@@ -347,6 +380,86 @@ export function Summary({ trip }: SummaryProps) {
         </div>
       </div>
 
+      {/* Budget Section */}
+      <div className="mb-6 bg-gray-50 dark:bg-gray-900/40 p-4 rounded-2xl border border-gray-100 dark:border-gray-700">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Target className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+            <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Monthly Budget</span>
+          </div>
+          {isEditingBudget ? (
+            <div className="flex items-center gap-2">
+              <input 
+                type="number" 
+                value={tempBudget}
+                onChange={(e) => setTempBudget(e.target.value)}
+                className="w-20 p-1 text-xs bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded outline-none"
+                autoFocus
+              />
+              <button onClick={handleSaveBudget} className="text-xs text-blue-600 font-bold">Save</button>
+            </div>
+          ) : (
+            <button 
+              onClick={() => setIsEditingBudget(true)}
+              className="text-xs text-gray-500 hover:text-blue-600 transition-colors"
+            >
+              {trip.monthlyBudget ? `${formatCurrency(trip.monthlyBudget)}` : 'Set Budget'}
+            </button>
+          )}
+        </div>
+        
+        {trip.monthlyBudget ? (
+          <div className="space-y-3">
+            <div className="h-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+              <div 
+                className={cn(
+                  "h-full transition-all duration-500",
+                  (totalMYR / trip.monthlyBudget) > 0.9 ? "bg-red-500" : (totalMYR / trip.monthlyBudget) > 0.7 ? "bg-amber-500" : "bg-emerald-500"
+                )}
+                style={{ width: `${Math.min(100, (totalMYR / trip.monthlyBudget) * 100)}%` }}
+              />
+            </div>
+            <div className="flex justify-between text-[10px] text-gray-500">
+              <span>{((totalMYR / trip.monthlyBudget) * 100).toFixed(1)}% used</span>
+              <span className="font-medium text-gray-700 dark:text-gray-300">{formatCurrency(Math.max(0, trip.monthlyBudget - totalMYR))} remaining</span>
+            </div>
+            
+            <div className="pt-2 border-t border-gray-100 dark:border-gray-800 grid grid-cols-2 gap-2">
+              <div className="text-center">
+                <div className="text-[10px] text-gray-400 uppercase">Daily Limit</div>
+                <div className="text-xs font-bold text-gray-700 dark:text-gray-300">{formatCurrency(trip.monthlyBudget / 30)}</div>
+              </div>
+              <div className="text-center">
+                <div className="text-[10px] text-gray-400 uppercase">Avg. Spent</div>
+                <div className="text-xs font-bold text-gray-700 dark:text-gray-300">{formatCurrency(totalMYR / Math.max(1, trip.expenses.length > 0 ? (new Set(trip.expenses.map(e => e.date.split('T')[0])).size) : 1))}</div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <p className="text-xs text-gray-400 italic">Set a budget to track your spending limit.</p>
+        )}
+      </div>
+
+      {/* Daily Spending Chart */}
+      <div className="mb-6">
+        <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Last 7 Days</h4>
+        <div className="h-32 w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={dailyData}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" opacity={0.5} />
+              <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#9ca3af' }} />
+              <Tooltip 
+                cursor={{ fill: 'rgba(59, 130, 246, 0.1)' }}
+                contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.9)', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                itemStyle={{ color: '#1f2937', fontSize: '10px', fontWeight: 600 }}
+                labelStyle={{ fontSize: '10px', color: '#6b7280', marginBottom: '4px' }}
+              />
+              <Bar dataKey="value" fill="#3B82F6" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
       <div>
         <div className="flex items-center justify-between mb-3">
           <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('dash_breakdown')}</h4>
@@ -372,45 +485,26 @@ export function Summary({ trip }: SummaryProps) {
           </div>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-4">
           {view === 'category' ? (
             <>
-              {chartData.length > 0 && (
-                <div className="h-48 w-full mb-4">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={chartData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={40}
-                        outerRadius={70}
-                        paddingAngle={5}
-                        dataKey="value"
-                      >
-                        {chartData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} strokeWidth={0} />
-                        ))}
-                      </Pie>
-                      <Tooltip 
-                        formatter={(value: number) => formatCurrency(value)}
-                        contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.9)', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-                        itemStyle={{ color: '#1f2937', fontSize: '12px', fontWeight: 600 }}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-              )}
-              {sortedCats.map(([cat, amt], idx) => (
-                <div key={cat} className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div 
-                      className="w-2.5 h-2.5 rounded-full shrink-0" 
-                      style={{ backgroundColor: COLORS[idx % COLORS.length] }}
-                    />
-                    <span className="text-gray-700 dark:text-gray-300 truncate">{t(`cat_${cat}`, cat)}</span>
+              {sortedCats.slice(0, 6).map(([cat, amt], idx) => (
+                <div key={cat} className="space-y-1">
+                  <div className="flex justify-between text-xs">
+                    <div className="flex items-center gap-2">
+                      <span className="w-6 h-6 flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-lg text-sm">
+                        {cat.split(' ')[0]}
+                      </span>
+                      <span className="font-medium text-gray-700 dark:text-gray-300">{t(`cat_${cat}`, cat).split(' ').slice(1).join(' ') || t(`cat_${cat}`, cat)}</span>
+                    </div>
+                    <span className="font-bold text-gray-900 dark:text-white">{formatCurrency(amt)}</span>
                   </div>
-                  <span className="font-medium text-gray-900 dark:text-white shrink-0">{formatCurrency(amt)}</span>
+                  <div className="h-1.5 w-full bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-blue-500 rounded-full"
+                      style={{ width: `${(amt / totalMYR) * 100}%`, opacity: 1 - (idx * 0.1) }}
+                    />
+                  </div>
                 </div>
               ))}
               {sortedCats.length === 0 && <div className="text-gray-400 dark:text-gray-500 text-sm italic">{t('dash_no_data')}</div>}

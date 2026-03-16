@@ -285,7 +285,7 @@ function App() {
 
           {/* Desktop: Right Sidebar (Stats & Planning) */}
           <div className="hidden lg:block lg:col-span-3 space-y-6">
-            <Summary trip={currentTrip} />
+            <Summary trip={currentTrip} onUpdateTrip={updateTrip} />
             <Balances trip={currentTrip} />
             <Goals trip={currentTrip} onUpdateTrip={updateTrip} />
             <RecurringTransactions trip={currentTrip} onUpdateTrip={updateTrip} />
@@ -294,7 +294,7 @@ function App() {
           {/* Mobile Only Views */}
           <div className={cn("lg:hidden", activeTab === 'dashboard' ? 'block' : 'hidden')}>
             <div className="space-y-6">
-              <Summary trip={currentTrip} />
+              <Summary trip={currentTrip} onUpdateTrip={updateTrip} />
               <Balances trip={currentTrip} />
             </div>
           </div>
