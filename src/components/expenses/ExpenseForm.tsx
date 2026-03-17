@@ -1131,7 +1131,7 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData }: ExpenseFo
               </button>
             </div>
             <div className="p-4 max-h-[60vh] overflow-y-auto">
-              <CategoryManager trip={trip} onUpdateTrip={(updatedTrip) => updateTrip(trip.id, updatedTrip)} />
+              <CategoryManager trip={trip} onUpdateTrip={(updatedTrip) => updateTrip(updatedTrip)} />
             </div>
           </div>
         </div>

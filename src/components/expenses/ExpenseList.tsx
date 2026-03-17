@@ -214,7 +214,7 @@ export function ExpenseList({ trip, onEdit, onView, onDelete, lastUpdatedId }: E
 
       {showCategoryManager && (
         <div className="bg-white dark:bg-gray-800 p-4 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors duration-200 animate-in slide-in-from-top-2">
-          <CategoryManager trip={trip} onUpdateTrip={(updatedTrip) => updateTrip(trip.id, updatedTrip)} />
+          <CategoryManager trip={trip} onUpdateTrip={(updatedTrip) => updateTrip(updatedTrip)} />
         </div>
       )}
 

@@ -16,7 +16,9 @@ export function useStore() {
   const [currentTripId, setCurrentTripId] = useState<string>('');
   const [isSyncing, setIsSyncing] = useState(false);
   const [needsSync, setNeedsSync] = useState(false);
-  const [githubToken, setGithubToken] = useState(GITHUB_TOKEN);
+  const [githubToken, setGithubToken] = useState(() => {
+    return localStorage.getItem(GITHUB_TOKEN_KEY) || GITHUB_TOKEN;
+  });
   const [syncError, setSyncError] = useState<string | null>(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [history, setHistory] = useState<AppData[]>([]);
@@ -343,6 +345,15 @@ export function useStore() {
               updatedTrips.push(newTrip);
             }
           });
+          
+          // If the current trip is empty and we fetched new trips, switch to the first fetched trip
+          const currentTrip = updatedTrips.find(t => t.id === currentTripId);
+          if (currentTrip && !currentTrip.gistId && currentTrip.expenses.length === 0 && currentTrip.users.length === 0) {
+            setCurrentTripId(newTrips[0].id);
+            // Optionally remove the empty default trip
+            return { ...prev, trips: updatedTrips.filter(t => t.id !== currentTrip.id) };
+          }
+          
           return { ...prev, trips: updatedTrips };
         });
         setNeedsSync(false);
@@ -353,7 +364,7 @@ export function useStore() {
     } finally {
       setIsSyncing(false);
     }
-  }, [githubToken]);
+  }, [githubToken, currentTripId]);
 
   const createGistForTrip = useCallback(async () => {
     if (!githubToken || !currentTrip) return;
@@ -414,14 +425,15 @@ export function useStore() {
 
   // Initial sync on mount/credential change if online
   useEffect(() => {
-    if (navigator.onLine && currentTrip?.gistId && !isSyncing) {
-        if (needsSync) {
-            pushToCloud();
-        } else {
-            fetchFromCloud();
-        }
+    if (navigator.onLine && githubToken && !isSyncing) {
+      if (needsSync && currentTrip?.gistId) {
+        pushToCloud();
+      } else {
+        // Fetch all trips to ensure we have the latest list of trips
+        fetchAllTripsFromCloud();
+      }
     }
-  }, [githubToken, currentTrip?.gistId]); // Run when credentials change or trip changes
+  }, [githubToken]); // Run when credentials change or on mount
 
   // Auto-push on data change (debounced)
   useEffect(() => {

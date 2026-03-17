@@ -164,7 +164,8 @@ function App() {
           goalId: goalId || undefined,
         };
         
-        updateTrip(currentTrip.id, {
+        updateTrip({
+          ...currentTrip,
           expenses: [newExpense, ...currentTrip.expenses]
         });
         
