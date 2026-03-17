@@ -19,9 +19,13 @@ export function getAverageRates(trip: Trip): Record<string, number> {
 }
 
 export function formatCurrency(amount: number, currency: string = 'MYR') {
-  return new Intl.NumberFormat('en-MY', {
-    style: 'currency',
-    currency: currency,
-    minimumFractionDigits: 2,
-  }).format(amount);
+  try {
+    return new Intl.NumberFormat('en-MY', {
+      style: 'currency',
+      currency: currency.length === 3 ? currency.toUpperCase() : 'MYR',
+      minimumFractionDigits: 2,
+    }).format(amount);
+  } catch (e) {
+    return `RM ${amount.toFixed(2)}`;
+  }
 }

@@ -35,24 +35,38 @@ export function useStore() {
 
   // Load initial data
   useEffect(() => {
-    const storedData = localStorage.getItem(STORAGE_KEY);
-    const storedTripId = localStorage.getItem(CURRENT_TRIP_KEY);
-    const storedToken = localStorage.getItem(GITHUB_TOKEN_KEY);
-    const storedSync = localStorage.getItem(SYNC_KEY) === 'true';
+    try {
+      const storedData = localStorage.getItem(STORAGE_KEY);
+      const storedTripId = localStorage.getItem(CURRENT_TRIP_KEY);
+      const storedToken = localStorage.getItem(GITHUB_TOKEN_KEY);
+      const storedSync = localStorage.getItem(SYNC_KEY) === 'true';
 
-    if (storedData) {
-      const parsed = JSON.parse(storedData);
-      setAppData(parsed);
-    }
-    if (storedTripId) {
-      setCurrentTripId(storedTripId);
-    } else if (storedData) {
-      const parsed = JSON.parse(storedData);
-      if (parsed.trips.length > 0) setCurrentTripId(parsed.trips[0].id);
-    }
+      if (storedData) {
+        const parsed = JSON.parse(storedData);
+        if (parsed && Array.isArray(parsed.trips) && parsed.trips.length > 0) {
+          setAppData(parsed);
+          
+          if (storedTripId && parsed.trips.some((t: Trip) => t.id === storedTripId)) {
+            setCurrentTripId(storedTripId);
+          } else {
+            setCurrentTripId(parsed.trips[0].id);
+          }
+        } else {
+          // If data is invalid, use default
+          setAppData(DEFAULT_DATA);
+          setCurrentTripId(DEFAULT_DATA.trips[0].id);
+        }
+      } else {
+        setCurrentTripId(DEFAULT_DATA.trips[0].id);
+      }
 
-    if (storedToken) setGithubToken(storedToken);
-    setNeedsSync(storedSync);
+      if (storedToken) setGithubToken(storedToken);
+      setNeedsSync(storedSync);
+    } catch (e) {
+      console.error("Failed to load stored data:", e);
+      setAppData(DEFAULT_DATA);
+      setCurrentTripId(DEFAULT_DATA.trips[0].id);
+    }
   }, []);
 
   // Process recurring transactions

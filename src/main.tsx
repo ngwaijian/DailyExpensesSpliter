@@ -4,6 +4,7 @@ import App from './App';
 import './index.css';
 import { registerSW } from 'virtual:pwa-register';
 import { LanguageProvider } from './contexts/LanguageContext';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 // Register service worker for PWA offline support
 const updateSW = registerSW({
@@ -24,8 +25,10 @@ const updateSW = registerSW({
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <LanguageProvider>
-      <App />
-    </LanguageProvider>
+    <ErrorBoundary>
+      <LanguageProvider>
+        <App />
+      </LanguageProvider>
+    </ErrorBoundary>
   </StrictMode>,
 );
