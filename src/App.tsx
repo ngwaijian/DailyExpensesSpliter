@@ -132,23 +132,27 @@ function App() {
   const [shortcutCurrency, setShortcutCurrency] = useState<string | null>(null);
   const [shortcutGoalId, setShortcutGoalId] = useState<string | null>(null);
 
-  if (!currentTrip) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
-
   React.useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const amount = params.get('amount');
-    const category = params.get('category');
-    const desc = params.get('desc');
-    const currency = params.get('currency');
-    const goalId = params.get('goalId');
-    const autoSave = params.get('autoSave') === 'true';
     
+    // Helper to get parameter case-insensitively
+    const getParam = (names: string[]) => {
+      for (const name of names) {
+        const val = params.get(name) || params.get(name.toLowerCase()) || params.get(name.charAt(0).toUpperCase() + name.slice(1));
+        if (val) return val;
+      }
+      return null;
+    };
+
+    const amount = getParam(['amount', 'amt']);
+    const category = getParam(['category', 'cat', 'type']);
+    const desc = getParam(['desc', 'description', 'note']);
+    const currency = getParam(['currency', 'curr']);
+    const goalId = getParam(['goalId', 'goal']);
+    const autoSave = getParam(['autoSave']) === 'true';
+    
+    if (!currentTrip) return;
+
     let shouldClear = false;
 
     if (autoSave && amount) {
@@ -167,17 +171,25 @@ function App() {
           const normalizedRaw = rawCategory.toLowerCase();
           
           // Try exact match first
-          let match = tripCategories.find(c => c.toLowerCase() === normalizedRaw);
+          let match = tripCategories.find(c => {
+            const translated = t(`cat_${c}`, c).toLowerCase();
+            return c.toLowerCase() === normalizedRaw || translated === normalizedRaw;
+          });
           
           // Then try fuzzy match
           if (!match) {
             match = tripCategories.find(c => {
               const lowerC = c.toLowerCase();
+              const translated = t(`cat_${c}`, c).toLowerCase();
               const nameOnly = lowerC.replace(/^[^\s]+\s/, '').trim();
+              const translatedNameOnly = translated.replace(/^[^\s]+\s/, '').trim();
+              
               return lowerC.includes(normalizedRaw) || 
+                     translated.includes(normalizedRaw) ||
                      normalizedRaw.includes(nameOnly) ||
+                     normalizedRaw.includes(translatedNameOnly) ||
                      (nameOnly.length > 2 && nameOnly.includes(normalizedRaw)) ||
-                     (normalizedRaw.length > 2 && nameOnly.includes(normalizedRaw));
+                     (translatedNameOnly.length > 2 && translatedNameOnly.includes(normalizedRaw));
             });
           }
           cleanCategory = match || rawCategory;
@@ -224,17 +236,25 @@ function App() {
       const normalizedRaw = rawCategory.toLowerCase();
       
       // Try exact match first
-      let match = tripCategories.find(c => c.toLowerCase() === normalizedRaw);
+      let match = tripCategories.find(c => {
+        const translated = t(`cat_${c}`, c).toLowerCase();
+        return c.toLowerCase() === normalizedRaw || translated === normalizedRaw;
+      });
       
       // Then try fuzzy match
       if (!match) {
         match = tripCategories.find(c => {
           const lowerC = c.toLowerCase();
+          const translated = t(`cat_${c}`, c).toLowerCase();
           const nameOnly = lowerC.replace(/^[^\s]+\s/, '').trim();
+          const translatedNameOnly = translated.replace(/^[^\s]+\s/, '').trim();
+          
           return lowerC.includes(normalizedRaw) || 
+                 translated.includes(normalizedRaw) ||
                  normalizedRaw.includes(nameOnly) ||
+                 normalizedRaw.includes(translatedNameOnly) ||
                  (nameOnly.length > 2 && nameOnly.includes(normalizedRaw)) ||
-                 (normalizedRaw.length > 2 && nameOnly.includes(normalizedRaw));
+                 (translatedNameOnly.length > 2 && translatedNameOnly.includes(normalizedRaw));
         });
       }
       
@@ -263,7 +283,15 @@ function App() {
       setActiveTab('expenses');
       window.history.replaceState({}, '', window.location.pathname);
     }
-  }, [currentTrip.id, currentTrip.users, currentTrip.expenses, updateTrip]);
+  }, [currentTrip?.id, currentTrip?.users, currentTrip?.expenses, updateTrip, t]);
+
+  if (!currentTrip) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
   const scrollToForm = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
