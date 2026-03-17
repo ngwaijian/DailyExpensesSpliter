@@ -165,13 +165,21 @@ function App() {
         let cleanCategory = '📝 Other';
         if (rawCategory) {
           const normalizedRaw = rawCategory.toLowerCase();
-          const match = tripCategories.find(c => {
-            const lowerC = c.toLowerCase();
-            const nameOnly = lowerC.replace(/^[^\s]+\s/, '');
-            return lowerC.includes(normalizedRaw) || 
-                   normalizedRaw.includes(nameOnly) ||
-                   nameOnly.includes(normalizedRaw);
-          });
+          
+          // Try exact match first
+          let match = tripCategories.find(c => c.toLowerCase() === normalizedRaw);
+          
+          // Then try fuzzy match
+          if (!match) {
+            match = tripCategories.find(c => {
+              const lowerC = c.toLowerCase();
+              const nameOnly = lowerC.replace(/^[^\s]+\s/, '').trim();
+              return lowerC.includes(normalizedRaw) || 
+                     normalizedRaw.includes(nameOnly) ||
+                     (nameOnly.length > 2 && nameOnly.includes(normalizedRaw)) ||
+                     (normalizedRaw.length > 2 && nameOnly.includes(normalizedRaw));
+            });
+          }
           cleanCategory = match || rawCategory;
         }
 
