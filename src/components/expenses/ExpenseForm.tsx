@@ -84,40 +84,6 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
   const [splitShares, setSplitShares] = useState<{ [key: string]: number }>({});
   const [goalId, setGoalId] = useState<string>(initialData?.goalId || '');
 
-  // Sync initialData with state when it changes (important for shortcuts)
-  useEffect(() => {
-    if (initialData) {
-      if (initialData.type) setType(initialData.type);
-      if (initialData.desc) setDesc(initialData.desc);
-      if (initialData.memo) setMemo(initialData.memo);
-      if (initialData.amountOriginal !== undefined) setAmount(initialData.amountOriginal.toString());
-      if (initialData.currency) setCurrency(initialData.currency);
-      
-      if (initialData.category) {
-        // Double-check fuzzy match in form context
-        const normalizedRaw = initialData.category.toLowerCase();
-        const match = tripCategories.find(c => {
-          const lowerC = c.toLowerCase();
-          const nameOnly = lowerC.replace(/^[^\s]+\s/, '').trim();
-          return lowerC === normalizedRaw || 
-                 lowerC.includes(normalizedRaw) || 
-                 normalizedRaw.includes(nameOnly) ||
-                 (nameOnly.length > 2 && nameOnly.includes(normalizedRaw));
-        });
-        setCategory(match || initialData.category);
-      }
-      
-      if (initialData.date) setDate(formatDateTime(initialData.date));
-      if (initialData.paidBy) setPaidBy(initialData.paidBy);
-      if (initialData.splitAmong) setSplitAmong(initialData.splitAmong);
-      if (initialData.splitDetails) {
-        setSplitDetails(initialData.splitDetails);
-        setSplitMode('unequal');
-      }
-      if (initialData.goalId) setGoalId(initialData.goalId);
-    }
-  }, [initialData, tripCategories]);
-
   // Update splitDetails when amount changes in equal or shares mode
   useEffect(() => {
     if (splitMode === 'equal' && amount && !isNaN(parseFloat(amount)) && splitAmong.length > 0) {

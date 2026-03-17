@@ -238,7 +238,9 @@ function App() {
         });
       }
       
-      setShortcutCategory(match || rawCategory);
+      const finalCategory = match || rawCategory;
+      setShortcutCategory(finalCategory);
+      console.log('Shortcut Category Matched:', finalCategory);
       shouldClear = true;
     }
 
@@ -459,7 +461,7 @@ function App() {
             "lg:col-span-6",
             activeTab === 'expenses' ? 'block' : 'hidden lg:block'
           )}>
-            <div key={editingExpenseId || (shortcutAmount !== null || shortcutCategory || shortcutDesc || shortcutCurrency || shortcutGoalId ? 'shortcut' : 'new')} ref={formRef}>
+            <div key={editingExpenseId || `${shortcutAmount}-${shortcutCategory}-${shortcutDesc}-${shortcutCurrency}-${shortcutGoalId}`} ref={formRef}>
               <ExpenseForm 
                 trip={currentTrip} 
                 onSubmit={handleAddExpense}
