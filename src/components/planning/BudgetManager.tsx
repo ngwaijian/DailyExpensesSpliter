@@ -1,21 +1,22 @@
 import React, { useState } from 'react';
-import { Group, Budget, CATEGORIES } from '../../types';
+import { Trip, Budget, CATEGORIES } from '../../types';
 import { Wallet, Plus, Edit2, Trash2, AlertCircle, PieChart, TrendingUp } from 'lucide-react';
 import { formatCurrency } from '../../utils/currency';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { cn } from '../../lib/utils';
 
 interface BudgetManagerProps {
-  group: Group;
-  onUpdateGroup: (group: Group) => void;
+  trip: Trip;
+  onUpdateTrip: (trip: Trip) => void;
 }
 
-export function BudgetManager({ group, onUpdateGroup }: BudgetManagerProps) {
+export function BudgetManager({ trip, onUpdateTrip }: BudgetManagerProps) {
   const { t } = useLanguage();
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const [categories, setCategories] = useState<string[]>(['All']);
+  const [name, setName] = useState('');
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState('MYR');
   const [period, setPeriod] = useState<'trip' | 'monthly'>('trip');
@@ -50,6 +51,7 @@ export function BudgetManager({ group, onUpdateGroup }: BudgetManagerProps) {
 
     const newBudget: Budget = {
       id: editingId || Date.now().toString(),
+      name,
       categories,
       amount: parseFloat(amount),
       currency,
@@ -69,6 +71,7 @@ export function BudgetManager({ group, onUpdateGroup }: BudgetManagerProps) {
 
   const handleEdit = (budget: Budget) => {
     setEditingId(budget.id);
+    setName(budget.name || '');
     setCategories(budget.categories);
     setAmount(budget.amount.toString());
     setCurrency(budget.currency);
@@ -85,6 +88,7 @@ export function BudgetManager({ group, onUpdateGroup }: BudgetManagerProps) {
   const resetForm = () => {
     setIsAdding(false);
     setEditingId(null);
+    setName('');
     setCategories(['All']);
     setAmount('');
     setCurrency('MYR');
@@ -111,6 +115,16 @@ export function BudgetManager({ group, onUpdateGroup }: BudgetManagerProps) {
       {isAdding && (
         <form onSubmit={handleSave} className="mb-6 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-2xl border border-gray-100 dark:border-gray-600">
           <div className="space-y-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Budget Name</label>
+              <input
+                type="text"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                placeholder="e.g. Food, Transport, etc."
+                className="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none text-gray-900 dark:text-white"
+              />
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Categories</label>
@@ -210,7 +224,7 @@ export function BudgetManager({ group, onUpdateGroup }: BudgetManagerProps) {
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-bold text-gray-800 dark:text-white">
-                      {budget.categories.includes('All') ? 'Total Budget' : budget.categories.map(c => c.split(' ')[0]).join(', ')}
+                      {budget.name || (budget.categories.includes('All') ? 'Total Budget' : budget.categories.map(c => c.split(' ')[0]).join(', '))}
                     </span>
                     <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded uppercase font-bold tracking-wider">
                       {budget.period}

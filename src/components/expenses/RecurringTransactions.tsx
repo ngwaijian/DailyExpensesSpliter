@@ -1,18 +1,18 @@
 import React, { useState } from 'react';
-import { Group, RecurringTransaction, CATEGORIES } from '../../types';
+import { Trip, RecurringTransaction, CATEGORIES } from '../../types';
 import { Repeat, Plus, Edit2, Trash2, Calendar, Tag } from 'lucide-react';
 import { formatCurrency } from '../../utils/currency';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { cn } from '../../lib/utils';
 
 interface RecurringTransactionsProps {
-  group: Group;
-  onUpdateGroup: (group: Group) => void;
+  trip: Trip;
+  onUpdateTrip: (trip: Trip) => void;
 }
 
-export function RecurringTransactions({ group, onUpdateGroup }: RecurringTransactionsProps) {
+export function RecurringTransactions({ trip, onUpdateTrip }: RecurringTransactionsProps) {
   const { t } = useLanguage();
-  const tripCategories = group.categories || CATEGORIES;
+  const tripCategories = trip.categories || CATEGORIES;
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -28,16 +28,27 @@ export function RecurringTransactions({ group, onUpdateGroup }: RecurringTransac
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!desc || !amount || !paidBy) return;
+    if (!desc.trim()) {
+      alert('Please enter a description.');
+      return;
+    }
+    if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
+      alert('Please enter a valid amount.');
+      return;
+    }
+    if (!paidBy) {
+      alert('Please select who pays.');
+      return;
+    }
 
     const newTx: RecurringTransaction = {
       id: editingId || Date.now().toString(),
-      desc,
+      desc: desc.trim(),
       amountOriginal: parseFloat(amount),
       currency,
       category,
       paidBy,
-      splitAmong: trip.users,
+      splitAmong: trip.users.length > 0 ? trip.users : [paidBy],
       frequency,
       nextDate,
     };

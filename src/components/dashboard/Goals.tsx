@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
-import { Group, Goal } from '../../types';
+import { Trip, Goal } from '../../types';
 import { Target, Plus, Edit2, Trash2, CheckCircle2 } from 'lucide-react';
 import { formatCurrency } from '../../utils/currency';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { cn } from '../../lib/utils';
 
 interface GoalsProps {
-  group: Group;
-  onUpdateGroup: (group: Group) => void;
+  trip: Trip;
+  onUpdateTrip: (trip: Trip) => void;
 }
 
-export function Goals({ group, onUpdateGroup }: GoalsProps) {
+export function Goals({ trip, onUpdateTrip }: GoalsProps) {
   const { t } = useLanguage();
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -19,7 +19,7 @@ export function Goals({ group, onUpdateGroup }: GoalsProps) {
   const [currentAmount, setCurrentAmount] = useState('');
   const [currency, setCurrency] = useState('MYR');
 
-  const goals = group.goals || [];
+  const goals = trip.goals || [];
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,7 +40,7 @@ export function Goals({ group, onUpdateGroup }: GoalsProps) {
       newGoals = [...goals, newGoal];
     }
 
-    onUpdateGroup({ ...group, goals: newGoals });
+    onUpdateTrip({ ...trip, goals: newGoals });
     resetForm();
   };
 
@@ -55,7 +55,7 @@ export function Goals({ group, onUpdateGroup }: GoalsProps) {
 
   const handleDelete = (id: string) => {
     if (confirm(t('app_delete_goal_confirm') || 'Delete this goal?')) {
-      onUpdateGroup({ ...group, goals: goals.filter(g => g.id !== id) });
+      onUpdateTrip({ ...trip, goals: goals.filter(g => g.id !== id) });
     }
   };
 
@@ -153,11 +153,20 @@ export function Goals({ group, onUpdateGroup }: GoalsProps) {
                     {goal.name}
                     {isCompleted && <CheckCircle2 className="w-4 h-4 text-green-500" />}
                   </h4>
-                  <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                    <span className={cn("font-medium", isCompleted ? "text-green-600 dark:text-green-400" : "text-blue-600 dark:text-blue-400")}>
-                      {formatCurrency(goal.currentAmount)}
-                    </span>
-                    {' '}of {formatCurrency(goal.targetAmount)}
+                  <div className="text-sm text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-2">
+                    <div className="relative group/input">
+                      <input
+                        type="number"
+                        value={goal.currentAmount}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value) || 0;
+                          const updatedGoals = goals.map(g => g.id === goal.id ? { ...g, currentAmount: val } : g);
+                          onUpdateTrip({ ...trip, goals: updatedGoals });
+                        }}
+                        className="w-20 p-1 bg-transparent border-b border-transparent hover:border-blue-300 focus:border-blue-500 focus:bg-white dark:focus:bg-gray-800 outline-none transition-all font-medium text-blue-600 dark:text-blue-400"
+                      />
+                    </div>
+                    <span>of {formatCurrency(goal.targetAmount)}</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">

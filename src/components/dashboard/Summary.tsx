@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Group } from '../../types';
+import { Trip } from '../../types';
 import { getAverageRates, formatCurrency } from '../../utils/currency';
 import { TrendingUp, Download, FileText, Table, Users, PieChart as PieChartIcon, List, Calendar, Target } from 'lucide-react';
 import { cn } from '../../lib/utils';
@@ -10,21 +10,22 @@ import html2canvas from 'html2canvas';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 interface SummaryProps {
-  group: Group;
-  onUpdateGroup?: (group: Group) => void;
+  trip: Trip;
+  onUpdateTrip?: (trip: Trip) => void;
 }
 
 const COLORS = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#6366F1', '#14B8A6'];
 
-export function Summary({ group, onUpdateGroup }: SummaryProps) {
+export function Summary({ trip, onUpdateTrip }: SummaryProps) {
   const { t } = useLanguage();
   const [view, setView] = useState<'category' | 'person'>('category');
+  const [selectedPerson, setSelectedPerson] = useState<string>('All');
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isEditingBudget, setIsEditingBudget] = useState(false);
-  const [tempBudget, setTempBudget] = useState(group.monthlyBudget?.toString() || '');
+  const [tempBudget, setTempBudget] = useState(trip.monthlyBudget?.toString() || '');
   const exportMenuRef = useRef<HTMLDivElement>(null);
-  const rates = getAverageRates(group);
+  const rates = getAverageRates(trip);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -41,11 +42,16 @@ export function Summary({ group, onUpdateGroup }: SummaryProps) {
   const personStats: Record<string, { paid: number; share: number }> = {};
 
   // Initialize stats for current users
-  group.users.forEach(u => {
+  trip.users.forEach(u => {
     personStats[u] = { paid: 0, share: 0 };
   });
 
-  group.expenses.forEach(e => {
+  trip.expenses.forEach(e => {
+    // Filter by selected person if not 'All'
+    if (selectedPerson !== 'All' && e.paidBy !== selectedPerson && !e.splitAmong.includes(selectedPerson)) {
+      return;
+    }
+
     const rate = rates[e.currency] || e.rate || 1;
     const myr = e.amountOriginal * rate;
 
@@ -57,7 +63,7 @@ export function Summary({ group, onUpdateGroup }: SummaryProps) {
       if (personStats[e.paidBy]) {
         personStats[e.paidBy].share += myr;
         // Do not add to 'paid' because a sponsorship is a transfer of burden, not a new payment
-      } else if (!group.users.includes(e.paidBy)) {
+      } else if (!trip.users.includes(e.paidBy)) {
         personStats[e.paidBy] = { paid: 0, share: myr };
       }
 
@@ -66,7 +72,7 @@ export function Summary({ group, onUpdateGroup }: SummaryProps) {
         e.splitAmong.forEach(u => {
           if (personStats[u]) {
             personStats[u].share -= splitAmount;
-          } else if (!group.users.includes(u)) {
+          } else if (!trip.users.includes(u)) {
              personStats[u] = { paid: 0, share: -splitAmount };
           }
         });
@@ -86,7 +92,7 @@ export function Summary({ group, onUpdateGroup }: SummaryProps) {
           if (personStats[sponsor]) {
             personStats[sponsor].paid += myr;
             personStats[sponsor].share += myr;
-          } else if (!group.users.includes(sponsor)) {
+          } else if (!trip.users.includes(sponsor)) {
             personStats[sponsor] = { paid: myr, share: myr };
           }
         } else if (e.splitDetails) {
@@ -371,12 +377,45 @@ export function Summary({ group, onUpdateGroup }: SummaryProps) {
 
       <div className="grid grid-cols-2 gap-4 mb-6">
         <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl text-center">
-          <div className="text-xs text-blue-800 dark:text-blue-300 font-medium uppercase tracking-wide mb-1">{t('dash_total_spent')}</div>
+          <div className="text-xs text-blue-800 dark:text-blue-300 font-medium uppercase tracking-wide mb-1">
+            {selectedPerson === 'All' ? t('dash_total_spent') : `${selectedPerson}'s Total`}
+          </div>
           <div className="text-xl font-bold text-blue-900 dark:text-blue-100 break-words" title={formatCurrency(totalMYR)}>{formatCurrency(totalMYR)}</div>
         </div>
         <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl text-center">
           <div className="text-xs text-blue-800 dark:text-blue-300 font-medium uppercase tracking-wide mb-1">{t('dash_per_person')}</div>
           <div className="text-xl font-bold text-blue-900 dark:text-blue-100 break-words" title={formatCurrency(avgPerPerson)}>{formatCurrency(avgPerPerson)}</div>
+        </div>
+      </div>
+
+      <div className="mb-6">
+        <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wider">Filter by Person</label>
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setSelectedPerson('All')}
+            className={cn(
+              "px-3 py-1.5 text-xs font-medium rounded-full transition-all",
+              selectedPerson === 'All'
+                ? "bg-blue-600 text-white shadow-md"
+                : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+            )}
+          >
+            All People
+          </button>
+          {trip.users.map(user => (
+            <button
+              key={user}
+              onClick={() => setSelectedPerson(user)}
+              className={cn(
+                "px-3 py-1.5 text-xs font-medium rounded-full transition-all",
+                selectedPerson === user
+                  ? "bg-blue-600 text-white shadow-md"
+                  : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+              )}
+            >
+              {user}
+            </button>
+          ))}
         </div>
       </div>
 

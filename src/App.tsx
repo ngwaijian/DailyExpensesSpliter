@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useStore } from './hooks/useStore';
 import { useTheme } from './hooks/useTheme';
 import { useLanguage } from './contexts/LanguageContext';
-import { GroupSelector } from './components/trip/GroupSelector';
+import { TripSelector } from './components/trip/TripSelector';
 import { SettingsModal } from './components/settings/SettingsModal';
 import { ExpenseForm } from './components/expenses/ExpenseForm';
 import { ExpenseList } from './components/expenses/ExpenseList';
@@ -18,11 +18,11 @@ import { cn } from './lib/utils';
 
 function App() {
   const { 
-    appData, currentGroup, currentGroupId, setCurrentGroupId, 
-    addGroup, deleteGroup, renameGroup, updateGroup,
+    appData, currentTrip, currentTripId, setCurrentTripId, 
+    addTrip, deleteTrip, renameTrip, updateTrip,
     isSyncing, needsSync, syncError, isOnline,
     githubToken, setGithubToken, 
-    fetchFromCloud, pushToCloud, createGistForGroup, fetchAllGroupsFromCloud
+    fetchFromCloud, pushToCloud, createGistForTrip, fetchAllTripsFromCloud
   } = useStore();
 
   const { theme, setTheme, resolvedTheme } = useTheme();
@@ -37,11 +37,19 @@ function App() {
   // Mobile Tab State
   const [activeTab, setActiveTab] = useState<'expenses' | 'dashboard' | 'people' | 'planning'>('expenses');
   const [showFab, setShowFab] = useState(false);
+  const [shortcutAmount, setShortcutAmount] = useState<number | null>(null);
 
   React.useEffect(() => {
-    const handleScroll = () => setShowFab(window.scrollY > 300);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    const params = new URLSearchParams(window.location.search);
+    const amount = params.get('amount');
+    if (amount) {
+      const parsed = parseFloat(amount);
+      if (!isNaN(parsed)) {
+        setShortcutAmount(parsed);
+        // Clear the param from URL to avoid re-population on refresh
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+    }
   }, []);
 
   const scrollToForm = () => {
@@ -62,7 +70,7 @@ function App() {
   };
 
   const handleAddExpense = (data: any) => {
-    const newExpenses = [...currentGroup.expenses];
+    const newExpenses = [...currentTrip.expenses];
     let updatedId = '';
     if (editingExpenseId) {
       const idx = newExpenses.findIndex(e => e.id === editingExpenseId);
@@ -74,8 +82,9 @@ function App() {
       updatedId = Date.now().toString();
       newExpenses.push({ id: updatedId, ...data });
     }
-    updateGroup({ ...currentGroup, expenses: newExpenses });
+    updateTrip({ ...currentTrip, expenses: newExpenses });
     setEditingExpenseId(null);
+    setShortcutAmount(null); // Clear shortcut amount after use
     setLastUpdatedId(updatedId);
     
     // Clear the lastUpdatedId after a short delay so it doesn't keep jumping back
@@ -87,29 +96,29 @@ function App() {
 
   const handleDeleteExpense = (id: string) => {
     if (!confirm(t('app_delete_expense_confirm'))) return;
-    updateGroup({ 
-      ...currentGroup, 
-      expenses: currentGroup.expenses.filter(e => e.id !== id) 
+    updateTrip({ 
+      ...currentTrip, 
+      expenses: currentTrip.expenses.filter(e => e.id !== id) 
     });
   };
 
   const handleAddPerson = (name: string) => {
-    if (currentGroup.users.includes(name)) return;
-    updateGroup({ ...currentGroup, users: [...currentGroup.users, name] });
+    if (currentTrip.users.includes(name)) return;
+    updateTrip({ ...currentTrip, users: [...currentTrip.users, name] });
   };
 
   const handleEditPerson = (oldName: string, newName: string) => {
     const trimmed = newName.trim();
     if (!trimmed || trimmed === oldName) return;
-    if (currentGroup.users.includes(trimmed)) {
+    if (currentTrip.users.includes(trimmed)) {
       alert(t('app_person_exists'));
       return;
     }
 
-    updateGroup({
-      ...currentGroup,
-      users: currentGroup.users.map(u => u === oldName ? trimmed : u),
-      expenses: currentGroup.expenses.map(e => ({
+    updateTrip({
+      ...currentTrip,
+      users: currentTrip.users.map(u => u === oldName ? trimmed : u),
+      expenses: currentTrip.expenses.map(e => ({
         ...e,
         paidBy: e.paidBy === oldName ? trimmed : e.paidBy,
         splitAmong: e.splitAmong.map(u => u === oldName ? trimmed : u),
@@ -120,10 +129,10 @@ function App() {
 
   const handleRemovePerson = (name: string) => {
     if (!confirm(`${t('app_remove_person_confirm')}${name}?`)) return;
-    updateGroup({ 
-      ...currentGroup, 
-      users: currentGroup.users.filter(u => u !== name),
-      expenses: currentGroup.expenses.map(e => ({
+    updateTrip({ 
+      ...currentTrip, 
+      users: currentTrip.users.filter(u => u !== name),
+      expenses: currentTrip.expenses.map(e => ({
         ...e,
         splitAmong: e.splitAmong.filter(u => u !== name)
       }))
@@ -131,9 +140,9 @@ function App() {
   };
 
   const handleAddExchange = (currency: string, foreignAmount: number, myrSpent: number) => {
-    updateGroup({
-      ...currentGroup,
-      exchanges: [...currentGroup.exchanges, {
+    updateTrip({
+      ...currentTrip,
+      exchanges: [...currentTrip.exchanges, {
         id: Date.now().toString(),
         currency, foreignAmount, myrSpent, date: new Date().toISOString()
       }]
@@ -141,9 +150,9 @@ function App() {
   };
 
   const handleRemoveExchange = (id: string) => {
-    updateGroup({
-      ...currentGroup,
-      exchanges: currentGroup.exchanges.filter(e => e.id !== id)
+    updateTrip({
+      ...currentTrip,
+      exchanges: currentTrip.exchanges.filter(e => e.id !== id)
     });
   };
 
@@ -172,30 +181,30 @@ function App() {
           </div>
 
           <TripSelector 
-            groups={appData.groups}
-            currentGroupId={currentGroupId}
-            onSelect={setCurrentGroupId}
+            trips={appData.trips}
+            currentTripId={currentTripId}
+            onSelect={setCurrentTripId}
             onAdd={() => {
-              const name = prompt(t('app_new_group_prompt'));
-              if (name) addGroup(name);
+              const name = prompt(t('app_new_trip_prompt'));
+              if (name) addTrip(name);
             }}
             onDelete={() => {
-              if (confirm(t('app_delete_group_confirm'))) deleteGroup(currentGroupId);
+              if (confirm(t('app_delete_trip_confirm'))) deleteTrip(currentTripId);
             }}
             onRename={() => {
-              const name = prompt(t('app_rename_group_prompt'), currentGroup.name);
-              if (name) renameGroup(currentGroupId, name);
+              const name = prompt(t('app_rename_trip_prompt'), currentTrip.name);
+              if (name) renameTrip(currentTripId, name);
             }}
           />
 
           <div className="flex items-center gap-2">
             <button
               onClick={fetchFromCloud}
-              disabled={isSyncing || !isOnline || !currentGroup.gistId}
+              disabled={isSyncing || !isOnline || !currentTrip.gistId}
               className={cn(
                 "p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors",
                 isSyncing && "animate-spin text-blue-500",
-                !currentGroup.gistId && "opacity-50 cursor-not-allowed"
+                !currentTrip.gistId && "opacity-50 cursor-not-allowed"
               )}
               title={t('app_sync_data')}
             >
@@ -240,7 +249,7 @@ function App() {
               className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg relative transition-colors"
             >
               <Settings className="w-6 h-6" />
-              {needsSync && isOnline && currentGroup.gistId && <span className="absolute top-2 right-2 w-2 h-2 bg-amber-500 rounded-full" />}
+              {needsSync && isOnline && currentTrip.gistId && <span className="absolute top-2 right-2 w-2 h-2 bg-amber-500 rounded-full" />}
               {!isOnline && <span className="absolute top-2 right-2 w-2 h-2 bg-gray-400 rounded-full border border-white dark:border-gray-800" />}
             </button>
           </div>
@@ -253,7 +262,7 @@ function App() {
           {/* Desktop: Left Sidebar (People & Wallet) */}
           <div className="hidden lg:block lg:col-span-3">
             <PeopleWallet 
-              group={currentGroup} 
+              trip={currentTrip} 
               onAddPerson={handleAddPerson}
               onEditPerson={handleEditPerson}
               onRemovePerson={handleRemovePerson}
@@ -267,16 +276,21 @@ function App() {
             "lg:col-span-6",
             activeTab === 'expenses' ? 'block' : 'hidden lg:block'
           )}>
-            <div key={editingExpenseId || 'new'} ref={formRef}>
+            <div key={editingExpenseId || (shortcutAmount ? 'shortcut' : 'new')} ref={formRef}>
               <ExpenseForm 
-                group={currentGroup} 
+                trip={currentTrip} 
                 onSubmit={handleAddExpense}
-                onCancel={() => setEditingExpenseId(null)}
-                initialData={editingExpenseId ? currentGroup.expenses.find(e => e.id === editingExpenseId) : undefined}
+                onCancel={() => {
+                  setEditingExpenseId(null);
+                  setShortcutAmount(null);
+                }}
+                initialData={editingExpenseId 
+                  ? currentTrip.expenses.find(e => e.id === editingExpenseId) 
+                  : (shortcutAmount ? { amountOriginal: shortcutAmount } : undefined)}
               />
             </div>
             <ExpenseList 
-              group={currentGroup}
+              trip={currentTrip}
               onEdit={handleEditExpenseId}
               onView={setViewingExpenseId}
               onDelete={handleDeleteExpense}
@@ -286,32 +300,32 @@ function App() {
 
           {/* Desktop: Right Sidebar (Stats & Planning) */}
           <div className="hidden lg:block lg:col-span-3 space-y-6">
-            <Summary group={currentGroup} onUpdateGroup={updateGroup} />
-            <Balances group={currentGroup} />
-            <BudgetManager group={currentGroup} onUpdateGroup={updateGroup} />
-            <Goals group={currentGroup} onUpdateGroup={updateGroup} />
-            <RecurringTransactions group={currentGroup} onUpdateGroup={updateGroup} />
+            <Summary trip={currentTrip} onUpdateTrip={updateTrip} />
+            <Balances trip={currentTrip} />
+            <BudgetManager trip={currentTrip} onUpdateTrip={updateTrip} />
+            <Goals trip={currentTrip} onUpdateTrip={updateTrip} />
+            <RecurringTransactions trip={currentTrip} onUpdateTrip={updateTrip} />
           </div>
 
           {/* Mobile Only Views */}
           <div className={cn("lg:hidden", activeTab === 'dashboard' ? 'block' : 'hidden')}>
             <div className="space-y-6">
-              <Summary group={currentGroup} onUpdateGroup={updateGroup} />
-              <Balances group={currentGroup} />
+              <Summary trip={currentTrip} onUpdateTrip={updateTrip} />
+              <Balances trip={currentTrip} />
             </div>
           </div>
 
           <div className={cn("lg:hidden", activeTab === 'planning' ? 'block' : 'hidden')}>
             <div className="space-y-6">
-              <BudgetManager group={currentGroup} onUpdateGroup={updateGroup} />
-              <Goals group={currentGroup} onUpdateGroup={updateGroup} />
-              <RecurringTransactions group={currentGroup} onUpdateGroup={updateGroup} />
+              <BudgetManager trip={currentTrip} onUpdateTrip={updateTrip} />
+              <Goals trip={currentTrip} onUpdateTrip={updateTrip} />
+              <RecurringTransactions trip={currentTrip} onUpdateTrip={updateTrip} />
             </div>
           </div>
 
           <div className={cn("lg:hidden", activeTab === 'people' ? 'block' : 'hidden')}>
             <PeopleWallet 
-              group={currentGroup} 
+              trip={currentTrip} 
               onAddPerson={handleAddPerson}
               onEditPerson={handleEditPerson}
               onRemovePerson={handleRemovePerson}
@@ -385,12 +399,12 @@ function App() {
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
         githubToken={githubToken} setGithubToken={setGithubToken}
-        currentGroup={currentGroup}
-        onUpdateGroup={updateGroup}
-        createGistForGroup={createGistForGroup}
+        currentTrip={currentTrip}
+        onUpdateTrip={updateTrip}
+        createGistForTrip={createGistForTrip}
         onSync={fetchFromCloud}
         onPush={pushToCloud}
-        fetchAllGroupsFromCloud={fetchAllGroupsFromCloud}
+        fetchAllTripsFromCloud={fetchAllTripsFromCloud}
         isSyncing={isSyncing}
         needsSync={needsSync}
         syncError={syncError}
