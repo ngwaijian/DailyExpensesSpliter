@@ -672,19 +672,26 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
           </div>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-4 w-full">
           {view === 'category' ? (
             <>
               {sortedCats.slice(0, 6).map(([cat, amt], idx) => (
-                <div key={cat} className="space-y-1">
-                  <div className="flex justify-between text-xs">
-                    <div className="flex items-center gap-2 min-w-0 flex-1">
-                      <span className="w-6 h-6 flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-lg text-sm shrink-0">
+                <div key={cat} className="space-y-2">
+                  <div className="flex items-center justify-between gap-4 w-full min-w-0">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="w-8 h-8 flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-xl text-base shrink-0">
                         {cat.split(' ')[0]}
                       </span>
-                      <span className="font-medium text-gray-700 dark:text-gray-300 truncate">{t(`cat_${cat}`, cat).split(' ').slice(1).join(' ') || t(`cat_${cat}`, cat)}</span>
+                      <div className="flex flex-col min-w-0">
+                        <span className="font-bold text-gray-900 dark:text-white truncate text-sm">
+                          {t(`cat_${cat}`, cat).split(' ').slice(1).join(' ') || t(`cat_${cat}`, cat)}
+                        </span>
+                        <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium">
+                          {((amt / totalMYR) * 100).toFixed(1)}% of total
+                        </span>
+                      </div>
                     </div>
-                    <span className="font-bold text-gray-900 dark:text-white shrink-0 ml-2">{formatCurrency(amt)}</span>
+                    <span className="font-black text-gray-900 dark:text-white text-sm shrink-0">{formatCurrency(amt)}</span>
                   </div>
                   <div className="h-1.5 w-full bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
                     <div 

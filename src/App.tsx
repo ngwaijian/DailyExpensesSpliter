@@ -13,7 +13,7 @@ import { Goals } from './components/dashboard/Goals';
 import { RecurringTransactions } from './components/expenses/RecurringTransactions';
 import { BudgetManager } from './components/planning/BudgetManager';
 import { ExpenseDetailsModal } from './components/expenses/ExpenseDetailsModal';
-import { ShieldCheck, LayoutGrid, List, Users, RefreshCw, Plus, Globe, Target, RotateCcw, Palette } from 'lucide-react';
+import { ShieldCheck, LayoutGrid, List, Users, RefreshCw, Plus, Globe, Target, RotateCcw, Settings } from 'lucide-react';
 import { cn } from './lib/utils';
 
 interface PreferencesModalProps {
@@ -32,7 +32,7 @@ function PreferencesModal({ isOpen, onClose, theme, setTheme }: PreferencesModal
       <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl w-full max-w-sm overflow-hidden transition-colors">
         <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-            <Palette className="w-5 h-5" />
+            <Settings className="w-5 h-5" />
             {t('app_preferences') || "Preferences"}
           </h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">✕</button>
@@ -449,7 +449,7 @@ function App() {
               className="flex items-center gap-1.5 px-2 sm:px-3 py-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors"
               title="Appearance & Language"
             >
-              <Palette className="w-5 h-5 sm:w-6 h-6" />
+              <Settings className="w-5 h-5 sm:w-6 h-6" />
               <span className="text-xs font-bold hidden sm:inline">Preferences</span>
             </button>
 
