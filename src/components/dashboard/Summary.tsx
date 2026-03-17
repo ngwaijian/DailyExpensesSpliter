@@ -235,9 +235,50 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
 
   trip.expenses.forEach(e => {
     if (e.type === 'settlement') return;
+    
+    // Filter by selected person if not 'All'
+    if (selectedPerson !== 'All') {
+      let personInvolved = false;
+      if (e.type === 'sponsorship') {
+        if (e.paidBy === selectedPerson || e.splitAmong.includes(selectedPerson)) {
+          personInvolved = true;
+        }
+      } else {
+        const sponsor = e.sponsoredBy || (e.isSponsored ? e.paidBy : null);
+        if (sponsor === selectedPerson || (e.splitDetails && e.splitDetails[selectedPerson]) || e.splitAmong.includes(selectedPerson)) {
+          personInvolved = true;
+        }
+      }
+      if (!personInvolved) return;
+    }
+
     if (last7Days[e.date] !== undefined) {
       const rate = rates[e.currency] || e.rate || 1;
-      last7Days[e.date] += e.amountOriginal * rate;
+      // For the spending chart, we only count expenses
+      if (e.type !== 'income') {
+        const val = e.amountOriginal * rate;
+        
+        // If a person is selected, we should only count THEIR share in the daily chart
+        if (selectedPerson !== 'All') {
+          let personShare = 0;
+          if (e.type === 'sponsorship') {
+            if (e.paidBy === selectedPerson) personShare += val;
+            if (e.splitAmong.includes(selectedPerson)) personShare -= val / e.splitAmong.length;
+          } else {
+            const sponsor = e.sponsoredBy || (e.isSponsored ? e.paidBy : null);
+            if (sponsor === selectedPerson) {
+              personShare = val;
+            } else if (e.splitDetails && e.splitDetails[selectedPerson]) {
+              personShare = e.splitDetails[selectedPerson] * rate;
+            } else if (e.splitAmong.includes(selectedPerson)) {
+              personShare = val / e.splitAmong.length;
+            }
+          }
+          last7Days[e.date] += Math.abs(personShare);
+        } else {
+          last7Days[e.date] += val;
+        }
+      }
     }
   });
 

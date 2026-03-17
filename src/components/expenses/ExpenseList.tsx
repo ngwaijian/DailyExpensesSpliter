@@ -321,14 +321,15 @@ export function ExpenseList({ trip, onEdit, onView, onDelete, lastUpdatedId, onU
             const showDateHeader = (sortOrder === 'date-desc' || sortOrder === 'date-asc') && 
               (index === 0 || getDatePart(filteredAndSortedExpenses[index - 1].date) !== getDatePart(exp.date));
 
-            let dailyTotal = 0;
+            let dailyNet = 0;
             if (showDateHeader) {
               const currentDay = getDatePart(exp.date);
-              dailyTotal = filteredAndSortedExpenses
+              dailyNet = filteredAndSortedExpenses
                 .filter(e => getDatePart(e.date) === currentDay && e.type !== 'settlement')
                 .reduce((sum, e) => {
                   const r = rates[e.currency] || e.rate || 1;
-                  return sum + (e.amountOriginal * r);
+                  const val = e.amountOriginal * r;
+                  return e.type === 'income' ? sum + val : sum - val;
                 }, 0);
             }
 
@@ -337,7 +338,12 @@ export function ExpenseList({ trip, onEdit, onView, onDelete, lastUpdatedId, onU
                 {showDateHeader && (
                   <div className="sticky top-0 z-10 bg-gray-50/95 dark:bg-gray-900/95 backdrop-blur-sm py-2 px-1 text-sm font-medium text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center">
                     <span>{new Date(exp.date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
-                    <span className="font-semibold text-gray-700 dark:text-gray-300">{t('list_total')} {formatCurrency(dailyTotal)}</span>
+                    <span className={cn(
+                      "font-semibold",
+                      dailyNet >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"
+                    )}>
+                      {dailyNet >= 0 ? t('dash_net_balance', 'Net') : t('list_total', 'Total')} {formatCurrency(dailyNet)}
+                    </span>
                   </div>
                 )}
                 <div 
