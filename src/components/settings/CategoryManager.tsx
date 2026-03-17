@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Trip } from '../../types';
 import { CATEGORIES } from '../../types';
-import { Tag, Plus, X, Edit2, Check, Trash2 } from 'lucide-react';
+import { Tag, Plus, X, Edit2, Check, Trash2, ChevronUp, ChevronDown } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { cn } from '../../lib/utils';
 
@@ -41,6 +41,16 @@ export function CategoryManager({ trip, onUpdateTrip }: CategoryManagerProps) {
     updatedCategories[editingIndex] = editValue.trim();
     onUpdateTrip({ ...trip, categories: updatedCategories });
     setEditingIndex(null);
+  };
+
+  const handleMove = (index: number, direction: 'up' | 'down') => {
+    const newIndex = direction === 'up' ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= categories.length) return;
+    
+    const updatedCategories = [...categories];
+    const [movedItem] = updatedCategories.splice(index, 1);
+    updatedCategories.splice(newIndex, 0, movedItem);
+    onUpdateTrip({ ...trip, categories: updatedCategories });
   };
 
   const handleReset = () => {
@@ -108,6 +118,20 @@ export function CategoryManager({ trip, onUpdateTrip }: CategoryManagerProps) {
               <>
                 <span className="text-sm text-gray-700 dark:text-gray-300">{cat}</span>
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button 
+                    onClick={() => handleMove(index, 'up')}
+                    disabled={index === 0}
+                    className="p-1 text-gray-400 hover:text-blue-600 disabled:opacity-30"
+                  >
+                    <ChevronUp className="w-3.5 h-3.5" />
+                  </button>
+                  <button 
+                    onClick={() => handleMove(index, 'down')}
+                    disabled={index === categories.length - 1}
+                    className="p-1 text-gray-400 hover:text-blue-600 disabled:opacity-30"
+                  >
+                    <ChevronDown className="w-3.5 h-3.5" />
+                  </button>
                   <button 
                     onClick={() => startEditing(index)}
                     className="p-1 text-gray-400 hover:text-blue-600"

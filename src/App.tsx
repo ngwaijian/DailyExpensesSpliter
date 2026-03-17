@@ -127,6 +127,8 @@ function App() {
   const [showFab, setShowFab] = useState(false);
   const [shortcutAmount, setShortcutAmount] = useState<number | null>(null);
   const [shortcutCategory, setShortcutCategory] = useState<string | null>(null);
+  const [shortcutDesc, setShortcutDesc] = useState<string | null>(null);
+  const [shortcutCurrency, setShortcutCurrency] = useState<string | null>(null);
   const [shortcutGoalId, setShortcutGoalId] = useState<string | null>(null);
 
   if (!currentTrip) {
@@ -141,6 +143,8 @@ function App() {
     const params = new URLSearchParams(window.location.search);
     const amount = params.get('amount');
     const category = params.get('category');
+    const desc = params.get('desc');
+    const currency = params.get('currency');
     const goalId = params.get('goalId');
     const autoSave = params.get('autoSave') === 'true';
     
@@ -153,10 +157,10 @@ function App() {
         const splitAmong = currentTrip.users.length > 0 ? currentTrip.users : ['Me'];
         const newExpense = {
           id: Date.now().toString(),
-          desc: category || 'Quick Add',
+          desc: desc || category || 'Quick Add',
           amountOriginal: parsedAmount,
-          currency: 'MYR',
-          category: category || 'Food & Drink',
+          currency: currency || 'MYR',
+          category: category || '📝 General / Other',
           date: new Date().toISOString(),
           paidBy,
           splitAmong,
@@ -171,7 +175,7 @@ function App() {
         
         window.history.replaceState({}, '', window.location.pathname);
         setTimeout(() => {
-          alert('Expense saved to cloud! You can close this Safari tab.');
+          alert('Expense saved! You can close this Safari tab.');
         }, 100);
         return;
       }
@@ -192,6 +196,16 @@ function App() {
 
     if (goalId) {
       setShortcutGoalId(goalId);
+      shouldClear = true;
+    }
+
+    if (desc) {
+      setShortcutDesc(desc);
+      shouldClear = true;
+    }
+
+    if (currency) {
+      setShortcutCurrency(currency);
       shouldClear = true;
     }
 
@@ -234,6 +248,10 @@ function App() {
     updateTrip({ ...currentTrip, expenses: newExpenses });
     setEditingExpenseId(null);
     setShortcutAmount(null); // Clear shortcut amount after use
+    setShortcutCategory(null);
+    setShortcutDesc(null);
+    setShortcutCurrency(null);
+    setShortcutGoalId(null);
     setLastUpdatedId(updatedId);
     
     // Clear the lastUpdatedId after a short delay so it doesn't keep jumping back
@@ -402,13 +420,17 @@ function App() {
                   setEditingExpenseId(null);
                   setShortcutAmount(null);
                   setShortcutCategory(null);
+                  setShortcutDesc(null);
+                  setShortcutCurrency(null);
                   setShortcutGoalId(null);
                 }}
                 initialData={editingExpenseId 
                   ? currentTrip.expenses.find(e => e.id === editingExpenseId) 
-                  : (shortcutAmount || shortcutCategory || shortcutGoalId ? { 
+                  : (shortcutAmount || shortcutCategory || shortcutGoalId || shortcutDesc || shortcutCurrency ? { 
                       amountOriginal: shortcutAmount || undefined,
                       category: shortcutCategory || undefined,
+                      desc: shortcutDesc || undefined,
+                      currency: shortcutCurrency || undefined,
                       goalId: shortcutGoalId || undefined
                     } : undefined)}
               />

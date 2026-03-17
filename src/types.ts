@@ -29,7 +29,7 @@ export interface Expense {
   };
   isSponsored?: boolean; // If true, this expense won't affect user balances
   sponsoredBy?: string; // The user who sponsored this expense
-  type?: 'expense' | 'sponsorship' | 'settlement'; // Distinguishes normal expenses from fixed-amount sponsorships and settlements
+  type?: 'expense' | 'income' | 'sponsorship' | 'settlement'; // Distinguishes normal expenses from income, fixed-amount sponsorships and settlements
   splitDetails?: { [userName: string]: number }; // Optional: specific amount for each person
   isSettled?: boolean; // If true, this expense won't affect user balances (just for recording)
   goalId?: string; // Optional link to a goal

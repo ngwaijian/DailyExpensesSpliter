@@ -38,6 +38,7 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
   }, []);
   
   let totalMYR = 0;
+  let totalIncomeMYR = 0;
   const categoryTotals: Record<string, number> = {};
   const personStats: Record<string, { paid: number; share: number }> = {};
 
@@ -57,6 +58,24 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
 
     if (e.type === 'settlement') {
       return; // Settlements don't affect total spent or individual shares
+    } else if (e.type === 'income') {
+      totalIncomeMYR += myr;
+      
+      // Person Paid (for income, 'paidBy' is who received it)
+      if (personStats[e.paidBy]) {
+        personStats[e.paidBy].paid -= myr; // Receiving income is like "negative paying"
+      }
+
+      // Person Share (who benefits from the income)
+      if (e.splitAmong.length > 0) {
+        const splitAmount = myr / e.splitAmong.length;
+        e.splitAmong.forEach(u => {
+          if (personStats[u]) {
+            personStats[u].share -= splitAmount;
+          }
+        });
+      }
+      return;
     } else if (e.type === 'sponsorship') {
       // Sponsorships don't change total spent or categories, 
       // but they transfer the "share" (burden) to the sponsor.
@@ -414,16 +433,35 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
         <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl text-center">
           <div className="text-xs text-blue-800 dark:text-blue-300 font-medium uppercase tracking-wide mb-1">
             {selectedPerson === 'All' ? t('dash_total_spent') : `${selectedPerson}'s Total`}
           </div>
           <div className="text-xl font-bold text-blue-900 dark:text-blue-100 break-words" title={formatCurrency(totalMYR)}>{formatCurrency(totalMYR)}</div>
         </div>
-        <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl text-center">
-          <div className="text-xs text-blue-800 dark:text-blue-300 font-medium uppercase tracking-wide mb-1">{t('dash_per_person')}</div>
-          <div className="text-xl font-bold text-blue-900 dark:text-blue-100 break-words" title={formatCurrency(avgPerPerson)}>{formatCurrency(avgPerPerson)}</div>
+        <div className="bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-xl text-center">
+          <div className="text-xs text-emerald-800 dark:text-emerald-300 font-medium uppercase tracking-wide mb-1">
+            {t('dash_total_income', 'Total Income')}
+          </div>
+          <div className="text-xl font-bold text-emerald-900 dark:text-emerald-100 break-words" title={formatCurrency(totalIncomeMYR)}>{formatCurrency(totalIncomeMYR)}</div>
+        </div>
+        <div className={cn(
+          "p-4 rounded-xl text-center col-span-2 sm:col-span-1",
+          (totalMYR - totalIncomeMYR) > 0 ? "bg-amber-50 dark:bg-amber-900/20" : "bg-emerald-50 dark:bg-emerald-900/20"
+        )}>
+          <div className={cn(
+            "text-xs font-medium uppercase tracking-wide mb-1",
+            (totalMYR - totalIncomeMYR) > 0 ? "text-amber-800 dark:text-amber-300" : "text-emerald-800 dark:text-emerald-300"
+          )}>
+            {t('dash_net_spent', 'Net Spent')}
+          </div>
+          <div className={cn(
+            "text-xl font-bold break-words",
+            (totalMYR - totalIncomeMYR) > 0 ? "text-amber-900 dark:text-amber-100" : "text-emerald-900 dark:text-emerald-100"
+          )} title={formatCurrency(totalMYR - totalIncomeMYR)}>
+            {formatCurrency(totalMYR - totalIncomeMYR)}
+          </div>
         </div>
       </div>
 

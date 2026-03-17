@@ -69,7 +69,7 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
   const { t } = useLanguage();
   const { resolvedTheme } = useTheme();
   const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false);
-  const [type, setType] = useState<'expense' | 'sponsorship' | 'settlement'>(initialData?.type || 'expense');
+  const [type, setType] = useState<'expense' | 'income' | 'sponsorship' | 'settlement'>(initialData?.type || 'expense');
   const [desc, setDesc] = useState(initialData?.desc || '');
   const [memo, setMemo] = useState(initialData?.memo || '');
   const [amount, setAmount] = useState(initialData?.amountOriginal || '');
@@ -471,6 +471,23 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
             )}
           >
             {t('form_type_expense')}
+          </button>
+          <button
+            type="button"
+            onClick={() => { 
+              setType('income'); 
+              setIsSettled(false);
+              setCategory('💰 Income');
+              if (!desc || desc === t('form_desc_placeholder')) {
+                setDesc('Income/Bonus/Cashback');
+              }
+            }}
+            className={cn(
+              "flex-1 py-1.5 px-1 text-xs font-medium rounded-lg transition-colors whitespace-normal h-auto min-h-[32px] flex items-center justify-center text-center",
+              type === 'income' ? "bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm" : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+            )}
+          >
+            Income
           </button>
           <button
             type="button"
