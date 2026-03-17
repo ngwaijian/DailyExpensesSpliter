@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useStore } from './hooks/useStore';
-import { CATEGORIES } from './types';
+import { CATEGORIES, Loan } from './types';
 import { useTheme } from './hooks/useTheme';
 import { useLanguage } from './contexts/LanguageContext';
 import { TripSelector, PeopleWallet } from './components/trip-management';
@@ -411,6 +411,27 @@ function App() {
     });
   };
 
+  const handleAddLoan = (loan: Loan) => {
+    updateTrip({
+      ...currentTrip,
+      loans: [...(currentTrip.loans || []), loan]
+    });
+  };
+
+  const handleEditLoan = (loan: Loan) => {
+    updateTrip({
+      ...currentTrip,
+      loans: (currentTrip.loans || []).map(l => l.id === loan.id ? loan : l)
+    });
+  };
+
+  const handleDeleteLoan = (id: string) => {
+    updateTrip({
+      ...currentTrip,
+      loans: (currentTrip.loans || []).filter(l => l.id !== id)
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans pb-20 md:pb-0 transition-colors duration-200">
       {/* Header */}
@@ -542,7 +563,7 @@ function App() {
             <BudgetManager trip={currentTrip} onUpdateTrip={updateTrip} />
             <Goals trip={currentTrip} onUpdateTrip={updateTrip} />
             <RecurringTransactions trip={currentTrip} onUpdateTrip={updateTrip} />
-            <LoanManager loans={currentTrip.loans || []} />
+            <LoanManager loans={currentTrip.loans || []} onAdd={handleAddLoan} onEdit={handleEditLoan} onDelete={handleDeleteLoan} />
           </div>
 
           {/* Mobile Only Views */}
@@ -558,6 +579,7 @@ function App() {
               <BudgetManager trip={currentTrip} onUpdateTrip={updateTrip} />
               <Goals trip={currentTrip} onUpdateTrip={updateTrip} />
               <RecurringTransactions trip={currentTrip} onUpdateTrip={updateTrip} />
+              <LoanManager loans={currentTrip.loans || []} onAdd={handleAddLoan} onEdit={handleEditLoan} onDelete={handleDeleteLoan} />
             </div>
           </div>
 

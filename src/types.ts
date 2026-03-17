@@ -74,9 +74,13 @@ export interface Loan {
   totalAmount: number;
   remainingAmount: number;
   installmentAmount: number;
+  interestRate: number;
+  termMonths: number;
   currency: string;
+  startDate: string;
   dueDate: string;
   paidBy: string; // The person who took the loan
+  status: 'active' | 'paid_off';
 }
 
 export interface Trip {
