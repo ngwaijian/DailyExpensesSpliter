@@ -24,6 +24,13 @@ export function RecurringTransactions({ trip, onUpdateTrip }: RecurringTransacti
   const [frequency, setFrequency] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('monthly');
   const [nextDate, setNextDate] = useState(new Date().toISOString().split('T')[0]);
 
+  // Update paidBy if it's empty and users become available
+  React.useEffect(() => {
+    if (!paidBy && trip.users.length > 0) {
+      setPaidBy(trip.users[0]);
+    }
+  }, [trip.users, paidBy]);
+
   const recurring = trip.recurringTransactions || [];
 
   const handleSave = (e: React.FormEvent) => {
@@ -77,7 +84,7 @@ export function RecurringTransactions({ trip, onUpdateTrip }: RecurringTransacti
   };
 
   const handleDelete = (id: string) => {
-    if (confirm(t('app_delete_recurring_confirm') || 'Delete this recurring transaction?')) {
+    if (window.confirm(t('app_delete_recurring_confirm') || 'Delete this recurring transaction?')) {
       onUpdateTrip({ ...trip, recurringTransactions: recurring.filter(r => r.id !== id) });
     }
   };
@@ -113,97 +120,114 @@ export function RecurringTransactions({ trip, onUpdateTrip }: RecurringTransacti
 
       {isAdding && (
         <form onSubmit={handleSave} className="mb-6 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-2xl border border-gray-100 dark:border-gray-600">
-          <div className="space-y-4">
-            <div>
-              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Description</label>
-              <input
-                type="text"
-                value={desc}
-                onChange={e => setDesc(e.target.value)}
-                className="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white"
-                required
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Category</label>
-                <select
-                  value={category}
-                  onChange={e => setCategory(e.target.value)}
-                  className="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white"
-                >
-                  {tripCategories.map(c => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Frequency</label>
-                <select
-                  value={frequency}
-                  onChange={e => setFrequency(e.target.value as any)}
-                  className="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white"
-                >
-                  <option value="daily">Daily</option>
-                  <option value="weekly">Weekly</option>
-                  <option value="monthly">Monthly</option>
-                  <option value="yearly">Yearly</option>
-                </select>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Amount</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={amount}
-                  onChange={e => setAmount(e.target.value)}
-                  className="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Next Date</label>
-                <input
-                  type="date"
-                  value={nextDate}
-                  onChange={e => setNextDate(e.target.value)}
-                  className="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white"
-                  required
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Paid By</label>
-                <select
-                  value={paidBy}
-                  onChange={e => setPaidBy(e.target.value)}
-                  className="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white"
-                >
-                  {trip.users.map(u => (
-                    <option key={u} value={u}>{u}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            <div className="flex gap-2 pt-2">
+          {trip.users.length === 0 ? (
+            <div className="text-center py-4">
+              <p className="text-sm text-amber-600 dark:text-amber-400 mb-3">
+                {t('form_add_people_first') || "Please add people to the group first."}
+              </p>
               <button
                 type="button"
                 onClick={resetForm}
-                className="flex-1 py-2.5 px-4 bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-800 dark:text-white rounded-xl text-sm font-medium transition-colors"
+                className="px-4 py-2 bg-gray-200 dark:bg-gray-600 rounded-xl text-sm font-medium"
               >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="flex-1 py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-medium transition-colors"
-              >
-                {editingId ? 'Update' : 'Save'}
+                {t('form_cancel') || "Cancel"}
               </button>
             </div>
-          </div>
+          ) : (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Description</label>
+                <input
+                  type="text"
+                  value={desc}
+                  onChange={e => setDesc(e.target.value)}
+                  className="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white"
+                  placeholder="e.g. Monthly Rent"
+                  required
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Category</label>
+                  <select
+                    value={category}
+                    onChange={e => setCategory(e.target.value)}
+                    className="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white"
+                  >
+                    {tripCategories.map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Frequency</label>
+                  <select
+                    value={frequency}
+                    onChange={e => setFrequency(e.target.value as any)}
+                    className="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white"
+                  >
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                    <option value="yearly">Yearly</option>
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Amount</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={amount}
+                    onChange={e => setAmount(e.target.value)}
+                    className="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white"
+                    placeholder="0.00"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Next Date</label>
+                  <input
+                    type="date"
+                    value={nextDate}
+                    onChange={e => setNextDate(e.target.value)}
+                    className="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white"
+                    required
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Paid By</label>
+                  <select
+                    value={paidBy}
+                    onChange={e => setPaidBy(e.target.value)}
+                    className="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white"
+                  >
+                    {trip.users.map(u => (
+                      <option key={u} value={u}>{u}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={resetForm}
+                  className="flex-1 py-2.5 px-4 bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-800 dark:text-white rounded-xl text-sm font-medium transition-colors"
+                >
+                  {t('form_cancel') || "Cancel"}
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-medium transition-colors"
+                >
+                  {editingId ? (t('form_update') || 'Update') : (t('form_save') || 'Save')}
+                </button>
+              </div>
+            </div>
+          )}
         </form>
       )}
 

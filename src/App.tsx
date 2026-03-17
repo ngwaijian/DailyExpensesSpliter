@@ -249,7 +249,11 @@ function App() {
               className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg relative transition-colors"
             >
               <Settings className="w-6 h-6" />
-              {needsSync && isOnline && currentTrip.gistId && <span className="absolute top-2 right-2 w-2 h-2 bg-amber-500 rounded-full" />}
+              {needsSync && isOnline && currentTrip.gistId && (
+                <span className="absolute -top-1 -right-1 bg-amber-500 text-white text-[8px] px-1 rounded-full font-bold shadow-sm animate-pulse">
+                  SYNC
+                </span>
+              )}
               {!isOnline && <span className="absolute top-2 right-2 w-2 h-2 bg-gray-400 rounded-full border border-white dark:border-gray-800" />}
             </button>
           </div>
