@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Trip, Expense, CATEGORIES } from '../../types';
 import { CATEGORY_COLORS, CATEGORY_STRIP_COLORS } from '../../constants';
 import { getAverageRates, formatCurrency } from '../../utils/currency';
-import { Edit2, Trash2, Calendar, User, MapPin, Gift, Handshake, Filter, ArrowUpDown, X, Search, Tag, RotateCcw, Settings } from 'lucide-react';
+import { Edit2, Trash2, Calendar, User, MapPin, Gift, Handshake, Filter, ArrowUpDown, X, Search, Tag, RotateCcw, Settings, Clock } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useTheme } from '../../hooks/useTheme';
@@ -121,7 +121,19 @@ export function ExpenseList({ trip, onEdit, onView, onDelete, lastUpdatedId }: E
     return result;
   }, [trip.expenses, filterCategory, sortOrder, startDate, endDate, rates]);
 
-  if (trip.expenses.length === 0) {
+  const upcomingRecurring = useMemo(() => {
+    if (!trip.recurringTransactions) return [];
+    const now = new Date();
+    const threeDaysFromNow = new Date();
+    threeDaysFromNow.setDate(now.getDate() + 3);
+    
+    return trip.recurringTransactions.filter(rt => {
+      const nextDate = new Date(rt.nextDate);
+      return nextDate >= now && nextDate <= threeDaysFromNow;
+    });
+  }, [trip.recurringTransactions]);
+
+  if (trip.expenses.length === 0 && upcomingRecurring.length === 0) {
     return (
       <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-3xl border border-dashed border-gray-300 dark:border-gray-700 transition-colors duration-200 flex flex-col items-center gap-4">
         <div className="w-20 h-20 bg-gray-50 dark:bg-gray-900 rounded-2xl flex items-center justify-center shadow-inner">
@@ -138,6 +150,31 @@ export function ExpenseList({ trip, onEdit, onView, onDelete, lastUpdatedId }: E
 
   return (
     <div className="space-y-4">
+      {/* Upcoming Recurring Reminders */}
+      {upcomingRecurring.length > 0 && (
+        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-2xl p-4 mb-4">
+          <h4 className="flex items-center gap-2 text-amber-800 dark:text-amber-400 font-semibold mb-3">
+            <Clock className="w-5 h-5" />
+            Upcoming Recurring Expenses
+          </h4>
+          <div className="space-y-2">
+            {upcomingRecurring.map(rt => (
+              <div key={rt.id} className="flex justify-between items-center bg-white/60 dark:bg-gray-800/60 p-3 rounded-xl">
+                <div>
+                  <div className="font-medium text-gray-900 dark:text-white">{rt.desc}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                    Due: {new Date(rt.nextDate).toLocaleDateString()} • {rt.frequency}
+                  </div>
+                </div>
+                <div className="font-semibold text-amber-700 dark:text-amber-400">
+                  {formatCurrency(rt.amountOriginal, rt.currency)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Filter Toggle Button */}
       <div className="flex justify-end gap-2">
         {canUndo && (
@@ -177,7 +214,7 @@ export function ExpenseList({ trip, onEdit, onView, onDelete, lastUpdatedId }: E
 
       {showCategoryManager && (
         <div className="bg-white dark:bg-gray-800 p-4 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors duration-200 animate-in slide-in-from-top-2">
-          <CategoryManager trip={trip} onUpdateTrip={updateTrip} />
+          <CategoryManager trip={trip} onUpdateTrip={(updatedTrip) => updateTrip(trip.id, updatedTrip)} />
         </div>
       )}
 

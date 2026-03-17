@@ -237,7 +237,7 @@ export function BudgetManager({ trip, onUpdateTrip }: BudgetManagerProps) {
                     {formatCurrency(spent)} / {formatCurrency(budget.amount)}
                   </div>
                 </div>
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                   <button onClick={() => handleEdit(budget)} className="p-1.5 text-gray-400 hover:text-emerald-500 dark:hover:text-emerald-400 transition-colors">
                     <Edit2 className="w-4 h-4" />
                   </button>

@@ -7,6 +7,8 @@ import { getAverageRates, formatCurrency } from '../../utils/currency';
 import { calculateBalances, getSimplifiedDebts } from '../../utils/balances';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useTheme } from '../../hooks/useTheme';
+import { useStore } from '../../hooks/useStore';
+import { CategoryManager } from '../settings/CategoryManager';
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -65,6 +67,8 @@ const formatDateTime = (d?: string) => {
 export function ExpenseForm({ trip, onSubmit, onCancel, initialData }: ExpenseFormProps) {
   const { t } = useLanguage();
   const { resolvedTheme } = useTheme();
+  const { updateTrip } = useStore();
+  const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false);
   const [type, setType] = useState<'expense' | 'sponsorship' | 'settlement'>(initialData?.type || 'expense');
   const [desc, setDesc] = useState(initialData?.desc || '');
   const [memo, setMemo] = useState(initialData?.memo || '');
@@ -78,6 +82,7 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData }: ExpenseFo
   const [splitMode, setSplitMode] = useState<'equal' | 'unequal' | 'shares'>(initialData?.splitDetails ? 'unequal' : 'equal');
   const [splitDetails, setSplitDetails] = useState<{ [key: string]: number | string }>(initialData?.splitDetails || {});
   const [splitShares, setSplitShares] = useState<{ [key: string]: number }>({});
+  const [goalId, setGoalId] = useState<string>(initialData?.goalId || '');
 
   // Update splitDetails when amount changes in equal or shares mode
   useEffect(() => {
@@ -247,6 +252,7 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData }: ExpenseFo
       sponsoredBy: isSponsored ? (sponsoredBy || paidBy) : undefined,
       type,
       splitDetails: finalSplitDetails,
+      goalId: goalId || undefined,
       location: locationName ? {
         name: locationName,
         ...locationCoords
@@ -535,7 +541,16 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData }: ExpenseFo
           {/* Category - Full width on mobile */}
           {type === 'expense' && (
             <div className="col-span-2 md:col-span-12">
-              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">{t('form_category')}</label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">{t('form_category')}</label>
+                <button
+                  type="button"
+                  onClick={() => setIsCategoryManagerOpen(true)}
+                  className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                >
+                  Edit Categories
+                </button>
+              </div>
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2">
                 {tripCategories.map(c => (
                   <button
@@ -555,6 +570,28 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData }: ExpenseFo
                     </span>
                   </button>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Link to Goal */}
+          {type === 'expense' && trip.goals && trip.goals.length > 0 && (
+            <div className="col-span-2 md:col-span-12">
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Link to Goal (Optional)</label>
+              <div className="relative">
+                <select
+                  value={goalId}
+                  onChange={(e) => setGoalId(e.target.value)}
+                  className="w-full p-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white transition-colors text-sm appearance-none min-h-[42px]"
+                >
+                  <option value="">-- No Goal --</option>
+                  {trip.goals.map(g => (
+                    <option key={g.id} value={g.id}>{g.name}</option>
+                  ))}
+                </select>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                </div>
               </div>
             </div>
           )}
@@ -622,7 +659,7 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData }: ExpenseFo
             {/* Calculator Keypad - Moved up to prevent layout shifting when currency info appears */}
             {showCalculator && (
               <div className="mt-2 p-2 bg-gray-100 dark:bg-gray-700/50 rounded-xl grid grid-cols-4 gap-2 animate-in slide-in-from-top-2 duration-200">
-                {['7','8','9','/','4','5','6','*','1','2','3','-','0','.','DEL','+'].map(key => (
+                {['1','2','3','/','4','5','6','*','7','8','9','-','.','0','DEL','+'].map(key => (
                   <button 
                     key={key} 
                     type="button"
@@ -1080,6 +1117,25 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData }: ExpenseFo
           </button>
         </div>
       </form>
+
+      {isCategoryManagerOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-700">
+              <h3 className="font-semibold text-gray-900 dark:text-white">Manage Categories</h3>
+              <button 
+                onClick={() => setIsCategoryManagerOpen(false)}
+                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-4 max-h-[60vh] overflow-y-auto">
+              <CategoryManager trip={trip} onUpdateTrip={(updatedTrip) => updateTrip(trip.id, updatedTrip)} />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

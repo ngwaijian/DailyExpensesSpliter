@@ -20,8 +20,10 @@ interface GoalItemProps {
 }
 
 function GoalItem({ goal, trip, onUpdateTrip, onEdit, onDelete, t }: GoalItemProps) {
+  const linkedExpensesTotal = trip.expenses?.filter(e => e.goalId === goal.id).reduce((sum, e) => sum + e.amountOriginal, 0) || 0;
+  const totalCurrentAmount = goal.currentAmount + linkedExpensesTotal;
   const [localAmount, setLocalAmount] = useState(goal.currentAmount.toString());
-  const progress = Math.min(100, Math.max(0, (goal.currentAmount / goal.targetAmount) * 100));
+  const progress = Math.min(100, Math.max(0, (totalCurrentAmount / goal.targetAmount) * 100));
   const isCompleted = progress >= 100;
 
   const handleBlur = () => {
@@ -40,21 +42,19 @@ function GoalItem({ goal, trip, onUpdateTrip, onEdit, onDelete, t }: GoalItemPro
             {goal.name}
             {isCompleted && <CheckCircle2 className="w-4 h-4 text-green-500" />}
           </h4>
-          <div className="text-sm text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-2">
-            <div className="relative group/input">
-              <input
-                type="number"
-                value={localAmount}
-                onChange={(e) => setLocalAmount(e.target.value)}
-                onBlur={handleBlur}
-                onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
-                className="w-20 p-1 bg-transparent border-b border-transparent hover:border-blue-300 focus:border-blue-500 focus:bg-white dark:focus:bg-gray-800 outline-none transition-all font-medium text-blue-600 dark:text-blue-400"
-              />
+          <div className="text-sm text-gray-500 dark:text-gray-400 mt-1 flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <span className="text-blue-600 dark:text-blue-400 font-medium">{formatCurrency(totalCurrentAmount)}</span>
+              <span>of {formatCurrency(goal.targetAmount)}</span>
             </div>
-            <span>of {formatCurrency(goal.targetAmount)}</span>
+            {linkedExpensesTotal > 0 && (
+              <div className="text-xs text-gray-400 dark:text-gray-500">
+                ({formatCurrency(goal.currentAmount)} manual + {formatCurrency(linkedExpensesTotal)} from expenses)
+              </div>
+            )}
           </div>
         </div>
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
           <button onClick={() => onEdit(goal)} className="p-1.5 text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">
             <Edit2 className="w-4 h-4" />
           </button>
@@ -73,8 +73,22 @@ function GoalItem({ goal, trip, onUpdateTrip, onEdit, onDelete, t }: GoalItemPro
           style={{ width: `${progress}%` }}
         />
       </div>
-      <div className="text-right text-xs text-gray-400 dark:text-gray-500 mt-1 font-medium">
-        {progress.toFixed(1)}%
+      <div className="flex justify-between items-center mt-1">
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-gray-500 dark:text-gray-400">Manual Entry:</span>
+          <input
+            type="number"
+            value={localAmount}
+            onChange={(e) => setLocalAmount(e.target.value)}
+            onBlur={handleBlur}
+            onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
+            className="w-16 p-1 bg-transparent border-b border-gray-300 dark:border-gray-600 hover:border-blue-300 focus:border-blue-500 focus:bg-white dark:focus:bg-gray-800 outline-none transition-all font-medium text-gray-700 dark:text-gray-300 text-xs"
+            placeholder="0.00"
+          />
+        </div>
+        <div className="text-right text-xs text-gray-400 dark:text-gray-500 font-medium">
+          {progress.toFixed(1)}%
+        </div>
       </div>
     </div>
   );

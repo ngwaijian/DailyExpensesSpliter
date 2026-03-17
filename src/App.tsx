@@ -126,6 +126,8 @@ function App() {
   const [activeTab, setActiveTab] = useState<'expenses' | 'dashboard' | 'people' | 'planning'>('expenses');
   const [showFab, setShowFab] = useState(false);
   const [shortcutAmount, setShortcutAmount] = useState<number | null>(null);
+  const [shortcutCategory, setShortcutCategory] = useState<string | null>(null);
+  const [shortcutGoalId, setShortcutGoalId] = useState<string | null>(null);
 
   if (!currentTrip) {
     return (
@@ -138,16 +140,65 @@ function App() {
   React.useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const amount = params.get('amount');
+    const category = params.get('category');
+    const goalId = params.get('goalId');
+    const autoSave = params.get('autoSave') === 'true';
+    
+    let shouldClear = false;
+
+    if (autoSave && amount) {
+      const parsedAmount = parseFloat(amount);
+      if (!isNaN(parsedAmount)) {
+        const paidBy = currentTrip.users.length > 0 ? currentTrip.users[0] : 'Me';
+        const splitAmong = currentTrip.users.length > 0 ? currentTrip.users : ['Me'];
+        const newExpense = {
+          id: Date.now().toString(),
+          desc: category || 'Quick Add',
+          amountOriginal: parsedAmount,
+          currency: 'MYR',
+          category: category || 'Food & Drink',
+          date: new Date().toISOString(),
+          paidBy,
+          splitAmong,
+          type: 'expense' as const,
+          goalId: goalId || undefined,
+        };
+        
+        updateTrip(currentTrip.id, {
+          expenses: [newExpense, ...currentTrip.expenses]
+        });
+        
+        window.history.replaceState({}, '', window.location.pathname);
+        setTimeout(() => {
+          alert('Expense saved to cloud! You can close this Safari tab.');
+        }, 100);
+        return;
+      }
+    }
+
     if (amount) {
       const parsed = parseFloat(amount);
       if (!isNaN(parsed)) {
         setShortcutAmount(parsed);
-        setActiveTab('expenses');
-        // Clear the param from URL to avoid re-population on refresh
-        window.history.replaceState({}, '', window.location.pathname);
+        shouldClear = true;
       }
     }
-  }, []);
+    
+    if (category) {
+      setShortcutCategory(category);
+      shouldClear = true;
+    }
+
+    if (goalId) {
+      setShortcutGoalId(goalId);
+      shouldClear = true;
+    }
+
+    if (shouldClear) {
+      setActiveTab('expenses');
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, [currentTrip.id, currentTrip.users, currentTrip.expenses, updateTrip]);
 
   const scrollToForm = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -348,10 +399,16 @@ function App() {
                 onCancel={() => {
                   setEditingExpenseId(null);
                   setShortcutAmount(null);
+                  setShortcutCategory(null);
+                  setShortcutGoalId(null);
                 }}
                 initialData={editingExpenseId 
                   ? currentTrip.expenses.find(e => e.id === editingExpenseId) 
-                  : (shortcutAmount ? { amountOriginal: shortcutAmount } : undefined)}
+                  : (shortcutAmount || shortcutCategory || shortcutGoalId ? { 
+                      amountOriginal: shortcutAmount || undefined,
+                      category: shortcutCategory || undefined,
+                      goalId: shortcutGoalId || undefined
+                    } : undefined)}
               />
             </div>
             <ExpenseList 

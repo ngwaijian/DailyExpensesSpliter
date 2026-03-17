@@ -14,6 +14,9 @@ const translations: Record<Language, Translations> = {
     nav_balances: "Balances",
     nav_settings: "Settings",
     nav_planning: "Planning",
+    plan_budgets: "Budgets",
+    plan_goals: "Goals",
+    plan_recurring: "Recurring",
     
     // Header
     header_select_trip: "Select Group",
@@ -217,6 +220,9 @@ const translations: Record<Language, Translations> = {
     nav_balances: "结算",
     nav_settings: "设置",
     nav_planning: "计划",
+    plan_budgets: "预算",
+    plan_goals: "目标",
+    plan_recurring: "定期支出",
     
     // Header
     header_select_trip: "选择账本",
