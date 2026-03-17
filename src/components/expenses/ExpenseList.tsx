@@ -385,6 +385,16 @@ export function ExpenseList({ trip, onEdit, onView, onDelete, lastUpdatedId, onU
                         <span className="font-medium text-blue-600 dark:text-blue-400">{exp.paidBy}</span>
                         <span>•</span>
                         <span>{t(`cat_${exp.category}`, exp.category).split(' ').slice(1).join(' ') || t(`cat_${exp.category}`, exp.category)}</span>
+                        <span>•</span>
+                        <span>{new Date(exp.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        {exp.isSponsored && (
+                          <>
+                            <span>•</span>
+                            <span className="flex items-center gap-0.5 text-amber-600 dark:text-amber-400 font-medium">
+                              <Gift className="w-3 h-3" /> Sponsored by {exp.sponsoredBy || 'Sponsor'}
+                            </span>
+                          </>
+                        )}
                         {exp.location && (
                           <>
                             <span>•</span>

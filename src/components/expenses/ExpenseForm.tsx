@@ -491,16 +491,6 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
           </button>
           <button
             type="button"
-            onClick={() => { setType('sponsorship'); setIsSettled(false); }}
-            className={cn(
-              "flex-1 py-1.5 px-1 text-xs font-medium rounded-lg transition-colors whitespace-normal h-auto min-h-[32px] flex items-center justify-center text-center",
-              type === 'sponsorship' ? "bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm" : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-            )}
-          >
-            {t('form_type_sponsorship')}
-          </button>
-          <button
-            type="button"
             onClick={() => {
               setType('settlement');
               setIsSettled(false);
