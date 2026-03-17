@@ -251,7 +251,7 @@ export function RecurringTransactions({ trip, onUpdateTrip }: RecurringTransacti
                 Next: {new Date(tx.nextDate).toLocaleDateString()}
               </div>
             </div>
-            <div className="flex flex-col items-end gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+            <div className="flex flex-col items-end gap-2 transition-opacity">
               <button onClick={() => handleEdit(tx)} className="p-1.5 text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">
                 <Edit2 className="w-4 h-4" />
               </button>

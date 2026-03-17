@@ -207,7 +207,7 @@ export function PeopleWallet({ trip, onAddPerson, onEditPerson, onRemovePerson, 
               ) : (
                 <>
                   <span className="font-medium text-gray-700 dark:text-gray-300">{user}</span>
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex items-center gap-1 transition-opacity">
                     <button 
                       onClick={() => startEdit(user)}
                       className="p-1 text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"

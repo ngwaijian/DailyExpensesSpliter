@@ -117,7 +117,7 @@ export function CategoryManager({ trip, onUpdateTrip }: CategoryManagerProps) {
             ) : (
               <>
                 <span className="text-sm text-gray-700 dark:text-gray-300">{cat}</span>
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex items-center gap-1 transition-opacity">
                   <button 
                     onClick={() => handleMove(index, 'up')}
                     disabled={index === 0}

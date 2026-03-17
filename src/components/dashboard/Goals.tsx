@@ -54,7 +54,7 @@ function GoalItem({ goal, trip, onUpdateTrip, onEdit, onDelete, t }: GoalItemPro
             )}
           </div>
         </div>
-        <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+        <div className="flex items-center gap-1 transition-opacity">
           <button onClick={() => onEdit(goal)} className="p-1.5 text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">
             <Edit2 className="w-4 h-4" />
           </button>
