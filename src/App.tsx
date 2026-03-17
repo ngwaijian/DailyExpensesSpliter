@@ -214,13 +214,22 @@ function App() {
       const rawCategory = category.split(',')[0].trim();
       const tripCategories = currentTrip.categories || CATEGORIES;
       const normalizedRaw = rawCategory.toLowerCase();
-      const match = tripCategories.find(c => {
-        const lowerC = c.toLowerCase();
-        const nameOnly = lowerC.replace(/^[^\s]+\s/, '');
-        return lowerC.includes(normalizedRaw) || 
-               normalizedRaw.includes(nameOnly) ||
-               nameOnly.includes(normalizedRaw);
-      });
+      
+      // Try exact match first
+      let match = tripCategories.find(c => c.toLowerCase() === normalizedRaw);
+      
+      // Then try fuzzy match
+      if (!match) {
+        match = tripCategories.find(c => {
+          const lowerC = c.toLowerCase();
+          const nameOnly = lowerC.replace(/^[^\s]+\s/, '').trim();
+          return lowerC.includes(normalizedRaw) || 
+                 normalizedRaw.includes(nameOnly) ||
+                 (nameOnly.length > 2 && nameOnly.includes(normalizedRaw)) ||
+                 (normalizedRaw.length > 2 && nameOnly.includes(normalizedRaw));
+        });
+      }
+      
       setShortcutCategory(match || rawCategory);
       shouldClear = true;
     }
@@ -442,7 +451,7 @@ function App() {
             "lg:col-span-6",
             activeTab === 'expenses' ? 'block' : 'hidden lg:block'
           )}>
-            <div key={editingExpenseId || (shortcutAmount ? 'shortcut' : 'new')} ref={formRef}>
+            <div key={editingExpenseId || (shortcutAmount !== null || shortcutCategory || shortcutDesc || shortcutCurrency || shortcutGoalId ? 'shortcut' : 'new')} ref={formRef}>
               <ExpenseForm 
                 trip={currentTrip} 
                 onSubmit={handleAddExpense}
@@ -457,12 +466,12 @@ function App() {
                 }}
                 initialData={editingExpenseId 
                   ? currentTrip.expenses.find(e => e.id === editingExpenseId) 
-                  : (shortcutAmount || shortcutCategory || shortcutGoalId || shortcutDesc || shortcutCurrency ? { 
-                      amountOriginal: shortcutAmount || undefined,
-                      category: shortcutCategory || undefined,
-                      desc: shortcutDesc || undefined,
-                      currency: shortcutCurrency || undefined,
-                      goalId: shortcutGoalId || undefined
+                  : (shortcutAmount !== null || shortcutCategory || shortcutGoalId || shortcutDesc || shortcutCurrency ? { 
+                      amountOriginal: shortcutAmount ?? undefined,
+                      category: shortcutCategory ?? undefined,
+                      desc: shortcutDesc ?? undefined,
+                      currency: shortcutCurrency ?? undefined,
+                      goalId: shortcutGoalId ?? undefined
                     } : undefined)}
               />
             </div>
