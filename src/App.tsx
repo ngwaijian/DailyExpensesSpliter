@@ -166,7 +166,7 @@ function App() {
         
         // Fuzzy match the category against the official list
         const tripCategories = currentTrip.categories || CATEGORIES;
-        let cleanCategory = '📝 Other';
+        let cleanCategory = tripCategories[0]; // Default to first category
         if (rawCategory) {
           const normalizedRaw = rawCategory.toLowerCase();
           
@@ -192,7 +192,7 @@ function App() {
                      (translatedNameOnly.length > 2 && translatedNameOnly.includes(normalizedRaw));
             });
           }
-          cleanCategory = match || rawCategory;
+          if (match) cleanCategory = match;
         }
 
         const newExpense = {
@@ -235,6 +235,8 @@ function App() {
       const tripCategories = currentTrip.categories || CATEGORIES;
       const normalizedRaw = rawCategory.toLowerCase();
       
+      console.log('Debug Shortcut Category Matching:', { rawCategory, normalizedRaw, tripCategories });
+
       // Try exact match first
       let match = tripCategories.find(c => {
         const translated = t(`cat_${c}`, c).toLowerCase();
@@ -249,18 +251,25 @@ function App() {
           const nameOnly = lowerC.replace(/^[^\s]+\s/, '').trim();
           const translatedNameOnly = translated.replace(/^[^\s]+\s/, '').trim();
           
-          return lowerC.includes(normalizedRaw) || 
+          const isMatch = lowerC.includes(normalizedRaw) || 
                  translated.includes(normalizedRaw) ||
                  normalizedRaw.includes(nameOnly) ||
                  normalizedRaw.includes(translatedNameOnly) ||
                  (nameOnly.length > 2 && nameOnly.includes(normalizedRaw)) ||
                  (translatedNameOnly.length > 2 && translatedNameOnly.includes(normalizedRaw));
+          
+          if (isMatch) console.log('Fuzzy match found:', c);
+          return isMatch;
         });
       }
       
-      const finalCategory = match || rawCategory;
-      setShortcutCategory(finalCategory);
-      console.log('Shortcut Category Matched:', finalCategory);
+      if (match) {
+        setShortcutCategory(match);
+        console.log('Shortcut Category Matched:', match);
+      } else {
+        console.log('No match found for category:', rawCategory);
+        // Do NOT set shortcutCategory if no match found, to allow fallback to default
+      }
       shouldClear = true;
     }
 
