@@ -43,7 +43,7 @@ function GoalItem({ goal, trip, onUpdateTrip, onEdit, onDelete, t }: GoalItemPro
             {isCompleted && <CheckCircle2 className="w-4 h-4 text-green-500" />}
           </h4>
           <div className="text-sm text-gray-500 dark:text-gray-400 mt-1 flex flex-col gap-1">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="text-blue-600 dark:text-blue-400 font-medium">{formatCurrency(totalCurrentAmount)}</span>
               <span>of {formatCurrency(goal.targetAmount)}</span>
             </div>

@@ -479,29 +479,29 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-        <div className="bg-gray-50/50 dark:bg-gray-900/20 p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50">
-          <div className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-widest mb-2">
-            {selectedPerson === 'All' ? t('dash_total_spent') : `${selectedPerson}'s Total`}
-          </div>
-          <div className="text-2xl font-black text-gray-900 dark:text-white" title={formatCurrency(-totalMYR)}>{formatCurrency(-totalMYR)}</div>
-        </div>
-        <div className="bg-gray-50/50 dark:bg-gray-900/20 p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50">
-          <div className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-widest mb-2">
-            {t('dash_total_income', 'Total Income')}
-          </div>
-          <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400" title={formatCurrency(totalIncomeMYR)}>{formatCurrency(totalIncomeMYR)}</div>
-        </div>
+      <div className="grid grid-cols-1 gap-4 mb-8">
         <div className="bg-gray-50/50 dark:bg-gray-900/20 p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50">
           <div className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-widest mb-2">
             {t('dash_net_balance', 'Net Balance')}
           </div>
           <div className={cn(
-            "text-2xl font-black",
+            "text-lg sm:text-xl md:text-2xl font-black break-words",
             (totalIncomeMYR - totalMYR) >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"
           )} title={formatCurrency(totalIncomeMYR - totalMYR)}>
             {formatCurrency(totalIncomeMYR - totalMYR)}
           </div>
+        </div>
+        <div className="bg-gray-50/50 dark:bg-gray-900/20 p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50">
+          <div className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-widest mb-2">
+            {t('dash_total_income', 'Total Income')}
+          </div>
+          <div className="text-lg sm:text-xl md:text-2xl font-black text-emerald-600 dark:text-emerald-400 break-words" title={formatCurrency(totalIncomeMYR)}>{formatCurrency(totalIncomeMYR)}</div>
+        </div>
+        <div className="bg-gray-50/50 dark:bg-gray-900/20 p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50">
+          <div className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-widest mb-2">
+            {selectedPerson === 'All' ? t('dash_total_spent') : `${selectedPerson}'s Total`}
+          </div>
+          <div className="text-lg sm:text-xl md:text-2xl font-black text-gray-900 dark:text-white break-words" title={formatCurrency(-totalMYR)}>{formatCurrency(-totalMYR)}</div>
         </div>
       </div>
 
