@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Group, CATEGORIES } from '../../types';
+import { Trip, CATEGORIES } from '../../types';
 import { CATEGORY_COLORS, CATEGORY_STRIP_COLORS } from '../../constants';
 import { Calendar, Tag, DollarSign, Users, X, Calculator, MapPin, Loader2, Search } from 'lucide-react';
 import { cn } from '../../lib/utils';
@@ -21,7 +21,7 @@ L.Icon.Default.mergeOptions({
 });
 
 interface ExpenseFormProps {
-  group: Group;
+  trip: Trip;
   onSubmit: (expenseData: any) => void;
   onCancel: () => void;
   initialData?: any;
@@ -62,7 +62,7 @@ const formatDateTime = (d?: string) => {
   return new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 };
 
-export function ExpenseForm({ group, onSubmit, onCancel, initialData }: ExpenseFormProps) {
+export function ExpenseForm({ trip, onSubmit, onCancel, initialData }: ExpenseFormProps) {
   const { t } = useLanguage();
   const { resolvedTheme } = useTheme();
   const [type, setType] = useState<'expense' | 'sponsorship' | 'settlement'>(initialData?.type || 'expense');
@@ -70,11 +70,11 @@ export function ExpenseForm({ group, onSubmit, onCancel, initialData }: ExpenseF
   const [memo, setMemo] = useState(initialData?.memo || '');
   const [amount, setAmount] = useState(initialData?.amountOriginal || '');
   const [currency, setCurrency] = useState(initialData?.currency || 'MYR');
-  const tripCategories = group.categories || CATEGORIES;
+  const tripCategories = trip.categories || CATEGORIES;
   const [category, setCategory] = useState(initialData?.category || tripCategories[0]);
   const [date, setDate] = useState(formatDateTime(initialData?.date));
-  const [paidBy, setPaidBy] = useState(initialData?.paidBy || (group.users.includes('Jian') ? 'Jian' : (group.users.length > 0 ? group.users[0] : '')));
-  const [splitAmong, setSplitAmong] = useState<string[]>(initialData?.splitAmong || group.users);
+  const [paidBy, setPaidBy] = useState(initialData?.paidBy || (trip.users.includes('Jian') ? 'Jian' : (trip.users.length > 0 ? trip.users[0] : '')));
+  const [splitAmong, setSplitAmong] = useState<string[]>(initialData?.splitAmong || trip.users);
   const [splitMode, setSplitMode] = useState<'equal' | 'unequal' | 'shares'>(initialData?.splitDetails ? 'unequal' : 'equal');
   const [splitDetails, setSplitDetails] = useState<{ [key: string]: number | string }>(initialData?.splitDetails || {});
   const [splitShares, setSplitShares] = useState<{ [key: string]: number }>({});

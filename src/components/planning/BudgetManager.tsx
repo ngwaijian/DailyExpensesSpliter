@@ -25,13 +25,15 @@ export function BudgetManager({ trip, onUpdateTrip }: BudgetManagerProps) {
   const tripCategories = trip.categories || CATEGORIES;
 
   const calculateSpending = (budget: Budget) => {
+    if (!budget || !budget.categories) return 0;
     const now = new Date();
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
 
     return trip.expenses.reduce((acc, exp) => {
       // Filter by category
-      if (!budget.categories.includes('All') && !budget.categories.includes(exp.category)) return acc;
+      const budgetCats = Array.isArray(budget.categories) ? budget.categories : [];
+      if (!budgetCats.includes('All') && !budgetCats.includes(exp.category)) return acc;
 
       // Filter by period
       if (budget.period === 'monthly') {
@@ -213,6 +215,7 @@ export function BudgetManager({ trip, onUpdateTrip }: BudgetManagerProps) {
 
       <div className="space-y-6">
         {budgets.map(budget => {
+          if (!budget || !budget.categories) return null;
           const spent = calculateSpending(budget);
           const remaining = budget.amount - spent;
           const percentage = Math.min(100, (spent / budget.amount) * 100);
@@ -224,7 +227,7 @@ export function BudgetManager({ trip, onUpdateTrip }: BudgetManagerProps) {
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-bold text-gray-800 dark:text-white">
-                      {budget.name || (budget.categories.includes('All') ? 'Total Budget' : budget.categories.map(c => c.split(' ')[0]).join(', '))}
+                      {budget.name || ((budget.categories || []).includes('All') ? 'Total Budget' : (budget.categories || []).map(c => c.split(' ')[0]).join(', '))}
                     </span>
                     <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded uppercase font-bold tracking-wider">
                       {budget.period}

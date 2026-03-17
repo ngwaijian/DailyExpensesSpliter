@@ -1,17 +1,17 @@
 import React from 'react';
-import { Group } from '../../types';
+import { Trip } from '../../types';
 import { formatCurrency } from '../../utils/currency';
 import { calculateBalances, getSimplifiedDebts } from '../../utils/balances';
 import { ArrowRight, CheckCircle2 } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 interface BalancesProps {
-  group: Group;
+  trip: Trip;
 }
 
-export function Balances({ group }: BalancesProps) {
+export function Balances({ trip }: BalancesProps) {
   const { t } = useLanguage();
-  const balances = calculateBalances(group);
+  const balances = calculateBalances(trip);
   const transactions = getSimplifiedDebts(balances);
 
   return (

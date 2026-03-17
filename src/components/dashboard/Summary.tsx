@@ -439,12 +439,14 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
         {trip.budgets && trip.budgets.length > 0 ? (
           <div className="space-y-4">
             {trip.budgets.slice(0, 3).map(budget => {
+              if (!budget || !budget.categories) return null;
               const now = new Date();
               const currentMonth = now.getMonth();
               const currentYear = now.getFullYear();
               
               const spent = trip.expenses.reduce((acc, exp) => {
-                if (!budget.categories.includes('All') && !budget.categories.includes(exp.category)) return acc;
+                const budgetCats = Array.isArray(budget.categories) ? budget.categories : [];
+                if (!budgetCats.includes('All') && !budgetCats.includes(exp.category)) return acc;
                 if (budget.period === 'monthly') {
                   const expDate = new Date(exp.date);
                   if (expDate.getMonth() !== currentMonth || expDate.getFullYear() !== currentYear) return acc;
@@ -460,7 +462,7 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
                 <div key={budget.id} className="space-y-1.5">
                   <div className="flex justify-between text-[10px]">
                     <span className="font-bold text-gray-600 dark:text-gray-400">
-                      {budget.categories.includes('All') ? 'Total' : budget.categories.map(c => c.split(' ')[0]).join(', ')} ({budget.period})
+                      {(budget.categories || []).includes('All') ? 'Total' : (budget.categories || []).map(c => c.split(' ')[0]).join(', ')} ({budget.period})
                     </span>
                     <span className={cn("font-bold", isOver ? "text-red-500" : "text-gray-500")}>
                       {formatCurrency(spent)} / {formatCurrency(budget.amount)}

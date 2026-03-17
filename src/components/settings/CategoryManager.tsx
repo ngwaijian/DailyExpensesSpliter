@@ -1,33 +1,33 @@
 import React, { useState } from 'react';
-import { Group } from '../../types';
+import { Trip } from '../../types';
 import { CATEGORIES } from '../../types';
 import { Tag, Plus, X, Edit2, Check, Trash2 } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { cn } from '../../lib/utils';
 
 interface CategoryManagerProps {
-  group: Group;
-  onUpdateGroup: (group: Group) => void;
+  trip: Trip;
+  onUpdateTrip: (trip: Trip) => void;
 }
 
-export function CategoryManager({ group, onUpdateGroup }: CategoryManagerProps) {
+export function CategoryManager({ trip, onUpdateTrip }: CategoryManagerProps) {
   const { t } = useLanguage();
   const [newCategory, setNewCategory] = useState('');
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editValue, setEditValue] = useState('');
 
-  const categories = group.categories || CATEGORIES;
+  const categories = trip.categories || CATEGORIES;
 
   const handleAdd = () => {
     if (!newCategory.trim()) return;
     const updatedCategories = [...categories, newCategory.trim()];
-    onUpdateGroup({ ...group, categories: updatedCategories });
+    onUpdateTrip({ ...trip, categories: updatedCategories });
     setNewCategory('');
   };
 
   const handleRemove = (index: number) => {
     const updatedCategories = categories.filter((_, i) => i !== index);
-    onUpdateGroup({ ...group, categories: updatedCategories });
+    onUpdateTrip({ ...trip, categories: updatedCategories });
   };
 
   const startEditing = (index: number) => {
@@ -39,13 +39,13 @@ export function CategoryManager({ group, onUpdateGroup }: CategoryManagerProps) 
     if (!editValue.trim() || editingIndex === null) return;
     const updatedCategories = [...categories];
     updatedCategories[editingIndex] = editValue.trim();
-    onUpdateGroup({ ...group, categories: updatedCategories });
+    onUpdateTrip({ ...trip, categories: updatedCategories });
     setEditingIndex(null);
   };
 
   const handleReset = () => {
     if (confirm('Reset categories to default? This will remove all custom categories.')) {
-      onUpdateGroup({ ...group, categories: CATEGORIES });
+      onUpdateTrip({ ...trip, categories: CATEGORIES });
     }
   };
 

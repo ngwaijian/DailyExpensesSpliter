@@ -1,13 +1,13 @@
-import { Group } from '../types';
+import { Trip } from '../types';
 import { getAverageRates } from './currency';
 
-export function calculateBalances(group: Group): Record<string, number> {
-  const rates = getAverageRates(group);
+export function calculateBalances(trip: Trip): Record<string, number> {
+  const rates = getAverageRates(trip);
   const balances: Record<string, number> = {};
   
-  group.users.forEach(u => balances[u] = 0);
+  trip.users.forEach(u => balances[u] = 0);
 
-  group.expenses.forEach(e => {
+  trip.expenses.forEach(e => {
     if (e.isSettled) return; // Skip settled expenses for balances calculations
 
     const rate = rates[e.currency] || e.rate || 1;
