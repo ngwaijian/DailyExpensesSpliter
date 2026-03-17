@@ -12,10 +12,44 @@ const DEFAULT_DATA: AppData = {
 };
 
 export function useStore() {
-  const [appData, setAppData] = useState<AppData>(DEFAULT_DATA);
-  const [currentTripId, setCurrentTripId] = useState<string>('');
+  const [appData, setAppData] = useState<AppData>(() => {
+    try {
+      const storedData = localStorage.getItem(STORAGE_KEY);
+      if (storedData) {
+        const parsed = JSON.parse(storedData);
+        if (parsed && Array.isArray(parsed.trips) && parsed.trips.length > 0) {
+          return parsed;
+        }
+      }
+    } catch (e) {
+      console.error("Failed to load stored data:", e);
+    }
+    return DEFAULT_DATA;
+  });
+
+  const [currentTripId, setCurrentTripId] = useState<string>(() => {
+    try {
+      const storedTripId = localStorage.getItem(CURRENT_TRIP_KEY);
+      const storedData = localStorage.getItem(STORAGE_KEY);
+      if (storedData) {
+        const parsed = JSON.parse(storedData);
+        if (parsed && Array.isArray(parsed.trips) && parsed.trips.length > 0) {
+          if (storedTripId && parsed.trips.some((t: Trip) => t.id === storedTripId)) {
+            return storedTripId;
+          }
+          return parsed.trips[0].id;
+        }
+      }
+    } catch (e) {
+      console.error("Failed to load stored data:", e);
+    }
+    return DEFAULT_DATA.trips[0].id;
+  });
+
   const [isSyncing, setIsSyncing] = useState(false);
-  const [needsSync, setNeedsSync] = useState(false);
+  const [needsSync, setNeedsSync] = useState(() => {
+    return localStorage.getItem(SYNC_KEY) === 'true';
+  });
   const [githubToken, setGithubToken] = useState(() => {
     return localStorage.getItem(GITHUB_TOKEN_KEY) || GITHUB_TOKEN;
   });
@@ -33,42 +67,6 @@ export function useStore() {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, []);
-
-  // Load initial data
-  useEffect(() => {
-    try {
-      const storedData = localStorage.getItem(STORAGE_KEY);
-      const storedTripId = localStorage.getItem(CURRENT_TRIP_KEY);
-      const storedToken = localStorage.getItem(GITHUB_TOKEN_KEY);
-      const storedSync = localStorage.getItem(SYNC_KEY) === 'true';
-
-      if (storedData) {
-        const parsed = JSON.parse(storedData);
-        if (parsed && Array.isArray(parsed.trips) && parsed.trips.length > 0) {
-          setAppData(parsed);
-          
-          if (storedTripId && parsed.trips.some((t: Trip) => t.id === storedTripId)) {
-            setCurrentTripId(storedTripId);
-          } else {
-            setCurrentTripId(parsed.trips[0].id);
-          }
-        } else {
-          // If data is invalid, use default
-          setAppData(DEFAULT_DATA);
-          setCurrentTripId(DEFAULT_DATA.trips[0].id);
-        }
-      } else {
-        setCurrentTripId(DEFAULT_DATA.trips[0].id);
-      }
-
-      if (storedToken) setGithubToken(storedToken);
-      setNeedsSync(storedSync);
-    } catch (e) {
-      console.error("Failed to load stored data:", e);
-      setAppData(DEFAULT_DATA);
-      setCurrentTripId(DEFAULT_DATA.trips[0].id);
-    }
   }, []);
 
   // Process recurring transactions
