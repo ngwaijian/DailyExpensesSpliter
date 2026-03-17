@@ -397,6 +397,7 @@ function App() {
               <ExpenseForm 
                 trip={currentTrip} 
                 onSubmit={handleAddExpense}
+                onUpdateTrip={updateTrip}
                 onCancel={() => {
                   setEditingExpenseId(null);
                   setShortcutAmount(null);
@@ -418,6 +419,9 @@ function App() {
               onView={setViewingExpenseId}
               onDelete={handleDeleteExpense}
               lastUpdatedId={lastUpdatedId}
+              onUpdateTrip={updateTrip}
+              undo={undo}
+              canUndo={canUndo}
             />
           </div>
 

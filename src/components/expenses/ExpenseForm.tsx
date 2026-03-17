@@ -27,6 +27,7 @@ interface ExpenseFormProps {
   onSubmit: (expenseData: any) => void;
   onCancel: () => void;
   initialData?: any;
+  onUpdateTrip: (trip: Trip) => void;
 }
 
 // Component to handle map clicks and updates
@@ -64,10 +65,9 @@ const formatDateTime = (d?: string) => {
   return new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 };
 
-export function ExpenseForm({ trip, onSubmit, onCancel, initialData }: ExpenseFormProps) {
+export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTrip }: ExpenseFormProps) {
   const { t } = useLanguage();
   const { resolvedTheme } = useTheme();
-  const { updateTrip } = useStore();
   const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false);
   const [type, setType] = useState<'expense' | 'sponsorship' | 'settlement'>(initialData?.type || 'expense');
   const [desc, setDesc] = useState(initialData?.desc || '');
@@ -1131,7 +1131,7 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData }: ExpenseFo
               </button>
             </div>
             <div className="p-4 max-h-[60vh] overflow-y-auto">
-              <CategoryManager trip={trip} onUpdateTrip={(updatedTrip) => updateTrip(updatedTrip)} />
+              <CategoryManager trip={trip} onUpdateTrip={onUpdateTrip} />
             </div>
           </div>
         </div>

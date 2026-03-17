@@ -15,12 +15,14 @@ interface ExpenseListProps {
   onView: (id: string) => void;
   onDelete: (id: string) => void;
   lastUpdatedId?: string | null;
+  onUpdateTrip: (trip: Trip) => void;
+  undo: () => void;
+  canUndo: boolean;
 }
 
-export function ExpenseList({ trip, onEdit, onView, onDelete, lastUpdatedId }: ExpenseListProps) {
+export function ExpenseList({ trip, onEdit, onView, onDelete, lastUpdatedId, onUpdateTrip, undo, canUndo }: ExpenseListProps) {
   const { t } = useLanguage();
   const { resolvedTheme } = useTheme();
-  const { undo, canUndo, updateTrip } = useStore();
   const rates = getAverageRates(trip);
   const [filterCategory, setFilterCategory] = useState<string>('All');
   const [sortOrder, setSortOrder] = useState<'date-desc' | 'date-asc' | 'amount-desc' | 'amount-asc'>('date-desc');
@@ -214,7 +216,7 @@ export function ExpenseList({ trip, onEdit, onView, onDelete, lastUpdatedId }: E
 
       {showCategoryManager && (
         <div className="bg-white dark:bg-gray-800 p-4 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors duration-200 animate-in slide-in-from-top-2">
-          <CategoryManager trip={trip} onUpdateTrip={(updatedTrip) => updateTrip(updatedTrip)} />
+          <CategoryManager trip={trip} onUpdateTrip={onUpdateTrip} />
         </div>
       )}
 
