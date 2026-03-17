@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Loan } from '../../types';
+import { X } from 'lucide-react';
 
 interface LoanModalProps {
   isOpen: boolean;
@@ -44,28 +45,65 @@ export const LoanModal: React.FC<LoanModalProps> = ({ isOpen, onClose, onSave, i
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-xl w-full max-w-sm space-y-4">
-        <h2 className="text-xl font-bold">{initialData ? 'Edit Loan' : 'Add Loan'}</h2>
-        <input type="text" placeholder="Loan Name" value={name} onChange={e => setName(e.target.value)} className="w-full p-2 border rounded-lg" required />
-        <input type="number" placeholder="Total Amount" value={totalAmount} onChange={e => setTotalAmount(Number(e.target.value))} className="w-full p-2 border rounded-lg" required />
-        <input type="number" placeholder="Remaining Amount" value={remainingAmount} onChange={e => setRemainingAmount(Number(e.target.value))} className="w-full p-2 border rounded-lg" required />
-        <input type="number" placeholder="Installment Amount" value={installmentAmount} onChange={e => setInstallmentAmount(Number(e.target.value))} className="w-full p-2 border rounded-lg" required />
-        <input type="number" placeholder="Interest Rate (%)" value={interestRate} onChange={e => setInterestRate(Number(e.target.value))} className="w-full p-2 border rounded-lg" required />
-        <input type="number" placeholder="Term (Months)" value={termMonths} onChange={e => setTermMonths(Number(e.target.value))} className="w-full p-2 border rounded-lg" required />
-        <input type="text" placeholder="Currency" value={currency} onChange={e => setCurrency(e.target.value)} className="w-full p-2 border rounded-lg" required />
-        <label className="text-xs text-gray-500">Start Date</label>
-        <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full p-2 border rounded-lg" required />
-        <label className="text-xs text-gray-500">Due Date</label>
-        <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} className="w-full p-2 border rounded-lg" required />
-        <input type="text" placeholder="Paid By" value={paidBy} onChange={e => setPaidBy(e.target.value)} className="w-full p-2 border rounded-lg" required />
-        <select value={status} onChange={e => setStatus(e.target.value as 'active' | 'paid_off')} className="w-full p-2 border rounded-lg">
-          <option value="active">Active</option>
-          <option value="paid_off">Paid Off</option>
-        </select>
-        <div className="flex justify-end gap-2">
-          <button type="button" onClick={onClose} className="px-4 py-2 text-gray-500">Cancel</button>
-          <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg">Save</button>
+      <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-2xl w-full max-w-lg space-y-6 max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800 z-10 pb-4 border-b border-gray-100 dark:border-gray-700">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{initialData ? 'Edit Loan' : 'Add New Loan'}</h2>
+          <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-600"><X className="w-6 h-6" /></button>
         </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-gray-500">Loan Name</label>
+            <input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl" required />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-gray-500">Paid By</label>
+            <input type="text" value={paidBy} onChange={e => setPaidBy(e.target.value)} className="w-full p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl" required />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-gray-500">Total Amount</label>
+            <input type="number" value={totalAmount} onChange={e => setTotalAmount(Number(e.target.value))} className="w-full p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl" required />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-gray-500">Remaining Amount</label>
+            <input type="number" value={remainingAmount} onChange={e => setRemainingAmount(Number(e.target.value))} className="w-full p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl" required />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-gray-500">Installment Amount</label>
+            <input type="number" value={installmentAmount} onChange={e => setInstallmentAmount(Number(e.target.value))} className="w-full p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl" required />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-gray-500">Interest Rate (%)</label>
+            <input type="number" value={interestRate} onChange={e => setInterestRate(Number(e.target.value))} className="w-full p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl" required />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-gray-500">Term (Months)</label>
+            <input type="number" value={termMonths} onChange={e => setTermMonths(Number(e.target.value))} className="w-full p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl" required />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-gray-500">Currency</label>
+            <input type="text" value={currency} onChange={e => setCurrency(e.target.value)} className="w-full p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl" required />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-gray-500">Start Date</label>
+            <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl" required />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-gray-500">Due Date</label>
+            <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} className="w-full p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl" required />
+          </div>
+          <div className="space-y-1 md:col-span-2">
+            <label className="text-xs font-medium text-gray-500">Status</label>
+            <select value={status} onChange={e => setStatus(e.target.value as 'active' | 'paid_off')} className="w-full p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl">
+              <option value="active">Active</option>
+              <option value="paid_off">Paid Off</option>
+            </select>
+          </div>
+        </div>
+
+        <button type="submit" className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-colors">
+          {initialData ? 'Save Changes' : 'Add Loan'}
+        </button>
       </form>
     </div>
   );

@@ -3,6 +3,7 @@ import { Loan } from '../../types';
 import { formatCurrency } from '../../utils/currency';
 import { LoanModal } from './LoanModal';
 import { cn } from '../../lib/utils';
+import { Plus, Trash2, Edit2, TrendingUp } from 'lucide-react';
 
 export const LoanManager: React.FC<{ 
   loans: Loan[], 
@@ -14,34 +15,64 @@ export const LoanManager: React.FC<{
   const [editingLoan, setEditingLoan] = useState<Loan | undefined>(undefined);
 
   return (
-    <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-sm">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-bold">Loans</h3>
-        <button onClick={() => { setEditingLoan(undefined); setIsModalOpen(true); }} className="text-sm text-blue-600 font-medium">+ Add</button>
+    <div className="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700">
+      <div className="flex justify-between items-center mb-6">
+        <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+          <TrendingUp className="w-5 h-5 text-blue-600" />
+          Loans
+        </h3>
+        <button 
+          onClick={() => { setEditingLoan(undefined); setIsModalOpen(true); }} 
+          className="flex items-center gap-1 text-sm bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-4 py-2 rounded-full font-medium hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
+        >
+          <Plus className="w-4 h-4" /> Add Loan
+        </button>
       </div>
+      
       {loans.length === 0 ? (
-        <p className="text-gray-500 text-sm">No loans yet.</p>
+        <div className="text-center py-8 text-gray-500 dark:text-gray-400 text-sm">
+          No loans recorded yet.
+        </div>
       ) : (
-        <div className="space-y-4">
-          {loans.map(loan => (
-            <div key={loan.id} className="flex justify-between items-center border-b border-gray-100 dark:border-gray-700 pb-2 last:border-0">
-              <div onClick={() => { setEditingLoan(loan); setIsModalOpen(true); }} className="cursor-pointer">
-                <p className="font-bold text-sm">{loan.name}</p>
-                <p className="text-xs text-gray-500">{formatCurrency(loan.remainingAmount)} / {formatCurrency(loan.totalAmount)} {loan.currency}</p>
-                <p className="text-[10px] text-gray-400">{loan.interestRate}% APR • {loan.termMonths} months</p>
-              </div>
-              <div className="text-right flex items-center gap-2">
-                <div>
-                  <p className="font-bold text-sm">{formatCurrency(loan.installmentAmount)}/mo</p>
-                  <p className="text-[10px] text-gray-400">Due: {loan.dueDate}</p>
-                  <p className={cn("text-[10px] font-bold", loan.status === 'active' ? "text-green-500" : "text-gray-500")}>
-                    {loan.status === 'active' ? 'Active' : 'Paid Off'}
-                  </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {loans.map(loan => {
+            const progress = ((loan.totalAmount - loan.remainingAmount) / loan.totalAmount) * 100;
+            return (
+              <div key={loan.id} className="bg-gray-50 dark:bg-gray-900 p-5 rounded-2xl border border-gray-100 dark:border-gray-800 space-y-3">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="font-bold text-gray-900 dark:text-white">{loan.name}</p>
+                    <p className="text-xs text-gray-500">{loan.paidBy}</p>
+                  </div>
+                  <div className="flex gap-1">
+                    <button onClick={() => { setEditingLoan(loan); setIsModalOpen(true); }} className="p-1.5 text-gray-400 hover:text-blue-600"><Edit2 className="w-4 h-4" /></button>
+                    <button onClick={() => onDelete(loan.id)} className="p-1.5 text-gray-400 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>
+                  </div>
                 </div>
-                <button onClick={() => onDelete(loan.id)} className="text-red-500 text-xs">Delete</button>
+
+                <div className="space-y-1">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Progress</span>
+                    <span className="font-medium">{progress.toFixed(0)}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                    <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${progress}%` }}></div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <p className="text-xs text-gray-500">Remaining</p>
+                    <p className="font-semibold">{formatCurrency(loan.remainingAmount)}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-gray-500">Installment</p>
+                    <p className="font-semibold">{formatCurrency(loan.installmentAmount)}/mo</p>
+                  </div>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
       <LoanModal 
