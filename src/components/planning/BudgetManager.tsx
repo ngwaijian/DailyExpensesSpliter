@@ -127,7 +127,7 @@ export function BudgetManager({ trip, onUpdateTrip }: BudgetManagerProps) {
                 className="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none text-gray-900 dark:text-white"
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Categories</label>
                 <div className="max-h-40 overflow-y-auto p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm">
@@ -158,41 +158,43 @@ export function BudgetManager({ trip, onUpdateTrip }: BudgetManagerProps) {
                   ))}
                 </div>
               </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Period</label>
-                <select
-                  value={period}
-                  onChange={e => setPeriod(e.target.value as any)}
-                  className="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none text-gray-900 dark:text-white"
-                >
-                  <option value="trip">Entire Trip</option>
-                  <option value="monthly">Monthly</option>
-                </select>
-              </div>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Budget Amount</label>
-              <div className="flex gap-2">
-                <input
-                  type="number"
-                  step="0.01"
-                  inputMode="decimal"
-                  value={amount}
-                  onChange={e => setAmount(e.target.value)}
-                  placeholder="0.00"
-                  className="flex-1 p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none text-gray-900 dark:text-white"
-                  required
-                />
-                <select
-                  value={currency}
-                  onChange={e => setCurrency(e.target.value)}
-                  className="w-24 p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none text-gray-900 dark:text-white"
-                >
-                  <option value="MYR">MYR</option>
-                  {trip.exchanges.map(ex => (
-                    <option key={ex.currency} value={ex.currency}>{ex.currency}</option>
-                  ))}
-                </select>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Period</label>
+                  <select
+                    value={period}
+                    onChange={e => setPeriod(e.target.value as any)}
+                    className="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none text-gray-900 dark:text-white"
+                  >
+                    <option value="trip">Entire Trip</option>
+                    <option value="monthly">Monthly</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Budget Amount</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      step="0.01"
+                      inputMode="decimal"
+                      value={amount}
+                      onChange={e => setAmount(e.target.value)}
+                      placeholder="0.00"
+                      className="flex-1 p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none text-gray-900 dark:text-white"
+                      required
+                    />
+                    <select
+                      value={currency}
+                      onChange={e => setCurrency(e.target.value)}
+                      className="w-24 p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none text-gray-900 dark:text-white"
+                    >
+                      <option value="MYR">MYR</option>
+                      {trip.exchanges.map(ex => (
+                        <option key={ex.currency} value={ex.currency}>{ex.currency}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
               </div>
             </div>
             <div className="flex gap-2 pt-2">

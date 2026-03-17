@@ -146,7 +146,7 @@ export function RecurringTransactions({ trip, onUpdateTrip }: RecurringTransacti
                   required
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Category</label>
                   <select
@@ -173,7 +173,7 @@ export function RecurringTransactions({ trip, onUpdateTrip }: RecurringTransacti
                   </select>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Amount</label>
                   <input
@@ -198,7 +198,7 @@ export function RecurringTransactions({ trip, onUpdateTrip }: RecurringTransacti
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Paid By</label>
                   <select
