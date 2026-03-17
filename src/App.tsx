@@ -12,6 +12,7 @@ import { Balances } from './components/dashboard/Balances';
 import { Goals } from './components/dashboard/Goals';
 import { RecurringTransactions } from './components/expenses/RecurringTransactions';
 import { BudgetManager } from './components/planning/BudgetManager';
+import { LoanManager } from './components/dashboard/LoanManager';
 import { ExpenseDetailsModal } from './components/expenses/ExpenseDetailsModal';
 import { ShieldCheck, LayoutGrid, List, Users, RefreshCw, Plus, Globe, Target, RotateCcw, Settings } from 'lucide-react';
 import { cn } from './lib/utils';
@@ -541,6 +542,7 @@ function App() {
             <BudgetManager trip={currentTrip} onUpdateTrip={updateTrip} />
             <Goals trip={currentTrip} onUpdateTrip={updateTrip} />
             <RecurringTransactions trip={currentTrip} onUpdateTrip={updateTrip} />
+            <LoanManager loans={currentTrip.loans || []} />
           </div>
 
           {/* Mobile Only Views */}

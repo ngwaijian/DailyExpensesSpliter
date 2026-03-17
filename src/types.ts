@@ -68,6 +68,17 @@ export interface Budget {
   period: 'trip' | 'monthly';
 }
 
+export interface Loan {
+  id: string;
+  name: string;
+  totalAmount: number;
+  remainingAmount: number;
+  installmentAmount: number;
+  currency: string;
+  dueDate: string;
+  paidBy: string; // The person who took the loan
+}
+
 export interface Trip {
   id: string;
   name: string;
@@ -76,6 +87,7 @@ export interface Trip {
   exchanges: Exchange[];
   goals?: Goal[];
   recurringTransactions?: RecurringTransaction[];
+  loans?: Loan[];
   budgets?: Budget[];
   monthlyBudget?: number;
   categories?: string[];
