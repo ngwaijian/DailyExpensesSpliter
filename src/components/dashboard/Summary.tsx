@@ -178,6 +178,7 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
   // If a specific person is selected, we adjust the totalMYR and categoryTotals to reflect ONLY their involvement
   if (selectedPerson !== 'All') {
     totalMYR = 0;
+    totalIncomeMYR = 0;
     Object.keys(categoryTotals).forEach(cat => categoryTotals[cat] = 0);
 
     trip.expenses.forEach(e => {
@@ -208,8 +209,12 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
       }
 
       if (personShare !== 0) {
-        totalMYR += Math.abs(personShare); // Total involvement
-        categoryTotals[cat] = (categoryTotals[cat] || 0) + Math.abs(personShare);
+        if (e.type === 'income') {
+          totalIncomeMYR += Math.abs(personShare);
+        } else {
+          totalMYR += Math.abs(personShare);
+          categoryTotals[cat] = (categoryTotals[cat] || 0) + Math.abs(personShare);
+        }
       }
     });
   }
@@ -434,11 +439,11 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
-        <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl text-center">
-          <div className="text-xs text-blue-800 dark:text-blue-300 font-medium uppercase tracking-wide mb-1">
+        <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-xl text-center">
+          <div className="text-xs text-red-800 dark:text-red-300 font-medium uppercase tracking-wide mb-1">
             {selectedPerson === 'All' ? t('dash_total_spent') : `${selectedPerson}'s Total`}
           </div>
-          <div className="text-xl font-bold text-blue-900 dark:text-blue-100 break-words" title={formatCurrency(totalMYR)}>{formatCurrency(totalMYR)}</div>
+          <div className="text-xl font-bold text-red-900 dark:text-red-100 break-words" title={formatCurrency(-totalMYR)}>{formatCurrency(-totalMYR)}</div>
         </div>
         <div className="bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-xl text-center">
           <div className="text-xs text-emerald-800 dark:text-emerald-300 font-medium uppercase tracking-wide mb-1">
@@ -448,19 +453,19 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
         </div>
         <div className={cn(
           "p-4 rounded-xl text-center col-span-2 sm:col-span-1",
-          (totalMYR - totalIncomeMYR) > 0 ? "bg-amber-50 dark:bg-amber-900/20" : "bg-emerald-50 dark:bg-emerald-900/20"
+          (totalIncomeMYR - totalMYR) >= 0 ? "bg-emerald-50 dark:bg-emerald-900/20" : "bg-amber-50 dark:bg-amber-900/20"
         )}>
           <div className={cn(
             "text-xs font-medium uppercase tracking-wide mb-1",
-            (totalMYR - totalIncomeMYR) > 0 ? "text-amber-800 dark:text-amber-300" : "text-emerald-800 dark:text-emerald-300"
+            (totalIncomeMYR - totalMYR) >= 0 ? "text-emerald-800 dark:text-emerald-300" : "text-amber-800 dark:text-amber-300"
           )}>
-            {t('dash_net_spent', 'Net Spent')}
+            {t('dash_net_balance', 'Net Balance')}
           </div>
           <div className={cn(
             "text-xl font-bold break-words",
-            (totalMYR - totalIncomeMYR) > 0 ? "text-amber-900 dark:text-amber-100" : "text-emerald-900 dark:text-emerald-100"
-          )} title={formatCurrency(totalMYR - totalIncomeMYR)}>
-            {formatCurrency(totalMYR - totalIncomeMYR)}
+            (totalIncomeMYR - totalMYR) >= 0 ? "text-emerald-900 dark:text-emerald-100" : "text-amber-900 dark:text-amber-100"
+          )} title={formatCurrency(totalIncomeMYR - totalMYR)}>
+            {formatCurrency(totalIncomeMYR - totalMYR)}
           </div>
         </div>
       </div>

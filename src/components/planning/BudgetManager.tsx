@@ -176,6 +176,7 @@ export function BudgetManager({ trip, onUpdateTrip }: BudgetManagerProps) {
                 <input
                   type="number"
                   step="0.01"
+                  inputMode="decimal"
                   value={amount}
                   onChange={e => setAmount(e.target.value)}
                   placeholder="0.00"

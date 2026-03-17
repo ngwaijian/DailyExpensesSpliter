@@ -179,6 +179,7 @@ export function RecurringTransactions({ trip, onUpdateTrip }: RecurringTransacti
                   <input
                     type="number"
                     step="0.01"
+                    inputMode="decimal"
                     value={amount}
                     onChange={e => setAmount(e.target.value)}
                     className="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white"

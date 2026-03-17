@@ -78,6 +78,7 @@ function GoalItem({ goal, trip, onUpdateTrip, onEdit, onDelete, t }: GoalItemPro
           <span className="text-xs text-gray-500 dark:text-gray-400">Manual Entry:</span>
           <input
             type="number"
+            inputMode="decimal"
             value={localAmount}
             onChange={(e) => setLocalAmount(e.target.value)}
             onBlur={handleBlur}
@@ -188,6 +189,7 @@ export function Goals({ trip, onUpdateTrip }: GoalsProps) {
                 <input
                   type="number"
                   step="0.01"
+                  inputMode="decimal"
                   value={targetAmount}
                   onChange={e => setTargetAmount(e.target.value)}
                   className="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white"
@@ -199,6 +201,7 @@ export function Goals({ trip, onUpdateTrip }: GoalsProps) {
                 <input
                   type="number"
                   step="0.01"
+                  inputMode="decimal"
                   value={currentAmount}
                   onChange={e => setCurrentAmount(e.target.value)}
                   className="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white"

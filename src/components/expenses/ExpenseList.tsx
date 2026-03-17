@@ -190,18 +190,6 @@ export function ExpenseList({ trip, onEdit, onView, onDelete, lastUpdatedId, onU
           </button>
         )}
         <button
-          onClick={() => setShowCategoryManager(!showCategoryManager)}
-          className={cn(
-            "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors",
-            showCategoryManager
-              ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-              : 'bg-white text-gray-600 dark:bg-gray-800 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
-          )}
-        >
-          <Settings className="w-4 h-4" />
-          {t('set_categories')}
-        </button>
-        <button
           onClick={() => setShowFilters(!showFilters)}
           className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
             showFilters || activeFilterCount > 0

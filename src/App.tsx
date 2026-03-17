@@ -155,12 +155,16 @@ function App() {
       if (!isNaN(parsedAmount)) {
         const paidBy = currentTrip.users.length > 0 ? currentTrip.users[0] : 'Me';
         const splitAmong = currentTrip.users.length > 0 ? currentTrip.users : ['Me'];
+        
+        // Fix: If shortcut passes multiple categories (comma separated), take only the first one
+        const cleanCategory = category ? category.split(',')[0].trim() : '📝 General / Other';
+
         const newExpense = {
           id: Date.now().toString(),
-          desc: desc || category || 'Quick Add',
+          desc: desc || cleanCategory || 'Quick Add',
           amountOriginal: parsedAmount,
           currency: currency || 'MYR',
-          category: category || '📝 General / Other',
+          category: cleanCategory,
           date: new Date().toISOString(),
           paidBy,
           splitAmong,
