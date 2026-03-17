@@ -441,24 +441,24 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-colors duration-200">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-800 dark:text-white flex items-center gap-2">
-          <TrendingUp className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+    <div className="bg-white dark:bg-gray-800 rounded-[2rem] shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-colors duration-200">
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest flex items-center gap-2">
+          <TrendingUp className="w-4 h-4" />
           {t('dash_summary')}
         </h3>
         
         <div className="relative" ref={exportMenuRef}>
           <button
             onClick={() => setShowExportMenu(!showExportMenu)}
-            className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl transition-all"
             title={t('dash_export')}
           >
             <Download className="w-5 h-5" />
           </button>
           
           {showExportMenu && (
-            <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden z-20 animate-in fade-in slide-in-from-top-2">
+            <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden z-20 animate-in fade-in slide-in-from-top-2">
               <button
                 onClick={exportPDF}
                 disabled={isExporting}
@@ -479,48 +479,41 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
-        <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-xl text-center">
-          <div className="text-xs text-red-800 dark:text-red-300 font-medium uppercase tracking-wide mb-1">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        <div className="bg-gray-50/50 dark:bg-gray-900/20 p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50">
+          <div className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-widest mb-2">
             {selectedPerson === 'All' ? t('dash_total_spent') : `${selectedPerson}'s Total`}
           </div>
-          <div className="text-xl font-bold text-red-900 dark:text-red-100 break-words" title={formatCurrency(-totalMYR)}>{formatCurrency(-totalMYR)}</div>
+          <div className="text-2xl font-black text-gray-900 dark:text-white" title={formatCurrency(-totalMYR)}>{formatCurrency(-totalMYR)}</div>
         </div>
-        <div className="bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-xl text-center">
-          <div className="text-xs text-emerald-800 dark:text-emerald-300 font-medium uppercase tracking-wide mb-1">
+        <div className="bg-gray-50/50 dark:bg-gray-900/20 p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50">
+          <div className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-widest mb-2">
             {t('dash_total_income', 'Total Income')}
           </div>
-          <div className="text-xl font-bold text-emerald-900 dark:text-emerald-100 break-words" title={formatCurrency(totalIncomeMYR)}>{formatCurrency(totalIncomeMYR)}</div>
+          <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400" title={formatCurrency(totalIncomeMYR)}>{formatCurrency(totalIncomeMYR)}</div>
         </div>
-        <div className={cn(
-          "p-4 rounded-xl text-center col-span-2 sm:col-span-1",
-          (totalIncomeMYR - totalMYR) >= 0 ? "bg-emerald-50 dark:bg-emerald-900/20" : "bg-amber-50 dark:bg-amber-900/20"
-        )}>
-          <div className={cn(
-            "text-xs font-medium uppercase tracking-wide mb-1",
-            (totalIncomeMYR - totalMYR) >= 0 ? "text-emerald-800 dark:text-emerald-300" : "text-amber-800 dark:text-amber-300"
-          )}>
+        <div className="bg-gray-50/50 dark:bg-gray-900/20 p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50">
+          <div className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-widest mb-2">
             {t('dash_net_balance', 'Net Balance')}
           </div>
           <div className={cn(
-            "text-xl font-bold break-words",
-            (totalIncomeMYR - totalMYR) >= 0 ? "text-emerald-900 dark:text-emerald-100" : "text-amber-900 dark:text-amber-100"
+            "text-2xl font-black",
+            (totalIncomeMYR - totalMYR) >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"
           )} title={formatCurrency(totalIncomeMYR - totalMYR)}>
             {formatCurrency(totalIncomeMYR - totalMYR)}
           </div>
         </div>
       </div>
 
-      <div className="mb-6">
-        <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wider">Filter by Person</label>
+      <div className="mb-8">
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setSelectedPerson('All')}
             className={cn(
-              "px-3 py-1.5 text-xs font-medium rounded-full transition-all",
+              "px-4 py-2 text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all",
               selectedPerson === 'All'
-                ? "bg-blue-600 text-white shadow-md"
-                : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-lg"
+                : "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
             )}
           >
             All People
@@ -530,10 +523,10 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
               key={user}
               onClick={() => setSelectedPerson(user)}
               className={cn(
-                "px-3 py-1.5 text-xs font-medium rounded-full transition-all",
+                "px-4 py-2 text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all",
                 selectedPerson === user
-                  ? "bg-blue-600 text-white shadow-md"
-                  : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                  ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-lg"
+                  : "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
               )}
             >
               {user}
@@ -685,13 +678,13 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
               {sortedCats.slice(0, 6).map(([cat, amt], idx) => (
                 <div key={cat} className="space-y-1">
                   <div className="flex justify-between text-xs">
-                    <div className="flex items-center gap-2">
-                      <span className="w-6 h-6 flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-lg text-sm">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <span className="w-6 h-6 flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-lg text-sm shrink-0">
                         {cat.split(' ')[0]}
                       </span>
-                      <span className="font-medium text-gray-700 dark:text-gray-300">{t(`cat_${cat}`, cat).split(' ').slice(1).join(' ') || t(`cat_${cat}`, cat)}</span>
+                      <span className="font-medium text-gray-700 dark:text-gray-300 truncate">{t(`cat_${cat}`, cat).split(' ').slice(1).join(' ') || t(`cat_${cat}`, cat)}</span>
                     </div>
-                    <span className="font-bold text-gray-900 dark:text-white">{formatCurrency(amt)}</span>
+                    <span className="font-bold text-gray-900 dark:text-white shrink-0 ml-2">{formatCurrency(amt)}</span>
                   </div>
                   <div className="h-1.5 w-full bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
                     <div 

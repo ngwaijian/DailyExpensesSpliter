@@ -312,7 +312,7 @@ export function ExpenseList({ trip, onEdit, onView, onDelete, lastUpdatedId, onU
           <p className="text-gray-400 dark:text-gray-500">{t('list_no_match')}</p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="bg-white dark:bg-gray-800 rounded-[2rem] shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
           {filteredAndSortedExpenses.map((exp, index) => {
             const rate = rates[exp.currency] || exp.rate || 1;
             const myrAmount = exp.amountOriginal * rate;
@@ -336,13 +336,17 @@ export function ExpenseList({ trip, onEdit, onView, onDelete, lastUpdatedId, onU
             return (
               <React.Fragment key={exp.id}>
                 {showDateHeader && (
-                  <div className="sticky top-0 z-10 bg-gray-50/95 dark:bg-gray-900/95 backdrop-blur-sm py-2 px-1 text-sm font-medium text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center">
-                    <span>{new Date(exp.date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                  <div className="bg-gray-50/50 dark:bg-gray-900/30 px-6 py-3 flex justify-between items-center border-b border-gray-100 dark:border-gray-700/50">
+                    <span className="text-[11px] uppercase tracking-wider font-bold text-gray-400 dark:text-gray-500">
+                      {new Date(exp.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+                    </span>
                     <span className={cn(
-                      "font-semibold",
-                      dailyNet >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"
+                      "text-[11px] font-bold px-2 py-0.5 rounded-full",
+                      dailyNet >= 0 
+                        ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400" 
+                        : "bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400"
                     )}>
-                      {dailyNet >= 0 ? t('dash_net_balance', 'Net') : t('list_total', 'Total')} {formatCurrency(dailyNet)}
+                      {formatCurrency(dailyNet)}
                     </span>
                   </div>
                 )}
@@ -350,93 +354,75 @@ export function ExpenseList({ trip, onEdit, onView, onDelete, lastUpdatedId, onU
                   id={`expense-${exp.id}`}
                   onClick={() => onView(exp.id)}
                   className={cn(
-                    "group p-4 rounded-3xl shadow-sm border transition-all relative duration-500 cursor-pointer overflow-hidden",
-                    highlightedId === exp.id
-                      ? "bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700 ring-2 ring-blue-500/50"
-                      : "bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700 hover:shadow-md"
+                    "group px-6 py-4 flex items-center gap-4 transition-colors relative cursor-pointer",
+                    index !== filteredAndSortedExpenses.length - 1 && !filteredAndSortedExpenses[index + 1]?.date.startsWith(getDatePart(exp.date)) && "border-b border-gray-50 dark:border-gray-700/50",
+                    index !== filteredAndSortedExpenses.length - 1 && "border-b border-gray-50 dark:border-gray-700/30",
+                    highlightedId === exp.id ? "bg-blue-50/50 dark:bg-blue-900/10" : "hover:bg-gray-50/50 dark:hover:bg-gray-700/20"
                   )}
                 >
+                  {/* Minimal Category Icon */}
+                  <div className={cn(
+                    "w-10 h-10 shrink-0 rounded-xl flex items-center justify-center text-xl transition-colors",
+                    exp.type === 'sponsorship' ? "bg-amber-50 dark:bg-amber-900/20" :
+                    exp.type === 'settlement' ? "bg-blue-50 dark:bg-blue-900/20" :
+                    "bg-gray-50 dark:bg-gray-700/50"
+                  )}>
+                    {exp.type === 'sponsorship' ? '🎁' : 
+                     exp.type === 'settlement' ? '🤝' : 
+                     exp.category.split(' ')[0]}
+                  </div>
 
-
-                  <div className="flex items-center gap-4">
-                    {/* Category Icon */}
-                    <div className={cn(
-                      "w-12 h-12 shrink-0 rounded-2xl flex items-center justify-center text-2xl shadow-sm border",
-                      exp.type === 'sponsorship' ? "bg-amber-50 border-amber-100" :
-                      exp.type === 'settlement' ? "bg-blue-50 border-blue-100" :
-                      "bg-gray-50 dark:bg-gray-700 border-gray-100 dark:border-gray-600"
-                    )}>
-                      {exp.type === 'sponsorship' ? '🎁' : 
-                       exp.type === 'settlement' ? '🤝' : 
-                       exp.category.split(' ')[0]}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <h4 className="font-semibold text-gray-900 dark:text-white truncate text-sm">{exp.desc}</h4>
+                      {exp.isSettled && exp.type !== 'settlement' && (
+                        <span className="text-[8px] px-1 rounded bg-gray-100 dark:bg-gray-700 text-gray-500">FIXED</span>
+                      )}
                     </div>
-
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                        <h4 className="font-bold text-gray-900 dark:text-white truncate">{exp.desc}</h4>
-                        {exp.isSettled && exp.type !== 'settlement' && (
-                          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600">
-                            ✅
+                    
+                    <div className="flex items-center gap-1.5 text-[10px] text-gray-400 dark:text-gray-500">
+                      <span className="text-blue-500 dark:text-blue-400 font-medium">{exp.paidBy}</span>
+                      <span>•</span>
+                      <span className="truncate">{t(`cat_${exp.category}`, exp.category).replace(/^[^\s]+\s/, '')}</span>
+                      <span>•</span>
+                      <span>{new Date(exp.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}</span>
+                      {exp.isSponsored && (
+                        <>
+                          <span>•</span>
+                          <span className="text-amber-500 flex items-center gap-0.5">
+                            <Gift size={10} /> {exp.sponsoredBy || 'Sponsor'}
                           </span>
-                        )}
-                      </div>
-                      
-                      <div className="flex items-center gap-2 text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">
-                        <span className="font-medium text-blue-600 dark:text-blue-400">{exp.paidBy}</span>
-                        <span>•</span>
-                        <span>{t(`cat_${exp.category}`, exp.category).split(' ').slice(1).join(' ') || t(`cat_${exp.category}`, exp.category)}</span>
-                        <span>•</span>
-                        <span>{new Date(exp.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                        {exp.isSponsored && (
-                          <>
-                            <span>•</span>
-                            <span className="flex items-center gap-0.5 text-amber-600 dark:text-amber-400 font-medium">
-                              <Gift className="w-3 h-3" /> Sponsored by {exp.sponsoredBy || 'Sponsor'}
-                            </span>
-                          </>
-                        )}
-                        {exp.location && (
-                          <>
-                            <span>•</span>
-                            <span className="flex items-center gap-0.5 text-blue-500 truncate max-w-[100px]">
-                              <MapPin className="w-3 h-3" /> {exp.location.name}
-                            </span>
-                          </>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="text-right shrink-0">
-                      <div className="font-bold text-gray-900 dark:text-white text-lg">{formatCurrency(myrAmount)}</div>
-                      <div className="text-[10px] text-gray-400 dark:text-gray-500">
-                        {exp.currency} {exp.amountOriginal.toFixed(2)}
-                      </div>
+                        </>
+                      )}
                     </div>
                   </div>
 
-                  {/* Expandable/Hover Actions (Hidden by default, shown on hover or in view) */}
-                  <div className="mt-3 pt-3 border-t border-gray-50 dark:border-gray-700 flex justify-between items-center">
-                    <div className="text-[10px] text-gray-400 dark:text-gray-500 italic truncate max-w-[70%]">
-                      {exp.memo || (exp.type !== 'settlement' ? `${exp.splitAmong.join(', ')} (${exp.splitAmong.length})` : '')}
+                  <div className="text-right shrink-0 flex flex-col items-end gap-1">
+                    <div className={cn(
+                      "font-bold text-sm",
+                      exp.type === 'income' ? "text-emerald-600 dark:text-emerald-400" : "text-gray-900 dark:text-white"
+                    )}>
+                      {exp.type === 'income' ? '+' : ''}{formatCurrency(myrAmount)}
                     </div>
-                    <div className="flex gap-1">
+                    {exp.currency !== 'MYR' && (
+                      <div className="text-[9px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-tight">
+                        {exp.amountOriginal.toFixed(2)} {exp.currency}
+                      </div>
+                    )}
+                    
+                    {/* Subtle Actions */}
+                    <div className="flex gap-1 mt-1">
                       <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onEdit(exp.id);
-                        }} 
-                        className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        onClick={(e) => { e.stopPropagation(); onEdit(exp.id); }} 
+                        className="p-1 text-gray-300 hover:text-blue-500 transition-colors"
                       >
-                        <Edit2 className="w-4 h-4" />
+                        <Edit2 size={12} />
                       </button>
                       <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onDelete(exp.id);
-                        }} 
-                        className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        onClick={(e) => { e.stopPropagation(); onDelete(exp.id); }} 
+                        className="p-1 text-gray-300 hover:text-red-500 transition-colors"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 size={12} />
                       </button>
                     </div>
                   </div>
