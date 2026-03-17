@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { Trip } from '../../types';
+import { Group } from '../../types';
 import { Users, Trash2, Plus, Edit2, Check, X } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 interface PeopleWalletProps {
-  trip: Trip;
+  group: Group;
   onAddPerson: (name: string) => void;
   onEditPerson: (oldName: string, newName: string) => void;
   onRemovePerson: (name: string) => void;
@@ -12,7 +12,7 @@ interface PeopleWalletProps {
   onRemoveExchange: (id: string) => void;
 }
 
-export function PeopleWallet({ trip, onAddPerson, onEditPerson, onRemovePerson, onAddExchange, onRemoveExchange }: PeopleWalletProps) {
+export function PeopleWallet({ group, onAddPerson, onEditPerson, onRemovePerson, onAddExchange, onRemoveExchange }: PeopleWalletProps) {
   const { t } = useLanguage();
   const [newPerson, setNewPerson] = useState('');
   const [editingUser, setEditingUser] = useState<string | null>(null);

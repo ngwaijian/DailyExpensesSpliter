@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
-import { Trip, Goal } from '../../types';
+import { Group, Goal } from '../../types';
 import { Target, Plus, Edit2, Trash2, CheckCircle2 } from 'lucide-react';
 import { formatCurrency } from '../../utils/currency';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { cn } from '../../lib/utils';
 
 interface GoalsProps {
-  trip: Trip;
-  onUpdateTrip: (trip: Trip) => void;
+  group: Group;
+  onUpdateGroup: (group: Group) => void;
 }
 
-export function Goals({ trip, onUpdateTrip }: GoalsProps) {
+export function Goals({ group, onUpdateGroup }: GoalsProps) {
   const { t } = useLanguage();
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -19,7 +19,7 @@ export function Goals({ trip, onUpdateTrip }: GoalsProps) {
   const [currentAmount, setCurrentAmount] = useState('');
   const [currency, setCurrency] = useState('MYR');
 
-  const goals = trip.goals || [];
+  const goals = group.goals || [];
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,7 +40,7 @@ export function Goals({ trip, onUpdateTrip }: GoalsProps) {
       newGoals = [...goals, newGoal];
     }
 
-    onUpdateTrip({ ...trip, goals: newGoals });
+    onUpdateGroup({ ...group, goals: newGoals });
     resetForm();
   };
 
@@ -55,7 +55,7 @@ export function Goals({ trip, onUpdateTrip }: GoalsProps) {
 
   const handleDelete = (id: string) => {
     if (confirm(t('app_delete_goal_confirm') || 'Delete this goal?')) {
-      onUpdateTrip({ ...trip, goals: goals.filter(g => g.id !== id) });
+      onUpdateGroup({ ...group, goals: goals.filter(g => g.id !== id) });
     }
   };
 

@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
-import { Trip, Budget, CATEGORIES } from '../../types';
+import { Group, Budget, CATEGORIES } from '../../types';
 import { Wallet, Plus, Edit2, Trash2, AlertCircle, PieChart, TrendingUp } from 'lucide-react';
 import { formatCurrency } from '../../utils/currency';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { cn } from '../../lib/utils';
 
 interface BudgetManagerProps {
-  trip: Trip;
-  onUpdateTrip: (trip: Trip) => void;
+  group: Group;
+  onUpdateGroup: (group: Group) => void;
 }
 
-export function BudgetManager({ trip, onUpdateTrip }: BudgetManagerProps) {
+export function BudgetManager({ group, onUpdateGroup }: BudgetManagerProps) {
   const { t } = useLanguage();
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);

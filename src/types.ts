@@ -63,10 +63,10 @@ export interface Budget {
   categories: string[];
   amount: number;
   currency: string;
-  period: 'trip' | 'monthly';
+  period: 'group' | 'monthly';
 }
 
-export interface Trip {
+export interface Group {
   id: string;
   name: string;
   users: string[]; // names
@@ -77,11 +77,11 @@ export interface Trip {
   budgets?: Budget[];
   monthlyBudget?: number;
   categories?: string[];
-  gistId?: string; // For syncing this specific trip
+  syncId?: string; // For syncing this specific group
 }
 
 export interface AppData {
-  trips: Trip[];
+  groups: Group[];
 }
 
 export const CATEGORIES = [

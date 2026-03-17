@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useStore } from './hooks/useStore';
 import { useTheme } from './hooks/useTheme';
 import { useLanguage } from './contexts/LanguageContext';
-import { TripSelector } from './components/trip/TripSelector';
+import { GroupSelector } from './components/trip/GroupSelector';
 import { SettingsModal } from './components/settings/SettingsModal';
 import { ExpenseForm } from './components/expenses/ExpenseForm';
 import { ExpenseList } from './components/expenses/ExpenseList';
@@ -18,11 +18,11 @@ import { cn } from './lib/utils';
 
 function App() {
   const { 
-    appData, currentTrip, currentTripId, setCurrentTripId, 
-    addTrip, deleteTrip, renameTrip, updateTrip,
+    appData, currentGroup, currentGroupId, setCurrentGroupId, 
+    addGroup, deleteGroup, renameGroup, updateGroup,
     isSyncing, needsSync, syncError, isOnline,
     githubToken, setGithubToken, 
-    fetchFromCloud, pushToCloud, createGistForTrip, fetchAllTripsFromCloud
+    fetchFromCloud, pushToCloud, createGistForGroup, fetchAllGroupsFromCloud
   } = useStore();
 
   const { theme, setTheme, resolvedTheme } = useTheme();
@@ -62,7 +62,7 @@ function App() {
   };
 
   const handleAddExpense = (data: any) => {
-    const newExpenses = [...currentTrip.expenses];
+    const newExpenses = [...currentGroup.expenses];
     let updatedId = '';
     if (editingExpenseId) {
       const idx = newExpenses.findIndex(e => e.id === editingExpenseId);
@@ -74,7 +74,7 @@ function App() {
       updatedId = Date.now().toString();
       newExpenses.push({ id: updatedId, ...data });
     }
-    updateTrip({ ...currentTrip, expenses: newExpenses });
+    updateGroup({ ...currentGroup, expenses: newExpenses });
     setEditingExpenseId(null);
     setLastUpdatedId(updatedId);
     
@@ -87,29 +87,29 @@ function App() {
 
   const handleDeleteExpense = (id: string) => {
     if (!confirm(t('app_delete_expense_confirm'))) return;
-    updateTrip({ 
-      ...currentTrip, 
-      expenses: currentTrip.expenses.filter(e => e.id !== id) 
+    updateGroup({ 
+      ...currentGroup, 
+      expenses: currentGroup.expenses.filter(e => e.id !== id) 
     });
   };
 
   const handleAddPerson = (name: string) => {
-    if (currentTrip.users.includes(name)) return;
-    updateTrip({ ...currentTrip, users: [...currentTrip.users, name] });
+    if (currentGroup.users.includes(name)) return;
+    updateGroup({ ...currentGroup, users: [...currentGroup.users, name] });
   };
 
   const handleEditPerson = (oldName: string, newName: string) => {
     const trimmed = newName.trim();
     if (!trimmed || trimmed === oldName) return;
-    if (currentTrip.users.includes(trimmed)) {
+    if (currentGroup.users.includes(trimmed)) {
       alert(t('app_person_exists'));
       return;
     }
 
-    updateTrip({
-      ...currentTrip,
-      users: currentTrip.users.map(u => u === oldName ? trimmed : u),
-      expenses: currentTrip.expenses.map(e => ({
+    updateGroup({
+      ...currentGroup,
+      users: currentGroup.users.map(u => u === oldName ? trimmed : u),
+      expenses: currentGroup.expenses.map(e => ({
         ...e,
         paidBy: e.paidBy === oldName ? trimmed : e.paidBy,
         splitAmong: e.splitAmong.map(u => u === oldName ? trimmed : u),
@@ -120,10 +120,10 @@ function App() {
 
   const handleRemovePerson = (name: string) => {
     if (!confirm(`${t('app_remove_person_confirm')}${name}?`)) return;
-    updateTrip({ 
-      ...currentTrip, 
-      users: currentTrip.users.filter(u => u !== name),
-      expenses: currentTrip.expenses.map(e => ({
+    updateGroup({ 
+      ...currentGroup, 
+      users: currentGroup.users.filter(u => u !== name),
+      expenses: currentGroup.expenses.map(e => ({
         ...e,
         splitAmong: e.splitAmong.filter(u => u !== name)
       }))
@@ -131,9 +131,9 @@ function App() {
   };
 
   const handleAddExchange = (currency: string, foreignAmount: number, myrSpent: number) => {
-    updateTrip({
-      ...currentTrip,
-      exchanges: [...currentTrip.exchanges, {
+    updateGroup({
+      ...currentGroup,
+      exchanges: [...currentGroup.exchanges, {
         id: Date.now().toString(),
         currency, foreignAmount, myrSpent, date: new Date().toISOString()
       }]
@@ -141,9 +141,9 @@ function App() {
   };
 
   const handleRemoveExchange = (id: string) => {
-    updateTrip({
-      ...currentTrip,
-      exchanges: currentTrip.exchanges.filter(e => e.id !== id)
+    updateGroup({
+      ...currentGroup,
+      exchanges: currentGroup.exchanges.filter(e => e.id !== id)
     });
   };
 
@@ -172,30 +172,30 @@ function App() {
           </div>
 
           <TripSelector 
-            trips={appData.trips}
-            currentTripId={currentTripId}
-            onSelect={setCurrentTripId}
+            groups={appData.groups}
+            currentGroupId={currentGroupId}
+            onSelect={setCurrentGroupId}
             onAdd={() => {
-              const name = prompt(t('app_new_trip_prompt'));
-              if (name) addTrip(name);
+              const name = prompt(t('app_new_group_prompt'));
+              if (name) addGroup(name);
             }}
             onDelete={() => {
-              if (confirm(t('app_delete_trip_confirm'))) deleteTrip(currentTripId);
+              if (confirm(t('app_delete_group_confirm'))) deleteGroup(currentGroupId);
             }}
             onRename={() => {
-              const name = prompt(t('app_rename_trip_prompt'), currentTrip.name);
-              if (name) renameTrip(currentTripId, name);
+              const name = prompt(t('app_rename_group_prompt'), currentGroup.name);
+              if (name) renameGroup(currentGroupId, name);
             }}
           />
 
           <div className="flex items-center gap-2">
             <button
               onClick={fetchFromCloud}
-              disabled={isSyncing || !isOnline || !currentTrip.gistId}
+              disabled={isSyncing || !isOnline || !currentGroup.gistId}
               className={cn(
                 "p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors",
                 isSyncing && "animate-spin text-blue-500",
-                !currentTrip.gistId && "opacity-50 cursor-not-allowed"
+                !currentGroup.gistId && "opacity-50 cursor-not-allowed"
               )}
               title={t('app_sync_data')}
             >
@@ -240,7 +240,7 @@ function App() {
               className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg relative transition-colors"
             >
               <Settings className="w-6 h-6" />
-              {needsSync && isOnline && currentTrip.gistId && <span className="absolute top-2 right-2 w-2 h-2 bg-amber-500 rounded-full" />}
+              {needsSync && isOnline && currentGroup.gistId && <span className="absolute top-2 right-2 w-2 h-2 bg-amber-500 rounded-full" />}
               {!isOnline && <span className="absolute top-2 right-2 w-2 h-2 bg-gray-400 rounded-full border border-white dark:border-gray-800" />}
             </button>
           </div>
@@ -253,7 +253,7 @@ function App() {
           {/* Desktop: Left Sidebar (People & Wallet) */}
           <div className="hidden lg:block lg:col-span-3">
             <PeopleWallet 
-              trip={currentTrip} 
+              group={currentGroup} 
               onAddPerson={handleAddPerson}
               onEditPerson={handleEditPerson}
               onRemovePerson={handleRemovePerson}
@@ -269,14 +269,14 @@ function App() {
           )}>
             <div key={editingExpenseId || 'new'} ref={formRef}>
               <ExpenseForm 
-                trip={currentTrip} 
+                group={currentGroup} 
                 onSubmit={handleAddExpense}
                 onCancel={() => setEditingExpenseId(null)}
-                initialData={editingExpenseId ? currentTrip.expenses.find(e => e.id === editingExpenseId) : undefined}
+                initialData={editingExpenseId ? currentGroup.expenses.find(e => e.id === editingExpenseId) : undefined}
               />
             </div>
             <ExpenseList 
-              trip={currentTrip}
+              group={currentGroup}
               onEdit={handleEditExpenseId}
               onView={setViewingExpenseId}
               onDelete={handleDeleteExpense}
@@ -286,32 +286,32 @@ function App() {
 
           {/* Desktop: Right Sidebar (Stats & Planning) */}
           <div className="hidden lg:block lg:col-span-3 space-y-6">
-            <Summary trip={currentTrip} onUpdateTrip={updateTrip} />
-            <Balances trip={currentTrip} />
-            <BudgetManager trip={currentTrip} onUpdateTrip={updateTrip} />
-            <Goals trip={currentTrip} onUpdateTrip={updateTrip} />
-            <RecurringTransactions trip={currentTrip} onUpdateTrip={updateTrip} />
+            <Summary group={currentGroup} onUpdateGroup={updateGroup} />
+            <Balances group={currentGroup} />
+            <BudgetManager group={currentGroup} onUpdateGroup={updateGroup} />
+            <Goals group={currentGroup} onUpdateGroup={updateGroup} />
+            <RecurringTransactions group={currentGroup} onUpdateGroup={updateGroup} />
           </div>
 
           {/* Mobile Only Views */}
           <div className={cn("lg:hidden", activeTab === 'dashboard' ? 'block' : 'hidden')}>
             <div className="space-y-6">
-              <Summary trip={currentTrip} onUpdateTrip={updateTrip} />
-              <Balances trip={currentTrip} />
+              <Summary group={currentGroup} onUpdateGroup={updateGroup} />
+              <Balances group={currentGroup} />
             </div>
           </div>
 
           <div className={cn("lg:hidden", activeTab === 'planning' ? 'block' : 'hidden')}>
             <div className="space-y-6">
-              <BudgetManager trip={currentTrip} onUpdateTrip={updateTrip} />
-              <Goals trip={currentTrip} onUpdateTrip={updateTrip} />
-              <RecurringTransactions trip={currentTrip} onUpdateTrip={updateTrip} />
+              <BudgetManager group={currentGroup} onUpdateGroup={updateGroup} />
+              <Goals group={currentGroup} onUpdateGroup={updateGroup} />
+              <RecurringTransactions group={currentGroup} onUpdateGroup={updateGroup} />
             </div>
           </div>
 
           <div className={cn("lg:hidden", activeTab === 'people' ? 'block' : 'hidden')}>
             <PeopleWallet 
-              trip={currentTrip} 
+              group={currentGroup} 
               onAddPerson={handleAddPerson}
               onEditPerson={handleEditPerson}
               onRemovePerson={handleRemovePerson}
@@ -385,12 +385,12 @@ function App() {
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
         githubToken={githubToken} setGithubToken={setGithubToken}
-        currentTrip={currentTrip}
-        onUpdateTrip={updateTrip}
-        createGistForTrip={createGistForTrip}
+        currentGroup={currentGroup}
+        onUpdateGroup={updateGroup}
+        createGistForGroup={createGistForGroup}
         onSync={fetchFromCloud}
         onPush={pushToCloud}
-        fetchAllTripsFromCloud={fetchAllTripsFromCloud}
+        fetchAllGroupsFromCloud={fetchAllGroupsFromCloud}
         isSyncing={isSyncing}
         needsSync={needsSync}
         syncError={syncError}

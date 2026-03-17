@@ -1,18 +1,18 @@
 import React, { useState } from 'react';
-import { Trip, RecurringTransaction, CATEGORIES } from '../../types';
+import { Group, RecurringTransaction, CATEGORIES } from '../../types';
 import { Repeat, Plus, Edit2, Trash2, Calendar, Tag } from 'lucide-react';
 import { formatCurrency } from '../../utils/currency';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { cn } from '../../lib/utils';
 
 interface RecurringTransactionsProps {
-  trip: Trip;
-  onUpdateTrip: (trip: Trip) => void;
+  group: Group;
+  onUpdateGroup: (group: Group) => void;
 }
 
-export function RecurringTransactions({ trip, onUpdateTrip }: RecurringTransactionsProps) {
+export function RecurringTransactions({ group, onUpdateGroup }: RecurringTransactionsProps) {
   const { t } = useLanguage();
-  const tripCategories = trip.categories || CATEGORIES;
+  const tripCategories = group.categories || CATEGORIES;
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
