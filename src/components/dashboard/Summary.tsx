@@ -585,7 +585,11 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
                 <div key={budget.id} className="space-y-1.5">
                   <div className="flex justify-between text-[10px]">
                     <span className="font-bold text-gray-600 dark:text-gray-400">
-                      {(budget.categories || []).includes('All') ? 'Total' : (budget.categories || []).map(c => c.split(' ')[0]).join(', ')} ({budget.period})
+                      {budget.name || (
+                        (budget.categories || []).includes('All') 
+                          ? 'Total' 
+                          : (budget.categories || []).map(c => c.split(' ')[0]).join(', ')
+                      )} ({budget.period})
                     </span>
                     <span className={cn("font-bold", isOver ? "text-red-500" : "text-gray-500")}>
                       {formatCurrency(spent)} / {formatCurrency(budget.amount)}

@@ -161,12 +161,17 @@ function App() {
         const rawCategory = category ? category.split(',')[0].trim() : '';
         
         // Fuzzy match the category against the official list
+        const tripCategories = currentTrip.categories || CATEGORIES;
         let cleanCategory = '📝 Other';
         if (rawCategory) {
-          const match = CATEGORIES.find(c => 
-            c.toLowerCase().includes(rawCategory.toLowerCase()) || 
-            rawCategory.toLowerCase().includes(c.toLowerCase().replace(/^[^\s]+\s/, ''))
-          );
+          const normalizedRaw = rawCategory.toLowerCase();
+          const match = tripCategories.find(c => {
+            const lowerC = c.toLowerCase();
+            const nameOnly = lowerC.replace(/^[^\s]+\s/, '');
+            return lowerC.includes(normalizedRaw) || 
+                   normalizedRaw.includes(nameOnly) ||
+                   nameOnly.includes(normalizedRaw);
+          });
           cleanCategory = match || rawCategory;
         }
 
@@ -205,7 +210,18 @@ function App() {
     }
     
     if (category) {
-      setShortcutCategory(category);
+      // Apply fuzzy matching for manual entry too
+      const rawCategory = category.split(',')[0].trim();
+      const tripCategories = currentTrip.categories || CATEGORIES;
+      const normalizedRaw = rawCategory.toLowerCase();
+      const match = tripCategories.find(c => {
+        const lowerC = c.toLowerCase();
+        const nameOnly = lowerC.replace(/^[^\s]+\s/, '');
+        return lowerC.includes(normalizedRaw) || 
+               normalizedRaw.includes(nameOnly) ||
+               nameOnly.includes(normalizedRaw);
+      });
+      setShortcutCategory(match || rawCategory);
       shouldClear = true;
     }
 
