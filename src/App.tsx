@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useStore } from './hooks/useStore';
+import { CATEGORIES } from './types';
 import { useTheme } from './hooks/useTheme';
 import { useLanguage } from './contexts/LanguageContext';
 import { TripSelector, PeopleWallet } from './components/trip-management';
@@ -157,7 +158,17 @@ function App() {
         const splitAmong = currentTrip.users.length > 0 ? currentTrip.users : ['Me'];
         
         // Fix: If shortcut passes multiple categories (comma separated), take only the first one
-        const cleanCategory = category ? category.split(',')[0].trim() : '📝 General / Other';
+        const rawCategory = category ? category.split(',')[0].trim() : '';
+        
+        // Fuzzy match the category against the official list
+        let cleanCategory = '📝 Other';
+        if (rawCategory) {
+          const match = CATEGORIES.find(c => 
+            c.toLowerCase().includes(rawCategory.toLowerCase()) || 
+            rawCategory.toLowerCase().includes(c.toLowerCase().replace(/^[^\s]+\s/, ''))
+          );
+          cleanCategory = match || rawCategory;
+        }
 
         const newExpense = {
           id: Date.now().toString(),
