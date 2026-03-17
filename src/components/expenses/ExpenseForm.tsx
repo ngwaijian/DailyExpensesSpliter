@@ -581,6 +581,7 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData }: ExpenseFo
               <div className="relative flex-1 flex items-center">
                 <DollarSign className="absolute left-3 w-4 h-4 text-gray-400" />
                 <input 
+                  id="amount-input"
                   type="text" 
                   inputMode="decimal"
                   pattern="[0-9]*\.?[0-9]*"

@@ -12,8 +12,95 @@ import { Goals } from './components/dashboard/Goals';
 import { RecurringTransactions } from './components/expenses/RecurringTransactions';
 import { BudgetManager } from './components/planning/BudgetManager';
 import { ExpenseDetailsModal } from './components/expenses/ExpenseDetailsModal';
-import { Settings, LayoutGrid, List, Users, Sun, Moon, Monitor, RefreshCw, Plus, Globe, Target } from 'lucide-react';
+import { ShieldCheck, LayoutGrid, List, Users, RefreshCw, Plus, Globe, Target, RotateCcw, Palette } from 'lucide-react';
 import { cn } from './lib/utils';
+
+interface PreferencesModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  theme: 'light' | 'dark' | 'system';
+  setTheme: (theme: 'light' | 'dark' | 'system') => void;
+}
+
+function PreferencesModal({ isOpen, onClose, theme, setTheme }: PreferencesModalProps) {
+  const { language, setLanguage, t } = useLanguage();
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl w-full max-w-sm overflow-hidden transition-colors">
+        <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+            <Palette className="w-5 h-5" />
+            {t('app_preferences') || "Preferences"}
+          </h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">✕</button>
+        </div>
+        <div className="p-6 space-y-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+              {t('app_theme') || "Appearance"}
+            </label>
+            <div className="flex bg-gray-100 dark:bg-gray-700 rounded-xl p-1 border border-gray-200 dark:border-gray-600">
+              {(['light', 'dark', 'system'] as const).map((mode) => (
+                <button
+                  key={mode}
+                  onClick={() => setTheme(mode)}
+                  className={cn(
+                    "flex-1 py-2 text-sm font-bold rounded-lg transition-all capitalize",
+                    theme === mode 
+                      ? "bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm" 
+                      : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  )}
+                >
+                  {mode}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+              {t('app_language') || "Language"}
+            </label>
+            <div className="flex bg-gray-100 dark:bg-gray-700 rounded-xl p-1 border border-gray-200 dark:border-gray-600">
+              <button
+                onClick={() => setLanguage('en')}
+                className={cn(
+                  "flex-1 py-2 text-sm font-bold rounded-lg transition-all",
+                  language === 'en' 
+                    ? "bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm" 
+                    : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                )}
+              >
+                English
+              </button>
+              <button
+                onClick={() => setLanguage('zh')}
+                className={cn(
+                  "flex-1 py-2 text-sm font-bold rounded-lg transition-all",
+                  language === 'zh' 
+                    ? "bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm" 
+                    : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                )}
+              >
+                中文
+              </button>
+            </div>
+          </div>
+        </div>
+        <div className="p-4 bg-gray-50 dark:bg-gray-900/50 flex justify-end">
+          <button
+            onClick={onClose}
+            className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-colors"
+          >
+            Done
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function App() {
   const { 
@@ -21,13 +108,15 @@ function App() {
     addTrip, deleteTrip, renameTrip, updateTrip,
     isSyncing, needsSync, syncError, isOnline,
     githubToken, setGithubToken, 
-    fetchFromCloud, pushToCloud, createGistForTrip, fetchAllTripsFromCloud
+    fetchFromCloud, pushToCloud, createGistForTrip, fetchAllTripsFromCloud,
+    undo, canUndo
   } = useStore();
 
   const { theme, setTheme, resolvedTheme } = useTheme();
   const { language, setLanguage, t } = useLanguage();
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
   const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
   const [viewingExpenseId, setViewingExpenseId] = useState<string | null>(null);
   const [lastUpdatedId, setLastUpdatedId] = useState<string | null>(null);
@@ -53,6 +142,7 @@ function App() {
       const parsed = parseFloat(amount);
       if (!isNaN(parsed)) {
         setShortcutAmount(parsed);
+        setActiveTab('expenses');
         // Clear the param from URL to avoid re-population on refresh
         window.history.replaceState({}, '', window.location.pathname);
       }
@@ -163,28 +253,20 @@ function App() {
     });
   };
 
-  const toggleTheme = () => {
-    if (theme === 'light') setTheme('dark');
-    else if (theme === 'dark') setTheme('system');
-    else setTheme('light');
-  };
-
-  const ThemeIcon = theme === 'light' ? Sun : theme === 'dark' ? Moon : Monitor;
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans pb-20 md:pb-0 transition-colors duration-200">
       {/* Header */}
       <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30 transition-colors duration-200">
-        <div className="w-full max-w-[98%] mx-auto px-4 py-3 flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <div className="p-0.5 rounded-xl overflow-hidden shadow-sm transition-transform hover:scale-105">
+        <div className="w-full max-w-[98%] mx-auto px-2 sm:px-4 py-2 sm:py-3 flex justify-between items-center">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="p-0.5 rounded-lg sm:rounded-xl overflow-hidden shadow-sm transition-transform hover:scale-105">
               <img 
                 src={resolvedTheme === 'dark' ? "/icon-dark.svg" : "/icon.svg"} 
                 alt="Logo" 
-                className="w-8 h-8 object-contain" 
+                className="w-6 h-6 sm:w-8 sm:h-8 object-contain" 
               />
             </div>
-            <h1 className="text-xl font-bold text-gray-800 dark:text-white hidden sm:block">DailyExpensesSpliter</h1>
+            <h1 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-white hidden md:block">DailyExpensesSpliter</h1>
           </div>
 
           <TripSelector 
@@ -204,62 +286,34 @@ function App() {
             }}
           />
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             <button
-              onClick={fetchFromCloud}
-              disabled={isSyncing || !isOnline || !currentTrip.gistId}
-              className={cn(
-                "p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors",
-                isSyncing && "animate-spin text-blue-500",
-                !currentTrip.gistId && "opacity-50 cursor-not-allowed"
-              )}
-              title={t('app_sync_data')}
+              onClick={() => setIsPreferencesOpen(true)}
+              className="flex items-center gap-1.5 px-2 sm:px-3 py-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors"
+              title="Appearance & Language"
             >
-              <RefreshCw className="w-6 h-6" />
+              <Palette className="w-5 h-5 sm:w-6 h-6" />
+              <span className="text-xs font-bold hidden sm:inline">Preferences</span>
             </button>
 
-            <button
-              onClick={toggleTheme}
-              className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-              title={`${t('app_theme')} ${theme}`}
-            >
-              <ThemeIcon className="w-6 h-6" />
-            </button>
-
-            <div className="flex bg-gray-100 dark:bg-gray-700 rounded-xl p-1 border border-gray-200 dark:border-gray-600">
+            {canUndo && (
               <button
-                onClick={() => setLanguage('en')}
-                className={cn(
-                  "px-2.5 py-1 text-xs font-bold rounded-lg transition-all",
-                  language === 'en' 
-                    ? "bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm" 
-                    : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                )}
+                onClick={undo}
+                className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors"
+                title="Undo last action"
               >
-                EN
+                <RotateCcw className="w-5 h-5 sm:w-6 h-6" />
               </button>
-              <button
-                onClick={() => setLanguage('zh')}
-                className={cn(
-                  "px-2.5 py-1 text-xs font-bold rounded-lg transition-all",
-                  language === 'zh' 
-                    ? "bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm" 
-                    : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                )}
-              >
-                中
-              </button>
-            </div>
+            )}
 
             <button 
               onClick={() => setIsSettingsOpen(true)}
-              className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg relative transition-colors"
+              className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl relative transition-colors"
+              title="Admin Settings"
             >
-              <Settings className="w-6 h-6" />
+              <ShieldCheck className="w-5 h-5 sm:w-6 h-6" />
               {needsSync && isOnline && currentTrip.gistId && (
-                <span className="absolute -top-1 -right-1 bg-amber-500 text-white text-[8px] px-1 rounded-full font-bold shadow-sm animate-pulse">
-                  SYNC
-                </span>
+                <span className="absolute top-1 right-1 w-2 h-2 bg-amber-500 rounded-full shadow-sm animate-pulse" />
               )}
               {!isOnline && <span className="absolute top-2 right-2 w-2 h-2 bg-gray-400 rounded-full border border-white dark:border-gray-800" />}
             </button>
@@ -406,6 +460,13 @@ function App() {
         </div>
       </div>
 
+      <PreferencesModal
+        isOpen={isPreferencesOpen}
+        onClose={() => setIsPreferencesOpen(false)}
+        theme={theme}
+        setTheme={setTheme}
+      />
+
       <SettingsModal 
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
@@ -420,6 +481,8 @@ function App() {
         needsSync={needsSync}
         syncError={syncError}
         isOnline={isOnline}
+        theme={theme}
+        setTheme={setTheme}
       />
 
       <ExpenseDetailsModal

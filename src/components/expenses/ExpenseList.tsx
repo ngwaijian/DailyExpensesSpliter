@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Trip, Expense, CATEGORIES } from '../../types';
 import { CATEGORY_COLORS, CATEGORY_STRIP_COLORS } from '../../constants';
 import { getAverageRates, formatCurrency } from '../../utils/currency';
-import { Edit2, Trash2, Calendar, User, MapPin, Gift, Handshake, Filter, ArrowUpDown, X, Search, Tag, RotateCcw } from 'lucide-react';
+import { Edit2, Trash2, Calendar, User, MapPin, Gift, Handshake, Filter, ArrowUpDown, X, Search, Tag, RotateCcw, Settings } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useTheme } from '../../hooks/useTheme';
@@ -152,14 +152,15 @@ export function ExpenseList({ trip, onEdit, onView, onDelete, lastUpdatedId }: E
         )}
         <button
           onClick={() => setShowCategoryManager(!showCategoryManager)}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+          className={cn(
+            "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors",
             showCategoryManager
               ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
               : 'bg-white text-gray-600 dark:bg-gray-800 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
-          }`}
+          )}
         >
-          <Tag className="w-4 h-4" />
-          Categories
+          <Settings className="w-4 h-4" />
+          {t('set_categories')}
         </button>
         <button
           onClick={() => setShowFilters(!showFilters)}

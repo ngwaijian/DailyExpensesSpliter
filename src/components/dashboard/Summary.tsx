@@ -149,12 +149,51 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
           if (personStats[u]) {
             personStats[u].share += splitAmount;
           } else if (!trip.users.includes(u)) {
-             personStats[u] = { paid: 0, share: splitAmount };
+            personStats[u] = { paid: 0, share: splitAmount };
           }
         });
       }
     }
   });
+
+  // If a specific person is selected, we adjust the totalMYR and categoryTotals to reflect ONLY their involvement
+  if (selectedPerson !== 'All') {
+    totalMYR = 0;
+    Object.keys(categoryTotals).forEach(cat => categoryTotals[cat] = 0);
+
+    trip.expenses.forEach(e => {
+      if (e.type === 'settlement') return;
+      
+      const rate = rates[e.currency] || e.rate || 1;
+      const cat = e.category || 'Other';
+      
+      // How much did this person contribute to this expense?
+      // Their "contribution" is their share.
+      let personShare = 0;
+      if (e.type === 'sponsorship') {
+        if (e.paidBy === selectedPerson) {
+          personShare = e.amountOriginal * rate;
+        }
+        if (e.splitAmong.includes(selectedPerson)) {
+          personShare -= (e.amountOriginal * rate) / e.splitAmong.length;
+        }
+      } else {
+        const sponsor = e.sponsoredBy || (e.isSponsored ? e.paidBy : null);
+        if (sponsor === selectedPerson) {
+          personShare = e.amountOriginal * rate;
+        } else if (e.splitDetails && e.splitDetails[selectedPerson]) {
+          personShare = e.splitDetails[selectedPerson] * rate;
+        } else if (e.splitAmong.includes(selectedPerson)) {
+          personShare = (e.amountOriginal * rate) / e.splitAmong.length;
+        }
+      }
+
+      if (personShare !== 0) {
+        totalMYR += Math.abs(personShare); // Total involvement
+        categoryTotals[cat] = (categoryTotals[cat] || 0) + Math.abs(personShare);
+      }
+    });
+  }
 
   const avgPerPerson = trip.users.length > 0 ? totalMYR / trip.users.length : 0;
   const sortedCats = Object.entries(categoryTotals).sort((a, b) => b[1] - a[1]);

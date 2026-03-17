@@ -10,6 +10,76 @@ interface GoalsProps {
   onUpdateTrip: (trip: Trip) => void;
 }
 
+interface GoalItemProps {
+  goal: Goal;
+  trip: Trip;
+  onUpdateTrip: (trip: Trip) => void;
+  onEdit: (goal: Goal) => void;
+  onDelete: (id: string) => void;
+  t: (key: string) => string;
+}
+
+function GoalItem({ goal, trip, onUpdateTrip, onEdit, onDelete, t }: GoalItemProps) {
+  const [localAmount, setLocalAmount] = useState(goal.currentAmount.toString());
+  const progress = Math.min(100, Math.max(0, (goal.currentAmount / goal.targetAmount) * 100));
+  const isCompleted = progress >= 100;
+
+  const handleBlur = () => {
+    const val = parseFloat(localAmount) || 0;
+    if (val !== goal.currentAmount) {
+      const updatedGoals = (trip.goals || []).map(g => g.id === goal.id ? { ...g, currentAmount: val } : g);
+      onUpdateTrip({ ...trip, goals: updatedGoals });
+    }
+  };
+
+  return (
+    <div className="p-4 bg-gray-50 dark:bg-gray-700/30 rounded-2xl border border-gray-100 dark:border-gray-700 group">
+      <div className="flex justify-between items-start mb-2">
+        <div>
+          <h4 className="font-semibold text-gray-800 dark:text-white flex items-center gap-2">
+            {goal.name}
+            {isCompleted && <CheckCircle2 className="w-4 h-4 text-green-500" />}
+          </h4>
+          <div className="text-sm text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-2">
+            <div className="relative group/input">
+              <input
+                type="number"
+                value={localAmount}
+                onChange={(e) => setLocalAmount(e.target.value)}
+                onBlur={handleBlur}
+                onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
+                className="w-20 p-1 bg-transparent border-b border-transparent hover:border-blue-300 focus:border-blue-500 focus:bg-white dark:focus:bg-gray-800 outline-none transition-all font-medium text-blue-600 dark:text-blue-400"
+              />
+            </div>
+            <span>of {formatCurrency(goal.targetAmount)}</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button onClick={() => onEdit(goal)} className="p-1.5 text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">
+            <Edit2 className="w-4 h-4" />
+          </button>
+          <button onClick={() => onDelete(goal.id)} className="p-1.5 text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors">
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+      
+      <div className="h-3 w-full bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden mt-3">
+        <div 
+          className={cn(
+            "h-full transition-all duration-500 rounded-full",
+            isCompleted ? "bg-green-500" : "bg-blue-500"
+          )}
+          style={{ width: `${progress}%` }}
+        />
+      </div>
+      <div className="text-right text-xs text-gray-400 dark:text-gray-500 mt-1 font-medium">
+        {progress.toFixed(1)}%
+      </div>
+    </div>
+  );
+}
+
 export function Goals({ trip, onUpdateTrip }: GoalsProps) {
   const { t } = useLanguage();
   const [isAdding, setIsAdding] = useState(false);
@@ -141,59 +211,17 @@ export function Goals({ trip, onUpdateTrip }: GoalsProps) {
       )}
 
       <div className="space-y-4">
-        {goals.map(goal => {
-          const progress = Math.min(100, Math.max(0, (goal.currentAmount / goal.targetAmount) * 100));
-          const isCompleted = progress >= 100;
-
-          return (
-            <div key={goal.id} className="p-4 bg-gray-50 dark:bg-gray-700/30 rounded-2xl border border-gray-100 dark:border-gray-700 group">
-              <div className="flex justify-between items-start mb-2">
-                <div>
-                  <h4 className="font-semibold text-gray-800 dark:text-white flex items-center gap-2">
-                    {goal.name}
-                    {isCompleted && <CheckCircle2 className="w-4 h-4 text-green-500" />}
-                  </h4>
-                  <div className="text-sm text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-2">
-                    <div className="relative group/input">
-                      <input
-                        type="number"
-                        value={goal.currentAmount}
-                        onChange={(e) => {
-                          const val = parseFloat(e.target.value) || 0;
-                          const updatedGoals = goals.map(g => g.id === goal.id ? { ...g, currentAmount: val } : g);
-                          onUpdateTrip({ ...trip, goals: updatedGoals });
-                        }}
-                        className="w-20 p-1 bg-transparent border-b border-transparent hover:border-blue-300 focus:border-blue-500 focus:bg-white dark:focus:bg-gray-800 outline-none transition-all font-medium text-blue-600 dark:text-blue-400"
-                      />
-                    </div>
-                    <span>of {formatCurrency(goal.targetAmount)}</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button onClick={() => handleEdit(goal)} className="p-1.5 text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">
-                    <Edit2 className="w-4 h-4" />
-                  </button>
-                  <button onClick={() => handleDelete(goal.id)} className="p-1.5 text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-              
-              <div className="h-3 w-full bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden mt-3">
-                <div 
-                  className={cn(
-                    "h-full transition-all duration-500 rounded-full",
-                    isCompleted ? "bg-green-500" : "bg-blue-500"
-                  )}
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-              <div className="text-right text-xs text-gray-400 dark:text-gray-500 mt-1 font-medium">
-                {progress.toFixed(1)}%
-              </div>
-            </div>
-          );
-        })}
+        {goals.map(goal => (
+          <GoalItem 
+            key={goal.id} 
+            goal={goal} 
+            trip={trip} 
+            onUpdateTrip={onUpdateTrip} 
+            onEdit={handleEdit} 
+            onDelete={handleDelete}
+            t={t}
+          />
+        ))}
         {goals.length === 0 && !isAdding && (
           <div className="text-center py-8 text-gray-400 dark:text-gray-500 italic">
             No goals set yet. Add one to start tracking!

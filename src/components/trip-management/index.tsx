@@ -31,31 +31,31 @@ export function TripSelector({ trips, currentTripId, onSelect, onAdd, onDelete, 
   }, []);
 
   return (
-    <div className="flex items-center gap-2" ref={menuRef}>
+    <div className="flex items-center gap-1" ref={menuRef}>
       <div className="relative group">
         <select 
           value={currentTripId} 
           onChange={(e) => onSelect(e.target.value)}
-          className="appearance-none bg-gray-100 dark:bg-gray-700 border-none text-gray-900 dark:text-white text-sm font-semibold rounded-xl pl-4 pr-10 py-2.5 min-w-[140px] max-w-[200px] truncate focus:ring-2 focus:ring-blue-500 cursor-pointer transition-all hover:bg-gray-200 dark:hover:bg-gray-600"
+          className="appearance-none bg-gray-100 dark:bg-gray-700 border-none text-gray-900 dark:text-white text-xs sm:text-sm font-bold rounded-xl pl-3 pr-8 py-2 sm:py-2.5 min-w-[100px] sm:min-w-[140px] max-w-[150px] sm:max-w-[200px] truncate focus:ring-2 focus:ring-blue-500 cursor-pointer transition-all hover:bg-gray-200 dark:hover:bg-gray-600 shadow-sm"
         >
           {trips.map(t => (
             <option key={t.id} value={t.id}>{t.name}</option>
           ))}
         </select>
-        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 dark:text-gray-400 pointer-events-none group-hover:text-gray-700 dark:group-hover:text-gray-200 transition-colors" />
+        <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500 dark:text-gray-400 pointer-events-none group-hover:text-gray-700 dark:group-hover:text-gray-200 transition-colors" />
       </div>
       
       <div className="relative">
         <button 
           onClick={() => setIsOpen(!isOpen)} 
           className={cn(
-            "p-2.5 rounded-xl transition-all duration-200",
+            "p-2 sm:p-2.5 rounded-xl transition-all duration-200",
             isOpen 
               ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" 
-              : "text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
+              : "text-gray-400 hover:bg-gray-100 dark:text-gray-500 dark:hover:bg-gray-700"
           )}
         >
-          <MoreVertical size={20} />
+          <MoreVertical size={18} />
         </button>
 
         {isOpen && (

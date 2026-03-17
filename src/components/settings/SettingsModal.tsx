@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Settings, Cloud, CloudOff, RefreshCw, Save, Globe, Share2, Copy } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Trip } from '../../types';
-import { CategoryManager } from './CategoryManager';
+import { cn } from '../../lib/utils';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -19,18 +19,42 @@ interface SettingsModalProps {
   needsSync: boolean;
   syncError?: string | null;
   isOnline: boolean;
+  theme: 'light' | 'dark' | 'system';
+  setTheme: (theme: 'light' | 'dark' | 'system') => void;
 }
 
 export function SettingsModal({ 
   isOpen, onClose, 
   githubToken, setGithubToken, 
   currentTrip, onUpdateTrip, createGistForTrip,
-  onSync, onPush, fetchAllTripsFromCloud, isSyncing, needsSync, syncError, isOnline
+  onSync, onPush, fetchAllTripsFromCloud, isSyncing, needsSync, syncError, isOnline,
+  theme, setTheme
 }: SettingsModalProps) {
   const { language, setLanguage, t } = useLanguage();
   const [copied, setCopied] = useState(false);
+  const [pin, setPin] = useState('');
+  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [pinError, setPinError] = useState(false);
 
   if (!isOpen) return null;
+
+  const handlePinSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (pin === '1234') {
+      setIsUnlocked(true);
+      setPinError(false);
+    } else {
+      setPinError(true);
+      setPin('');
+    }
+  };
+
+  const handleClose = () => {
+    setIsUnlocked(false);
+    setPin('');
+    setPinError(false);
+    onClose();
+  };
 
   const handleCopyLink = () => {
     if (!currentTrip.gistId) return;
@@ -40,6 +64,52 @@ export function SettingsModal({
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  if (!isUnlocked) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl w-full max-w-xs overflow-hidden transition-colors p-6">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center text-blue-600 dark:text-blue-400">
+              <Settings className="w-6 h-6" />
+            </div>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Settings Locked</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 text-center">Enter PIN to access settings</p>
+            
+            <form onSubmit={handlePinSubmit} className="w-full space-y-4">
+              <input
+                type="password"
+                value={pin}
+                onChange={e => setPin(e.target.value)}
+                placeholder="Enter PIN"
+                className={cn(
+                  "w-full p-3 bg-gray-50 dark:bg-gray-700 border rounded-xl text-center text-2xl tracking-widest focus:ring-2 focus:ring-blue-500 outline-none transition-all",
+                  pinError ? "border-red-500 animate-shake" : "border-gray-200 dark:border-gray-600"
+                )}
+                autoFocus
+              />
+              {pinError && <p className="text-xs text-red-500 text-center">Incorrect PIN. Try again.</p>}
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleClose}
+                  className="flex-1 py-2.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-colors"
+                >
+                  Unlock
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
@@ -51,11 +121,11 @@ export function SettingsModal({
             <Settings className="w-5 h-5" />
             {t('nav_settings')}
           </h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">✕</button>
+          <button onClick={handleClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">✕</button>
         </div>
         
-        <div className="p-6 space-y-4">
-          <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg text-sm text-blue-800 dark:text-blue-300 mt-4 whitespace-pre-line">
+        <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+          <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg text-sm text-blue-800 dark:text-blue-300 whitespace-pre-line">
             {t('set_sync_desc') || "Enter your GitHub token to sync and share groups via GitHub Gists. This allows you to access your data from any device without a database."}
           </div>
 
@@ -71,10 +141,6 @@ export function SettingsModal({
             <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1 italic">
               Note: This syncs your data to GitHub Gists. It is separate from the application's source code repository.
             </p>
-          </div>
-
-          <div className="pt-4 border-t border-gray-100 dark:border-gray-700">
-            <CategoryManager trip={currentTrip} onUpdateTrip={onUpdateTrip} />
           </div>
 
           <div className="pt-4 border-t border-gray-100 dark:border-gray-700">
