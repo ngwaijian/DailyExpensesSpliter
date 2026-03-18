@@ -14,84 +14,8 @@ import { RecurringTransactions } from './components/expenses/RecurringTransactio
 import { BudgetManager } from './components/planning/BudgetManager';
 import { LoanManager } from './components/dashboard/LoanManager';
 import { ExpenseDetailsModal } from './components/expenses/ExpenseDetailsModal';
-import { ShieldCheck, LayoutGrid, List, Users, RefreshCw, Plus, Globe, Target, RotateCcw, Settings } from 'lucide-react';
+import { ShieldCheck, LayoutGrid, List, Users, RefreshCw, Plus, Globe, Target, RotateCcw, Settings, Sun, Moon, Monitor } from 'lucide-react';
 import { cn } from './lib/utils';
-
-interface PreferencesModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  theme: 'light' | 'dark' | 'system';
-  setTheme: (theme: 'light' | 'dark' | 'system') => void;
-}
-
-function PreferencesModal({ isOpen, onClose, theme, setTheme }: PreferencesModalProps) {
-  const { language, setLanguage, t } = useLanguage();
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-sm overflow-hidden transition-colors">
-        <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-            <Settings className="w-5 h-5" />
-            {t('app_preferences') || "Preferences"}
-          </h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">✕</button>
-        </div>
-        <div className="p-6 space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-              {t('app_theme') || "Appearance"}
-            </label>
-            <div className="flex bg-gray-100 dark:bg-gray-700 rounded-xl p-1 border border-gray-200 dark:border-gray-600">
-              {(['light', 'dark', 'system'] as const).map((mode) => (
-                <button
-                  key={mode}
-                  onClick={() => setTheme(mode)}
-                  className={cn(
-                    "flex-1 py-2 text-sm font-bold rounded-lg transition-all capitalize",
-                    theme === mode 
-                      ? "bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm" 
-                      : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                  )}
-                >
-                  {mode}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-              {t('app_language') || "Language"}
-            </label>
-            <div className="flex bg-gray-100 dark:bg-gray-700 rounded-xl p-1 border border-gray-200 dark:border-gray-600">
-              <button
-                onClick={() => setLanguage('en')}
-                className={cn(
-                  "w-full py-2 text-sm font-bold rounded-lg transition-all",
-                  language === 'en' 
-                    ? "bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm" 
-                    : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                )}
-              >
-                English
-              </button>
-            </div>
-          </div>
-        </div>
-        <div className="p-4 bg-gray-50 dark:bg-gray-900/50 flex justify-end">
-          <button
-            onClick={onClose}
-            className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-colors"
-          >
-            Done
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function App() {
   const { 
@@ -107,7 +31,6 @@ function App() {
   const { language, setLanguage, t } = useLanguage();
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
   const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
   const [viewingExpenseId, setViewingExpenseId] = useState<string | null>(null);
   const [lastUpdatedId, setLastUpdatedId] = useState<string | null>(null);
@@ -425,6 +348,18 @@ function App() {
     });
   };
 
+  const toggleTheme = () => {
+    if (theme === 'light') setTheme('dark');
+    else if (theme === 'dark') setTheme('system');
+    else setTheme('light');
+  };
+
+  const getThemeIcon = () => {
+    if (theme === 'light') return <Sun className="w-5 h-5 sm:w-6 h-6" />;
+    if (theme === 'dark') return <Moon className="w-5 h-5 sm:w-6 h-6" />;
+    return <Monitor className="w-5 h-5 sm:w-6 h-6" />;
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans pb-20 md:pb-0 transition-colors duration-200">
       {/* Header */}
@@ -460,12 +395,12 @@ function App() {
 
           <div className="flex items-center gap-1 sm:gap-2">
             <button
-              onClick={() => setIsPreferencesOpen(true)}
+              onClick={toggleTheme}
               className="flex items-center gap-1.5 px-2 sm:px-3 py-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors"
-              title="Appearance & Language"
+              title={`Theme: ${theme}`}
             >
-              <Settings className="w-5 h-5 sm:w-6 h-6" />
-              <span className="text-xs font-bold hidden sm:inline">Preferences</span>
+              {getThemeIcon()}
+              <span className="text-xs font-bold hidden sm:inline capitalize">{theme}</span>
             </button>
 
             {canUndo && (
@@ -648,13 +583,6 @@ function App() {
         </div>
       </div>
 
-      <PreferencesModal
-        isOpen={isPreferencesOpen}
-        onClose={() => setIsPreferencesOpen(false)}
-        theme={theme}
-        setTheme={setTheme}
-      />
-
       <SettingsModal 
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
@@ -669,8 +597,6 @@ function App() {
         needsSync={needsSync}
         syncError={syncError}
         isOnline={isOnline}
-        theme={theme}
-        setTheme={setTheme}
       />
 
       <ExpenseDetailsModal

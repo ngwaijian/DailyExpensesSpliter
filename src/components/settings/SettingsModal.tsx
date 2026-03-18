@@ -19,16 +19,13 @@ interface SettingsModalProps {
   needsSync: boolean;
   syncError?: string | null;
   isOnline: boolean;
-  theme: 'light' | 'dark' | 'system';
-  setTheme: (theme: 'light' | 'dark' | 'system') => void;
 }
 
 export function SettingsModal({ 
   isOpen, onClose, 
   githubToken, setGithubToken, 
   currentTrip, onUpdateTrip, createGistForTrip,
-  onSync, onPush, fetchAllTripsFromCloud, isSyncing, needsSync, syncError, isOnline,
-  theme, setTheme
+  onSync, onPush, fetchAllTripsFromCloud, isSyncing, needsSync, syncError, isOnline
 }: SettingsModalProps) {
   const { language, setLanguage, t } = useLanguage();
   const [copied, setCopied] = useState(false);
