@@ -73,7 +73,7 @@ export function ExpenseList({ trip, onEdit, onView, onDelete, lastUpdatedId, onU
       const keyword = searchKeyword.toLowerCase().trim();
       result = result.filter(e => 
         e.desc.toLowerCase().includes(keyword) ||
-        e.category.toLowerCase().includes(keyword) ||
+        (typeof e.category === 'string' ? e.category : e.category?.name || '').toLowerCase().includes(keyword) ||
         e.paidBy.toLowerCase().includes(keyword) ||
         e.splitAmong.some(p => p.toLowerCase().includes(keyword)) ||
         (e.location?.name && e.location.name.toLowerCase().includes(keyword))
@@ -87,7 +87,7 @@ export function ExpenseList({ trip, onEdit, onView, onDelete, lastUpdatedId, onU
       } else if (filterCategory === 'Settlement') {
         result = result.filter(e => e.type === 'settlement');
       } else {
-        result = result.filter(e => e.category === filterCategory && e.type !== 'sponsorship' && e.type !== 'settlement');
+        result = result.filter(e => (typeof e.category === 'string' ? e.category : e.category?.name) === filterCategory && e.type !== 'sponsorship' && e.type !== 'settlement');
       }
     }
 
@@ -248,7 +248,7 @@ export function ExpenseList({ trip, onEdit, onView, onDelete, lastUpdatedId, onU
                 className="w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white text-sm transition-colors"
               >
                 <option value="All">{t('list_all_categories')}</option>
-                {CATEGORIES.map(c => <option key={c} value={c}>{t(`cat_${c}`, c)}</option>)}
+                {CATEGORIES.map(c => <option key={c.name} value={c.name}>{t(`cat_${c.name}`, c.name)}</option>)}
                 <option value="Sponsorship">{t('list_sponsorships')}</option>
                 <option value="Settlement">{t('list_settlements')}</option>
               </select>
@@ -369,7 +369,7 @@ export function ExpenseList({ trip, onEdit, onView, onDelete, lastUpdatedId, onU
                   )}>
                     {exp.type === 'sponsorship' ? '🎁' : 
                      exp.type === 'settlement' ? '🤝' : 
-                     exp.category.split(' ')[0]}
+                     (typeof exp.category === 'string' ? exp.category : exp.category?.name || 'Other').split(' ')[0]}
                   </div>
 
                   <div className="min-w-0 flex-1">
@@ -380,12 +380,15 @@ export function ExpenseList({ trip, onEdit, onView, onDelete, lastUpdatedId, onU
                       )}
                     </div>
                     
-                    <div className="flex items-center gap-1.5 text-[10px] text-gray-400 dark:text-gray-500">
+                    <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10px] text-gray-400 dark:text-gray-500">
                       <span className="text-blue-500 dark:text-blue-400 font-medium">{exp.paidBy}</span>
                       <span>•</span>
-                      <span className="truncate">{t(`cat_${exp.category}`, exp.category).replace(/^[^\s]+\s/, '')}</span>
+                      <span className="truncate max-w-[120px]">
+                        {t(`cat_${typeof exp.category === 'string' ? exp.category : exp.category?.name}`, typeof exp.category === 'string' ? exp.category : exp.category?.name || 'Other').replace(/^[^\s]+\s/, '')}
+                        {exp.subCategory ? ` / ${exp.subCategory}` : ''}
+                      </span>
                       <span>•</span>
-                      <span>{new Date(exp.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}</span>
+                      <span className="whitespace-nowrap">{new Date(exp.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}</span>
                       {exp.isSponsored && (
                         <>
                           <span>•</span>

@@ -74,11 +74,16 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
   const [memo, setMemo] = useState(initialData?.memo || '');
   const [amount, setAmount] = useState(initialData?.amountOriginal || '');
   const [currency, setCurrency] = useState(initialData?.currency || 'MYR');
-  const tripCategories = trip.categories || CATEGORIES;
-  const [category, setCategory] = useState(initialData?.category || tripCategories[0]);
+  const tripCategories = (trip.categories || CATEGORIES).map(c => typeof c === 'string' ? { name: c, subCategories: [] } : c);
+  const initialCategory = initialData?.category 
+    ? (typeof initialData.category === 'string' ? initialData.category : initialData.category.name)
+    : tripCategories[0].name;
+  const [category, setCategory] = useState<string>(initialCategory);
+  const [subCategory, setSubCategory] = useState(initialData?.subCategory || '');
   const [date, setDate] = useState(formatDateTime(initialData?.date));
-  const [paidBy, setPaidBy] = useState(initialData?.paidBy || (trip.users.includes('Jian') ? 'Jian' : (trip.users.length > 0 ? trip.users[0] : '')));
-  const [splitAmong, setSplitAmong] = useState<string[]>(initialData?.splitAmong || trip.users);
+  const initialPaidBy = initialData?.paidBy || (trip.users.includes('Jian') ? 'Jian' : (trip.users.length > 0 ? trip.users[0] : ''));
+  const [paidBy, setPaidBy] = useState(initialPaidBy);
+  const [splitAmong, setSplitAmong] = useState<string[]>(initialData?.splitAmong || (initialPaidBy ? [initialPaidBy] : []));
   const [splitMode, setSplitMode] = useState<'equal' | 'unequal' | 'shares'>(initialData?.splitDetails ? 'unequal' : 'equal');
   const [splitDetails, setSplitDetails] = useState<{ [key: string]: number | string }>(initialData?.splitDetails || {});
   const [splitShares, setSplitShares] = useState<{ [key: string]: number }>({});
@@ -192,10 +197,18 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!desc.trim()) {
-      alert('Please enter a description.');
-      return;
+    let finalDesc = desc.trim();
+    if (!finalDesc) {
+      if (subCategory) {
+        finalDesc = subCategory;
+      } else if (category) {
+        finalDesc = category;
+      } else {
+        alert('Please enter a description.');
+        return;
+      }
     }
+
     if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
       alert('Please enter a valid amount greater than 0.');
       return;
@@ -239,11 +252,12 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
     }
 
     onSubmit({
-      desc: desc.trim(),
+      desc: finalDesc,
       memo: memo.trim() || undefined,
       amountOriginal: parseFloat(amount),
       currency: currency.toUpperCase(),
       category,
+      subCategory: subCategory || undefined,
       date,
       paidBy,
       splitAmong,
@@ -270,10 +284,12 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
       setMemo(initialData.memo || '');
       setAmount(initialData.amountOriginal || '');
       setCurrency(initialData.currency || 'MYR');
-      setCategory(initialData.category || CATEGORIES[0]);
+      setCategory(initialData.category || tripCategories[0].name);
+      setSubCategory(initialData.subCategory || '');
       setDate(formatDateTime(initialData.date));
-      setPaidBy(initialData.paidBy || (trip.users.length > 0 ? trip.users[0] : ''));
-      setSplitAmong(initialData.splitAmong || trip.users);
+      const defaultPaidBy = trip.users.includes('Jian') ? 'Jian' : (trip.users.length > 0 ? trip.users[0] : '');
+      setPaidBy(initialData.paidBy || defaultPaidBy);
+      setSplitAmong(initialData.splitAmong || (initialData.paidBy ? [initialData.paidBy] : (defaultPaidBy ? [defaultPaidBy] : [])));
       setLocationName(initialData.location?.name || '');
       setLocationCoords(initialData.location?.lat ? {lat: initialData.location.lat, lng: initialData.location.lng} : undefined);
       setShowMap(!!initialData.location?.lat);
@@ -289,10 +305,12 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
       setMemo('');
       setAmount('');
       setCurrency('MYR');
-      setCategory(CATEGORIES[0]);
+      setCategory(tripCategories[0].name);
+      setSubCategory('');
       setDate(formatDateTime());
-      setPaidBy(trip.users.length > 0 ? trip.users[0] : '');
-      setSplitAmong(trip.users);
+      const defaultPaidBy = trip.users.includes('Jian') ? 'Jian' : (trip.users.length > 0 ? trip.users[0] : '');
+      setPaidBy(defaultPaidBy);
+      setSplitAmong(defaultPaidBy ? [defaultPaidBy] : []);
       setLocationName('');
       setLocationCoords(undefined);
       setShowMap(false);
@@ -513,7 +531,7 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-2 md:grid-cols-12 gap-3 md:gap-4">
           {/* Description - Full width on mobile, larger on desktop */}
-          <div className="col-span-2 md:col-span-8">
+          <div className="col-span-2 md:col-span-7">
             <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{t('form_desc')}</label>
             <input 
               id="desc-input"
@@ -531,16 +549,21 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
             </datalist>
           </div>
 
-          {/* Date - Side-by-side on mobile */}
-          <div className={cn("md:col-span-4 min-w-0", type !== 'expense' ? "col-span-2" : "col-span-1")}>
+          {/* Date and Time - Side-by-side on mobile */}
+          <div className="col-span-2 md:col-span-5 min-w-0">
             <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{t('form_date')}</label>
-            <div className="relative">
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            <div className="flex gap-2">
               <input 
-                type="datetime-local" 
-                value={date}
-                onChange={e => setDate(e.target.value)}
-                className="w-full pl-9 p-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white transition-colors text-sm appearance-none min-h-[42px]"
+                type="date" 
+                value={date.split('T')[0]}
+                onChange={e => setDate(e.target.value + 'T' + (date.split('T')[1] || '00:00'))}
+                className="flex-1 min-w-0 p-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white transition-colors text-sm min-h-[42px]"
+              />
+              <input 
+                type="time" 
+                value={date.split('T')[1] || '00:00'}
+                onChange={e => setDate(date.split('T')[0] + 'T' + e.target.value)}
+                className="flex-1 min-w-0 p-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white transition-colors text-sm min-h-[42px]"
               />
             </div>
           </div>
@@ -561,23 +584,45 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2">
                 {tripCategories.map(c => (
                   <button
-                    key={c}
+                    key={c.name}
                     type="button"
-                    onClick={() => setCategory(c)}
+                    onClick={() => { setCategory(c.name); setSubCategory(''); }}
                     className={cn(
                       "flex flex-col items-center justify-center p-2 rounded-xl border transition-all gap-1",
-                      category === c 
+                      category === c.name 
                         ? "bg-blue-50 dark:bg-blue-900/30 border-blue-500 text-blue-700 dark:text-blue-400 ring-1 ring-blue-500" 
                         : "bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-gray-400"
                     )}
                   >
-                    <span className="text-xl">{c.split(' ')[0]}</span>
+                    <span className="text-xl">{c.name.split(' ')[0]}</span>
                     <span className="text-[10px] text-center leading-tight truncate w-full">
-                      {t(`cat_${c}`, c).split(' ').slice(1).join(' ') || t(`cat_${c}`, c).split(' ')[1] || t(`cat_${c}`, c)}
+                      {c.name.split(' ').slice(1).join(' ')}
                     </span>
                   </button>
                 ))}
               </div>
+              {category && tripCategories.find(c => c.name === category)?.subCategories && tripCategories.find(c => c.name === category)!.subCategories!.length > 0 && (
+                <div className="mt-2">
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Sub-category</label>
+                  <div className="flex gap-2 flex-wrap">
+                    {tripCategories.find(c => c.name === category)!.subCategories!.map(sub => (
+                      <button
+                        key={sub}
+                        type="button"
+                        onClick={() => setSubCategory(sub)}
+                        className={cn(
+                          "px-3 py-1.5 rounded-lg border text-xs transition-all",
+                          subCategory === sub
+                            ? "bg-blue-100 dark:bg-blue-900/30 border-blue-500 text-blue-700 dark:text-blue-400"
+                            : "bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400"
+                        )}
+                      >
+                        {sub}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -821,7 +866,13 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
             </label>
             <select 
               value={paidBy}
-              onChange={e => setPaidBy(e.target.value)}
+              onChange={e => {
+                const newPaidBy = e.target.value;
+                if (splitAmong.length === 1 && splitAmong[0] === paidBy) {
+                  setSplitAmong([newPaidBy]);
+                }
+                setPaidBy(newPaidBy);
+              }}
               className="w-full p-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white transition-colors"
             >
               <option value="" disabled>{t('form_select_person')}</option>

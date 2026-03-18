@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Trip, RecurringTransaction, CATEGORIES } from '../../types';
+import { Trip, RecurringTransaction, CATEGORIES, Category } from '../../types';
 import { Repeat, Plus, Edit2, Trash2, Calendar, Tag } from 'lucide-react';
 import { formatCurrency } from '../../utils/currency';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -12,33 +12,44 @@ interface RecurringTransactionsProps {
 
 export function RecurringTransactions({ trip, onUpdateTrip }: RecurringTransactionsProps) {
   const { t } = useLanguage();
-  const tripCategories = trip.categories || CATEGORIES;
+  const tripCategories = (trip.categories || CATEGORIES).map(c => typeof c === 'string' ? { name: c, subCategories: [] } : c);
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const [desc, setDesc] = useState('');
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState('MYR');
-  const [category, setCategory] = useState(tripCategories[0]);
-  const [paidBy, setPaidBy] = useState(trip.users[0] || '');
+  const [category, setCategory] = useState<Category>(tripCategories[0]);
+  const [subCategory, setSubCategory] = useState<string>('');
+  const defaultPaidBy = trip.users.includes('Jian') ? 'Jian' : (trip.users.length > 0 ? trip.users[0] : '');
+  const [paidBy, setPaidBy] = useState(defaultPaidBy);
   const [frequency, setFrequency] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('monthly');
   const [nextDate, setNextDate] = useState(new Date().toISOString().split('T')[0]);
 
   // Update paidBy if it's empty and users become available
   React.useEffect(() => {
     if (!paidBy && trip.users.length > 0) {
-      setPaidBy(trip.users[0]);
+      setPaidBy(defaultPaidBy);
     }
-  }, [trip.users, paidBy]);
+  }, [trip.users, paidBy, defaultPaidBy]);
 
   const recurring = trip.recurringTransactions || [];
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!desc.trim()) {
-      alert('Please enter a description.');
-      return;
+    
+    let finalDesc = desc.trim();
+    if (!finalDesc) {
+      if (subCategory) {
+        finalDesc = subCategory;
+      } else if (category && category.name) {
+        finalDesc = category.name;
+      } else {
+        alert('Please enter a description.');
+        return;
+      }
     }
+
     if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
       alert('Please enter a valid amount.');
       return;
@@ -50,12 +61,13 @@ export function RecurringTransactions({ trip, onUpdateTrip }: RecurringTransacti
 
     const newTx: RecurringTransaction = {
       id: editingId || Date.now().toString(),
-      desc: desc.trim(),
+      desc: finalDesc,
       amountOriginal: parseFloat(amount),
       currency,
       category,
+      subCategory: subCategory || undefined,
       paidBy,
-      splitAmong: trip.users.length > 0 ? trip.users : [paidBy],
+      splitAmong: [paidBy],
       frequency,
       nextDate,
     };
@@ -77,6 +89,7 @@ export function RecurringTransactions({ trip, onUpdateTrip }: RecurringTransacti
     setAmount(tx.amountOriginal.toString());
     setCurrency(tx.currency);
     setCategory(tx.category);
+    setSubCategory(tx.subCategory || '');
     setPaidBy(tx.paidBy);
     setFrequency(tx.frequency);
     setNextDate(tx.nextDate);
@@ -96,7 +109,8 @@ export function RecurringTransactions({ trip, onUpdateTrip }: RecurringTransacti
     setAmount('');
     setCurrency('MYR');
     setCategory(tripCategories[0]);
-    setPaidBy(trip.users[0] || '');
+    setSubCategory('');
+    setPaidBy(defaultPaidBy);
     setFrequency('monthly');
     setNextDate(new Date().toISOString().split('T')[0]);
   };
@@ -150,15 +164,33 @@ export function RecurringTransactions({ trip, onUpdateTrip }: RecurringTransacti
                 <div>
                   <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Category</label>
                   <select
-                    value={category}
-                    onChange={e => setCategory(e.target.value)}
+                    value={category.name}
+                    onChange={e => {
+                      setCategory(tripCategories.find(c => c.name === e.target.value) || tripCategories[0]);
+                      setSubCategory('');
+                    }}
                     className="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white"
                   >
                     {tripCategories.map(c => (
-                      <option key={c} value={c}>{c}</option>
+                      <option key={c.name} value={c.name}>{c.name}</option>
                     ))}
                   </select>
                 </div>
+                {category.subCategories && category.subCategories.length > 0 && (
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Sub-category</label>
+                    <select
+                      value={subCategory}
+                      onChange={e => setSubCategory(e.target.value)}
+                      className="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white"
+                    >
+                      <option value="">None</option>
+                      {category.subCategories.map(sub => (
+                        <option key={sub} value={sub}>{sub}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 <div>
                   <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Frequency</label>
                   <select

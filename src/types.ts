@@ -17,7 +17,8 @@ export interface Expense {
   memo?: string; // Optional memo/notes for the transaction
   amountOriginal: number;
   currency: string;
-  category: string;
+  category: Category;
+  subCategory?: string; // Optional sub-category
   date: string;
   paidBy: string;
   splitAmong: string[]; // array of user names
@@ -51,7 +52,8 @@ export interface RecurringTransaction {
   desc: string;
   amountOriginal: number;
   currency: string;
-  category: string;
+  category: Category;
+  subCategory?: string;
   paidBy: string;
   splitAmong: string[];
   frequency: 'daily' | 'weekly' | 'monthly' | 'yearly';
@@ -94,7 +96,7 @@ export interface Trip {
   loans?: Loan[];
   budgets?: Budget[];
   monthlyBudget?: number;
-  categories?: string[];
+  categories?: Category[];
   gistId?: string; // For syncing this specific trip
 }
 
@@ -102,18 +104,23 @@ export interface AppData {
   trips: Trip[];
 }
 
-export const CATEGORIES = [
-  "🍔 Food & Dining",
-  "🛒 Groceries",
-  "🏠 Rent & Bills",
-  "🚗 Transport",
-  "🚕 Ride Hailing",
-  "🛍️ Shopping",
-  "🎭 Entertainment",
-  "🏥 Health & Medical",
-  "✈️ Travel",
-  "🎁 Gifts & Donations",
-  "🎓 Education",
-  "💼 Work",
-  "📝 Other",
+export interface Category {
+  name: string;
+  subCategories?: string[];
+}
+
+export const CATEGORIES: Category[] = [
+  { name: "🍔 Food & Dining", subCategories: ["Breakfast", "Lunch", "Dinner", "Snacks"] },
+  { name: "🛒 Groceries", subCategories: ["Supermarket", "Market"] },
+  { name: "🏠 Rent & Bills", subCategories: ["Rent", "Utilities", "Internet"] },
+  { name: "🚗 Transport", subCategories: ["Fuel", "Parking", "Public Transport"] },
+  { name: "🚕 Ride Hailing", subCategories: ["Grab", "Taxi"] },
+  { name: "🛍️ Shopping", subCategories: ["Clothes", "Electronics", "Home"] },
+  { name: "🎭 Entertainment", subCategories: ["Movies", "Games", "Hobbies"] },
+  { name: "🏥 Health & Medical", subCategories: ["Doctor", "Medicine"] },
+  { name: "✈️ Travel", subCategories: ["Flights", "Accommodation", "Tours"] },
+  { name: "🎁 Gifts & Donations", subCategories: [] },
+  { name: "🎓 Education", subCategories: [] },
+  { name: "💼 Work", subCategories: [] },
+  { name: "📝 Other", subCategories: [] },
 ];

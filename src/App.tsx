@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useStore } from './hooks/useStore';
-import { CATEGORIES, Loan } from './types';
+import { CATEGORIES, Loan, Category } from './types';
 import { useTheme } from './hooks/useTheme';
 import { useLanguage } from './contexts/LanguageContext';
 import { TripSelector, PeopleWallet } from './components/trip-management';
@@ -69,24 +69,13 @@ function PreferencesModal({ isOpen, onClose, theme, setTheme }: PreferencesModal
               <button
                 onClick={() => setLanguage('en')}
                 className={cn(
-                  "flex-1 py-2 text-sm font-bold rounded-lg transition-all",
+                  "w-full py-2 text-sm font-bold rounded-lg transition-all",
                   language === 'en' 
                     ? "bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm" 
                     : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                 )}
               >
                 English
-              </button>
-              <button
-                onClick={() => setLanguage('zh')}
-                className={cn(
-                  "flex-1 py-2 text-sm font-bold rounded-lg transition-all",
-                  language === 'zh' 
-                    ? "bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm" 
-                    : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                )}
-              >
-                中文
               </button>
             </div>
           </div>
@@ -166,22 +155,22 @@ function App() {
         const rawCategory = category ? category.split(',')[0].trim() : '';
         
         // Fuzzy match the category against the official list
-        const tripCategories = currentTrip.categories || CATEGORIES;
-        let cleanCategory = tripCategories[0]; // Default to first category
+        const tripCategories = (currentTrip.categories || CATEGORIES).map(c => typeof c === 'string' ? { name: c, subCategories: [] } : c);
+        let cleanCategory: Category = tripCategories[0]; // Default to first category
         if (rawCategory) {
           const normalizedRaw = rawCategory.toLowerCase();
           
           // Try exact match first
           let match = tripCategories.find(c => {
-            const translated = t(`cat_${c}`, c).toLowerCase();
-            return c.toLowerCase() === normalizedRaw || translated === normalizedRaw;
+            const translated = t(`cat_${c.name}`, c.name).toLowerCase();
+            return c.name.toLowerCase() === normalizedRaw || translated === normalizedRaw;
           });
           
           // Then try fuzzy match
           if (!match) {
             match = tripCategories.find(c => {
-              const lowerC = c.toLowerCase();
-              const translated = t(`cat_${c}`, c).toLowerCase();
+              const lowerC = c.name.toLowerCase();
+              const translated = t(`cat_${c.name}`, c.name).toLowerCase();
               const nameOnly = lowerC.replace(/^[^\s]+\s/, '').trim();
               const translatedNameOnly = translated.replace(/^[^\s]+\s/, '').trim();
               
@@ -198,7 +187,7 @@ function App() {
 
         const newExpense = {
           id: Date.now().toString(),
-          desc: desc || cleanCategory || 'Quick Add',
+          desc: desc || cleanCategory.name || 'Quick Add',
           amountOriginal: parsedAmount,
           currency: currency || 'MYR',
           category: cleanCategory,
@@ -240,15 +229,15 @@ function App() {
 
       // Try exact match first
       let match = tripCategories.find(c => {
-        const translated = t(`cat_${c}`, c).toLowerCase();
-        return c.toLowerCase() === normalizedRaw || translated === normalizedRaw;
+        const translated = t(`cat_${c.name}`, c.name).toLowerCase();
+        return c.name.toLowerCase() === normalizedRaw || translated === normalizedRaw;
       });
       
       // Then try fuzzy match
       if (!match) {
         match = tripCategories.find(c => {
-          const lowerC = c.toLowerCase();
-          const translated = t(`cat_${c}`, c).toLowerCase();
+          const lowerC = c.name.toLowerCase();
+          const translated = t(`cat_${c.name}`, c.name).toLowerCase();
           const nameOnly = lowerC.replace(/^[^\s]+\s/, '').trim();
           const translatedNameOnly = translated.replace(/^[^\s]+\s/, '').trim();
           
@@ -259,14 +248,14 @@ function App() {
                  (nameOnly.length > 2 && nameOnly.includes(normalizedRaw)) ||
                  (translatedNameOnly.length > 2 && translatedNameOnly.includes(normalizedRaw));
           
-          if (isMatch) console.log('Fuzzy match found:', c);
+          if (isMatch) console.log('Fuzzy match found:', c.name);
           return isMatch;
         });
       }
       
       if (match) {
-        setShortcutCategory(match);
-        console.log('Shortcut Category Matched:', match);
+        setShortcutCategory(match.name);
+        console.log('Shortcut Category Matched:', match.name);
       } else {
         console.log('No match found for category:', rawCategory);
         // Do NOT set shortcutCategory if no match found, to allow fallback to default
@@ -322,16 +311,20 @@ function App() {
 
   const handleAddExpense = (data: any) => {
     const newExpenses = [...currentTrip.expenses];
+    const tripCategories = (currentTrip.categories || CATEGORIES).map(c => typeof c === 'string' ? { name: c, subCategories: [] } : c);
+    const categoryObj = tripCategories.find(c => c.name === data.category) || { name: data.category, subCategories: [] };
+    const expenseData = { ...data, category: categoryObj };
+    
     let updatedId = '';
     if (editingExpenseId) {
       const idx = newExpenses.findIndex(e => e.id === editingExpenseId);
       if (idx !== -1) {
-        newExpenses[idx] = { ...newExpenses[idx], ...data };
+        newExpenses[idx] = { ...newExpenses[idx], ...expenseData };
         updatedId = editingExpenseId;
       }
     } else {
       updatedId = Date.now().toString();
-      newExpenses.push({ id: updatedId, ...data });
+      newExpenses.push({ id: updatedId, ...expenseData });
     }
     updateTrip({ ...currentTrip, expenses: newExpenses });
     setEditingExpenseId(null);

@@ -22,7 +22,7 @@ export function BudgetManager({ trip, onUpdateTrip }: BudgetManagerProps) {
   const [period, setPeriod] = useState<'trip' | 'monthly'>('trip');
 
   const budgets = trip.budgets || [];
-  const tripCategories = trip.categories || CATEGORIES;
+  const tripCategories = (trip.categories || CATEGORIES).map(c => typeof c === 'string' ? { name: c, subCategories: [] } : c);
 
   const calculateSpending = (budget: Budget) => {
     if (!budget || !budget.categories) return 0;
@@ -33,7 +33,7 @@ export function BudgetManager({ trip, onUpdateTrip }: BudgetManagerProps) {
     return trip.expenses.reduce((acc, exp) => {
       // Filter by category
       const budgetCats = Array.isArray(budget.categories) ? budget.categories : [];
-      if (!budgetCats.includes('All') && !budgetCats.includes(exp.category)) return acc;
+      if (!budgetCats.includes('All') && !budgetCats.includes(typeof exp.category === 'string' ? exp.category : exp.category?.name || 'Other')) return acc;
 
       // Filter by period
       if (budget.period === 'monthly') {
@@ -141,19 +141,19 @@ export function BudgetManager({ trip, onUpdateTrip }: BudgetManagerProps) {
                     <span className="text-gray-900 dark:text-white">All Categories</span>
                   </label>
                   {tripCategories.map(c => (
-                    <label key={c} className="flex items-center gap-2 p-1 cursor-pointer">
+                    <label key={c.name} className="flex items-center gap-2 p-1 cursor-pointer">
                       <input
                         type="checkbox"
-                        checked={!categories.includes('All') && categories.includes(c)}
+                        checked={!categories.includes('All') && categories.includes(c.name)}
                         onChange={() => {
                           setCategories(prev => {
                             const next = prev.includes('All') ? [] : [...prev];
-                            return next.includes(c) ? next.filter(i => i !== c) : [...next, c];
+                            return next.includes(c.name) ? next.filter(i => i !== c.name) : [...next, c.name];
                           });
                         }}
                         className="rounded text-emerald-600 focus:ring-emerald-500"
                       />
-                      <span className="text-gray-900 dark:text-white">{c}</span>
+                      <span className="text-gray-900 dark:text-white">{c.name}</span>
                     </label>
                   ))}
                 </div>

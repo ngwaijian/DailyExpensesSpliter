@@ -38,14 +38,25 @@ export function SettingsModal({
 
   if (!isOpen) return null;
 
-  const handlePinSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (pin === '1234') {
+  const handlePinSubmit = (inputPin: string) => {
+    if (inputPin === '1111') {
       setIsUnlocked(true);
       setPinError(false);
     } else {
       setPinError(true);
       setPin('');
+    }
+  };
+
+  const handleNumberPad = (num: string) => {
+    if (num === 'DEL') {
+      setPin(prev => prev.slice(0, -1));
+    } else {
+      const newPin = pin + num;
+      setPin(newPin);
+      if (newPin.length === 4) {
+        handlePinSubmit(newPin);
+      }
     }
   };
 
@@ -76,35 +87,38 @@ export function SettingsModal({
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">Settings Locked</h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 text-center">Enter PIN to access settings</p>
             
-            <form onSubmit={handlePinSubmit} className="w-full space-y-4">
-              <input
-                type="password"
-                value={pin}
-                onChange={e => setPin(e.target.value)}
-                placeholder="Enter PIN"
-                className={cn(
-                  "w-full p-3 bg-gray-50 dark:bg-gray-700 border rounded-xl text-center text-2xl tracking-widest focus:ring-2 focus:ring-blue-500 outline-none transition-all",
-                  pinError ? "border-red-500 animate-shake" : "border-gray-200 dark:border-gray-600"
-                )}
-                autoFocus
-              />
-              {pinError && <p className="text-xs text-red-500 text-center">Incorrect PIN. Try again.</p>}
-              <div className="flex gap-2">
+            <div className="w-full flex justify-center gap-2 mb-4">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className={cn(
+                  "w-4 h-4 rounded-full border-2",
+                  i < pin.length ? "bg-blue-600 border-blue-600" : "bg-gray-200 dark:bg-gray-700 border-gray-300 dark:border-gray-600"
+                )} />
+              ))}
+            </div>
+
+            <div className="grid grid-cols-3 gap-3 w-full">
+              {['1','2','3','4','5','6','7','8','9','','0','DEL'].map(num => (
                 <button
-                  type="button"
-                  onClick={handleClose}
-                  className="flex-1 py-2.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-medium transition-colors"
+                  key={num}
+                  onClick={() => num && handleNumberPad(num)}
+                  className={cn(
+                    "h-14 rounded-2xl text-xl font-semibold flex items-center justify-center transition-all active:scale-95",
+                    num ? "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-600" : "invisible"
+                  )}
                 >
-                  Cancel
+                  {num === 'DEL' ? '⌫' : num}
                 </button>
-                <button
-                  type="submit"
-                  className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-colors"
-                >
-                  Unlock
-                </button>
-              </div>
-            </form>
+              ))}
+            </div>
+            
+            {pinError && <p className="text-xs text-red-500 text-center">Incorrect PIN. Try again.</p>}
+            
+            <button
+              onClick={handleClose}
+              className="w-full py-2.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-medium transition-colors mt-2"
+            >
+              Cancel
+            </button>
           </div>
         </div>
       </div>

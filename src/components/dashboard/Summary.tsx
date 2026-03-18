@@ -5,7 +5,7 @@ import { TrendingUp, Download, FileText, Table, Users, PieChart as PieChartIcon,
 import { cn } from '../../lib/utils';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import { toJpeg } from 'html-to-image';
 
 import { useLanguage } from '../../contexts/LanguageContext';
 
@@ -100,7 +100,7 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
       totalMYR += myr;
       
       // Category Totals
-      const cat = e.category || 'Other';
+      const cat = (typeof e.category === 'string' ? e.category : e.category?.name) || 'Other';
       categoryTotals[cat] = (categoryTotals[cat] || 0) + myr;
 
       if (e.isSettled) {
@@ -185,7 +185,7 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
       if (e.type === 'settlement') return;
       
       const rate = rates[e.currency] || e.rate || 1;
-      const cat = e.category || 'Other';
+      const cat = (typeof e.category === 'string' ? e.category : e.category?.name) || 'Other';
       
       // How much did this person contribute to this expense?
       // Their "contribution" is their share.
@@ -387,17 +387,21 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
       // Wait for the browser to fully paint the element
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#ffffff',
-        logging: false
+      const imgData = await toJpeg(element, {
+        quality: 1.0,
+        pixelRatio: 2,
+        backgroundColor: '#ffffff'
       });
       
-      const imgData = canvas.toDataURL('image/jpeg', 1.0);
+      // We need to get the dimensions of the generated image
+      const img = new Image();
+      img.src = imgData;
+      await new Promise(resolve => {
+        img.onload = resolve;
+      });
       
-      const pdfWidth = Math.max(1, Math.round(canvas.width / 2));
-      const pdfHeight = Math.max(1, Math.round(canvas.height / 2));
+      const pdfWidth = Math.max(1, Math.round(img.width / 2));
+      const pdfHeight = Math.max(1, Math.round(img.height / 2));
       
       const pdf = new jsPDF({
         orientation: pdfWidth > pdfHeight ? 'l' : 'p',
@@ -562,7 +566,7 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
               
               const spent = trip.expenses.reduce((acc, exp) => {
                 const budgetCats = Array.isArray(budget.categories) ? budget.categories : [];
-                if (!budgetCats.includes('All') && !budgetCats.includes(exp.category)) return acc;
+                if (!budgetCats.includes('All') && !budgetCats.includes(exp.category.name)) return acc;
                 if (budget.period === 'monthly') {
                   const expDate = new Date(exp.date);
                   if (expDate.getMonth() !== currentMonth || expDate.getFullYear() !== currentYear) return acc;
@@ -871,7 +875,10 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
                 return (
                   <tr key={e.id} style={{ color: '#1f2937' }}>
                     <td className="p-2 whitespace-nowrap" style={{ border: '1px solid #e5e7eb' }}>{formatDate(e.date)}</td>
-                    <td className="p-2" style={{ border: '1px solid #e5e7eb' }}>{t(`cat_${e.category}`, e.category)}</td>
+                    <td className="p-2" style={{ border: '1px solid #e5e7eb' }}>
+                      {t(`cat_${typeof e.category === 'string' ? e.category : e.category?.name}`, typeof e.category === 'string' ? e.category : e.category?.name)}
+                      {e.subCategory && <span style={{ color: '#6b7280', fontSize: '0.875em' }}> / {e.subCategory}</span>}
+                    </td>
                     <td className="p-2" style={{ border: '1px solid #e5e7eb' }}>
                       <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px' }}>
                         <span>{e.desc}</span>

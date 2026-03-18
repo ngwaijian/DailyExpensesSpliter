@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
-type Language = 'en' | 'zh';
+type Language = 'en';
 
 interface Translations {
   [key: string]: string;
@@ -208,208 +208,6 @@ const translations: Record<Language, Translations> = {
     set_push_data: "Push Data",
     set_unsaved_changes: "You have unsaved local changes",
     set_offline: "You are offline. Changes saved locally.",
-  },
-  zh: {
-    // Navigation
-    nav_dashboard: "概览",
-    nav_expenses: "记账",
-    nav_balances: "结算",
-    nav_settings: "设置",
-    nav_planning: "计划",
-    plan_budgets: "预算",
-    plan_goals: "目标",
-    plan_recurring: "定期支出",
-    
-    // Header
-    header_select_trip: "选择账本",
-    header_new_trip: "新建账本",
-    
-    // Expense Form
-    form_type_expense: "支出",
-    form_type_settlement: "还款",
-    form_type_sponsorship: "赞助",
-    form_desc: "描述",
-    form_desc_placeholder: "例如：晚餐、打车...",
-    form_desc_settlement: "还款",
-    form_date: "日期",
-    form_category: "类别",
-    form_amount: "金额",
-    form_paid_by: "付款人",
-    form_split_among: "分摊人",
-    form_memo: "备注 (可选)",
-    form_memo_placeholder: "添加额外信息...",
-    form_location: "地点 (可选)",
-    form_location_placeholder: "搜索地点...",
-    form_cancel: "取消",
-    form_save: "保存",
-    form_add: "添加记录",
-    form_edit: "编辑记录",
-    form_split_equally: "平分",
-    form_split_unequally: "不平分",
-    form_sponsored_by: "赞助人",
-    form_who_received: "收款人",
-    form_beneficiaries: "受益人",
-    form_all: "全选",
-    form_none: "全不选",
-    form_add_people_first: "请先添加成员",
-    form_split_method: "分摊方式",
-    form_equally: "平分",
-    form_exact_amounts: "具体金额",
-    form_percentages: "百分比",
-    form_shares: "份额",
-    form_mark_sponsored: "标记为赞助",
-    form_settled_desc: "已结算的支出会被记录，但不影响余额。",
-    form_sponsored_desc: "赞助的支出计入账本总额，但由赞助人承担全部费用。",
-    form_assign_shares: "分配份额（最大：{maxShares}）。设置为0以排除。",
-    form_remaining_shares: "剩余：{remainingShares}",
-    form_split_remaining: "平分剩余",
-    form_clear: "清空",
-    form_total: "总计:",
-    form_reset: "重置",
-    form_update_entry: "更新记录",
-    form_save_entry: "保存记录",
-    form_select_person: "选择人员",
-    form_coordinates: "已附加坐标:",
-    form_suggested_settlement: "建议全额结算:",
-    form_pinned_location: "已定位地点",
-    form_pinned: "已定位",
-    form_pin: "定位",
-    form_use_current_location: "使用当前位置",
-    form_search_location: "搜索地点",
-    
-    // Categories
-    "cat_🍽️ Meals & Dining": "餐饮美食",
-    "cat_🏨 Accommodation": "住宿酒店",
-    "cat_🚕 Transport & Fuel": "交通加油",
-    "cat_✈️ Flights": "航班机票",
-    "cat_🎢 Activities & Tours": "活动观光",
-    "cat_🛍️ Shopping": "购物消费",
-    "cat_🍻 Drinks & Nightlife": "饮品夜生活",
-    "cat_📝 General / Other": "其他支出",
-    
-    // Dashboard
-    dash_total: "总支出",
-    dash_your_balance: "你的余额",
-    dash_recent: "最近记录",
-    dash_view_all: "查看全部",
-    dash_summary: "账本总结",
-    dash_export: "导出数据",
-    dash_export_pdf: "导出 PDF",
-    dash_generating_pdf: "正在生成 PDF...",
-    dash_export_csv: "导出 CSV",
-    dash_total_spent: "总支出",
-    dash_per_person: "人均支出",
-    dash_breakdown: "明细",
-    dash_category: "分类",
-    dash_person: "人员",
-    dash_no_data: "暂无数据",
-    dash_no_people: "暂无人员",
-    dash_paid: "已付:",
-    dash_exported: "导出时间",
-    dash_people: "人数",
-    dash_expenses_count: "支出笔数",
-    dash_start_date: "开始日期",
-    dash_end_date: "结束日期",
-    dash_person_breakdown: "人员明细",
-    dash_share: "应付",
-    dash_balance: "余额",
-    dash_category_breakdown: "分类明细",
-    dash_amount: "金额",
-    dash_percentage: "百分比",
-    dash_detailed_expenses: "详细支出列表",
-    dash_original: "原币种",
-    dash_myr: "马币",
-    
-    // Balances
-    bal_title: "结算",
-    bal_settled: "已结清",
-    bal_owes: "欠",
-    bal_gets_back: "应收",
-    bal_settle_up: "去结账",
-    bal_mark_settled: "标记为已结清",
-    bal_settlements: "结算方案",
-    bal_all_settled: "全部结清啦！🎉",
-    
-    // Expense List
-    list_no_expenses: "暂无支出。在上方添加一笔吧！",
-    list_filters: "筛选与排序",
-    list_search: "搜索",
-    list_search_placeholder: "搜索描述、人员、地点...",
-    list_category: "分类",
-    list_all_categories: "所有分类",
-    list_sponsorships: "赞助",
-    list_settlements: "结算",
-    list_from: "从",
-    list_to: "至",
-    list_sort_by: "排序方式",
-    list_date_desc: "日期 (从新到旧)",
-    list_date_asc: "日期 (从旧到新)",
-    list_amount_desc: "金额 (从高到低)",
-    list_amount_asc: "金额 (从低到高)",
-    list_reset_filters: "重置筛选",
-    list_no_match: "没有符合筛选条件的支出。",
-    list_total: "总计:",
-    list_sponsored_by: " 由 ",
-    list_paid_to: "付给",
-    list_paid: "支付",
-    list_sponsored: "赞助",
-    list_no_one: "无",
-    
-    // Expense Details Modal
-    detail_settlement: "结算详情",
-    detail_sponsorship: "赞助详情",
-    detail_expense: "支出详情",
-    detail_date: "日期",
-    detail_category: "分类",
-    detail_paid_by: "支付人",
-    detail_sponsored_by: "赞助人",
-    detail_split_details: "分摊详情",
-    detail_split_type: "分摊方式",
-    detail_unequal: "不均等",
-    detail_location: "地点",
-    detail_open_maps: "在地图中打开",
-    detail_edit: "编辑",
-    detail_delete: "删除",
-    detail_confirm_delete: "确定要删除这笔支出吗？",
-    
-    // Trip People & Wallet
-    trip_people: "人员",
-    trip_name_placeholder: "姓名",
-    trip_no_people: "暂无人员。",
-    trip_wallet: "货币钱包",
-    trip_cur_placeholder: "币种",
-    trip_foreign_placeholder: "外币",
-    trip_myr_placeholder: "马币",
-    trip_log_exchange: "记录汇率",
-    trip_avg_rate: "平均:",
-    trip_no_exchanges: "暂无汇率记录。默认 1:1。",
-    trip_new: "新建账本",
-    trip_rename: "重命名账本",
-    trip_delete: "删除账本",
-    
-    // App
-    app_new_trip_prompt: "新账本名称:",
-    app_delete_trip_confirm: "删除当前账本？",
-    app_rename_trip_prompt: "重命名账本:",
-    app_delete_expense_confirm: "删除这笔支出？",
-    app_person_exists: "已存在同名人员。",
-    app_remove_person_confirm: "移除 ",
-    app_sync_data: "同步数据",
-    app_theme: "主题:",
-    nav_people: "人员",
-    app_add_new_entry: "添加新记录",
-    
-    // Settings
-    set_language: "语言 (Language)",
-    set_theme: "主题",
-    set_currency: "主货币",
-    set_sync_desc: "使用 GitHub Gist 在设备间同步数据。\n1. 创建一个 Personal Access Token (Gist 权限)。\n2. 创建一个私有 Gist 并将其 ID 粘贴到此处。",
-    set_github_token: "GitHub Token",
-    set_gist_id: "Gist ID",
-    set_pull_data: "拉取数据",
-    set_push_data: "推送数据",
-    set_unsaved_changes: "您有未保存的本地更改",
-    set_offline: "您处于离线状态。更改已保存在本地。",
   }
 };
 
@@ -425,21 +223,12 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguageState] = useState<Language>('en');
 
   useEffect(() => {
-    const saved = localStorage.getItem('sw_language') as Language;
-    if (saved && (saved === 'en' || saved === 'zh')) {
-      setLanguageState(saved);
-    } else {
-      // Auto-detect based on browser
-      const browserLang = navigator.language.toLowerCase();
-      if (browserLang.includes('zh')) {
-        setLanguageState('zh');
-      }
-    }
+    setLanguageState('en');
   }, []);
 
   const setLanguage = (lang: Language) => {
-    setLanguageState(lang);
-    localStorage.setItem('sw_language', lang);
+    setLanguageState('en');
+    localStorage.setItem('sw_language', 'en');
   };
 
   const t = (key: string, fallback?: string) => {
