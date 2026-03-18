@@ -79,7 +79,7 @@ export function SettingsModal({
   if (!isUnlocked) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-        <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl w-full max-w-xs overflow-hidden transition-colors p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-xs overflow-hidden transition-colors p-6">
           <div className="flex flex-col items-center gap-4">
             <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center text-blue-600 dark:text-blue-400">
               <Settings className="w-6 h-6" />
@@ -128,7 +128,7 @@ export function SettingsModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
       <div 
-        className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl w-full max-w-md overflow-hidden transition-colors"
+        className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md overflow-hidden transition-colors"
       >
         <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">

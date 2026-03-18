@@ -445,7 +445,7 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-[2rem] shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-colors duration-200">
+    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-colors duration-200">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest flex items-center gap-2">
           <TrendingUp className="w-4 h-4" />

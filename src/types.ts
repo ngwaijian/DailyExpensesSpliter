@@ -73,6 +73,7 @@ export interface Budget {
 export interface Loan {
   id: string;
   name: string;
+  type: 'loan' | 'installment';
   totalAmount: number;
   remainingAmount: number;
   installmentAmount: number;
@@ -81,6 +82,7 @@ export interface Loan {
   currency: string;
   startDate: string;
   dueDate: string;
+  nextInstallmentDate: string; // Added
   paidBy: string; // The person who took the loan
   status: 'active' | 'paid_off';
 }

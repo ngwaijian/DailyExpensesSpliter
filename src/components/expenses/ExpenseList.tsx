@@ -135,9 +135,61 @@ export function ExpenseList({ trip, onEdit, onView, onDelete, lastUpdatedId, onU
     });
   }, [trip.recurringTransactions]);
 
-  if (trip.expenses.length === 0 && upcomingRecurring.length === 0) {
+  const upcomingLoans = useMemo(() => {
+    if (!trip.loans) return [];
+    const now = new Date();
+    const threeDaysFromNow = new Date();
+    threeDaysFromNow.setDate(now.getDate() + 3);
+    
+    return trip.loans.filter(l => {
+      if (l.status === 'paid_off') return false;
+      const nextDate = new Date(l.nextInstallmentDate);
+      return nextDate >= now && nextDate <= threeDaysFromNow;
+    });
+  }, [trip.loans]);
+
+  const handleMarkAsPaid = (item: { id: string, desc: string, amountOriginal: number, currency: string, paidBy: string, type: 'loan' | 'recurring', nextDate: string }) => {
+    const newExpense: Expense = {
+      id: Date.now().toString(),
+      desc: item.desc,
+      amountOriginal: item.amountOriginal,
+      currency: item.currency,
+      category: { name: '🏠 Rent & Bills' }, // Default category
+      date: new Date().toISOString().split('T')[0],
+      paidBy: item.paidBy,
+      splitAmong: [item.paidBy],
+      type: 'expense'
+    };
+
+    const updatedTrip = { ...trip, expenses: [...trip.expenses, newExpense] };
+
+    if (item.type === 'loan') {
+      updatedTrip.loans = trip.loans?.map(l => {
+        if (l.id === item.id) {
+          const nextDate = new Date(l.nextInstallmentDate);
+          nextDate.setMonth(nextDate.getMonth() + 1);
+          return { ...l, remainingAmount: l.remainingAmount - l.installmentAmount, nextInstallmentDate: nextDate.toISOString().split('T')[0] };
+        }
+        return l;
+      });
+    } else {
+      updatedTrip.recurringTransactions = trip.recurringTransactions?.map(rt => {
+        if (rt.id === item.id) {
+          const nextDate = new Date(rt.nextDate);
+          if (rt.frequency === 'monthly') nextDate.setMonth(nextDate.getMonth() + 1);
+          else if (rt.frequency === 'weekly') nextDate.setDate(nextDate.getDate() + 7);
+          return { ...rt, nextDate: nextDate.toISOString().split('T')[0] };
+        }
+        return rt;
+      });
+    }
+
+    onUpdateTrip(updatedTrip);
+  };
+
+  if (trip.expenses.length === 0 && upcomingRecurring.length === 0 && upcomingLoans.length === 0) {
     return (
-      <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-3xl border border-dashed border-gray-300 dark:border-gray-700 transition-colors duration-200 flex flex-col items-center gap-4">
+      <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-2xl border border-dashed border-gray-300 dark:border-gray-700 transition-colors duration-200 flex flex-col items-center gap-4">
         <div className="w-20 h-20 bg-gray-50 dark:bg-gray-900 rounded-2xl flex items-center justify-center shadow-inner">
           <img 
             src={resolvedTheme === 'dark' ? "/icon-dark.svg" : "/icon.svg"} 
@@ -152,12 +204,12 @@ export function ExpenseList({ trip, onEdit, onView, onDelete, lastUpdatedId, onU
 
   return (
     <div className="space-y-4">
-      {/* Upcoming Recurring Reminders */}
-      {upcomingRecurring.length > 0 && (
+      {/* Upcoming Reminders */}
+      {(upcomingRecurring.length > 0 || upcomingLoans.length > 0) && (
         <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-2xl p-4 mb-4">
           <h4 className="flex items-center gap-2 text-amber-800 dark:text-amber-400 font-semibold mb-3">
             <Clock className="w-5 h-5" />
-            Upcoming Recurring Expenses
+            Upcoming Payments
           </h4>
           <div className="space-y-2">
             {upcomingRecurring.map(rt => (
@@ -168,8 +220,27 @@ export function ExpenseList({ trip, onEdit, onView, onDelete, lastUpdatedId, onU
                     Due: {new Date(rt.nextDate).toLocaleDateString()} • {rt.frequency}
                   </div>
                 </div>
-                <div className="font-semibold text-amber-700 dark:text-amber-400">
-                  {formatCurrency(rt.amountOriginal, rt.currency)}
+                <div className="flex items-center gap-3">
+                  <div className="font-semibold text-amber-700 dark:text-amber-400">
+                    {formatCurrency(rt.amountOriginal, rt.currency)}
+                  </div>
+                  <button onClick={() => handleMarkAsPaid({ id: rt.id, desc: rt.desc, amountOriginal: rt.amountOriginal, currency: rt.currency, paidBy: rt.paidBy, type: 'recurring', nextDate: rt.nextDate })} className="px-3 py-1 bg-amber-500 text-white rounded-lg text-xs font-medium hover:bg-amber-600">Pay</button>
+                </div>
+              </div>
+            ))}
+            {upcomingLoans.map(l => (
+              <div key={l.id} className="flex justify-between items-center bg-white/60 dark:bg-gray-800/60 p-3 rounded-xl">
+                <div>
+                  <div className="font-medium text-gray-900 dark:text-white">{l.name}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                    Due: {new Date(l.nextInstallmentDate).toLocaleDateString()} • Installment
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="font-semibold text-amber-700 dark:text-amber-400">
+                    {formatCurrency(l.installmentAmount, l.currency)}
+                  </div>
+                  <button onClick={() => handleMarkAsPaid({ id: l.id, desc: l.name, amountOriginal: l.installmentAmount, currency: l.currency, paidBy: l.paidBy, type: 'loan', nextDate: l.nextInstallmentDate })} className="px-3 py-1 bg-amber-500 text-white rounded-lg text-xs font-medium hover:bg-amber-600">Pay</button>
                 </div>
               </div>
             ))}
@@ -203,14 +274,14 @@ export function ExpenseList({ trip, onEdit, onView, onDelete, lastUpdatedId, onU
       </div>
 
       {showCategoryManager && (
-        <div className="bg-white dark:bg-gray-800 p-4 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors duration-200 animate-in slide-in-from-top-2">
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors duration-200 animate-in slide-in-from-top-2">
           <CategoryManager trip={trip} onUpdateTrip={onUpdateTrip} />
         </div>
       )}
 
       {/* Filter and Sort Controls */}
       {showFilters && (
-        <div className="bg-white dark:bg-gray-800 p-4 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors duration-200 animate-in slide-in-from-top-2">
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors duration-200 animate-in slide-in-from-top-2">
           <div className="flex flex-col gap-4">
             {/* Search Input */}
             <div>
@@ -308,11 +379,11 @@ export function ExpenseList({ trip, onEdit, onView, onDelete, lastUpdatedId, onU
       )}
 
       {filteredAndSortedExpenses.length === 0 ? (
-        <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-3xl border border-dashed border-gray-300 dark:border-gray-700 transition-colors duration-200">
+        <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-2xl border border-dashed border-gray-300 dark:border-gray-700 transition-colors duration-200">
           <p className="text-gray-400 dark:text-gray-500">{t('list_no_match')}</p>
         </div>
       ) : (
-        <div className="bg-white dark:bg-gray-800 rounded-[2rem] shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
           {filteredAndSortedExpenses.map((exp, index) => {
             const rate = rates[exp.currency] || exp.rate || 1;
             const myrAmount = exp.amountOriginal * rate;

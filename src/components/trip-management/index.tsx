@@ -59,7 +59,7 @@ export function TripSelector({ trips, currentTripId, onSelect, onAdd, onDelete, 
         </button>
 
         {isOpen && (
-          <div className="absolute top-full right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-3xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-100 origin-top-right">
+          <div className="absolute top-full right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-100 origin-top-right">
             <div className="p-1.5 space-y-0.5">
               <button 
                 onClick={() => { onAdd(); setIsOpen(false); }}
@@ -162,7 +162,7 @@ export function PeopleWallet({ trip, onAddPerson, onEditPerson, onRemovePerson, 
 
   return (
     <div className="space-y-4">
-      <div className="bg-white dark:bg-gray-800 rounded-[2rem] shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-colors duration-200">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-colors duration-200">
         <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-4 flex items-center gap-2">
           <Users className="w-4 h-4" />
           {t('trip_people')}
@@ -207,7 +207,7 @@ export function PeopleWallet({ trip, onAddPerson, onEditPerson, onRemovePerson, 
               ) : (
                 <>
                   <span className="font-medium text-gray-700 dark:text-gray-300">{user}</span>
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex items-center gap-1 transition-opacity">
                     <button 
                       onClick={() => startEdit(user)}
                       className="p-1 text-gray-400 hover:text-blue-500 transition-colors"
@@ -229,7 +229,7 @@ export function PeopleWallet({ trip, onAddPerson, onEditPerson, onRemovePerson, 
         </ul>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-[2rem] shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-colors duration-200">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-colors duration-200">
         <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-4">{t('trip_wallet')}</h3>
         
         <form onSubmit={handleAddExchange} className="space-y-2 mb-6">
@@ -283,8 +283,8 @@ export function PeopleWallet({ trip, onAddPerson, onEditPerson, onRemovePerson, 
                   {exchanges.map((ex: any) => (
                     <div key={ex.id} className="flex justify-between items-center text-[10px] text-gray-500 dark:text-gray-400 px-2 py-1 hover:bg-white dark:hover:bg-gray-800 rounded-lg transition-colors group">
                       <span>{ex.foreignAmount} {cur} → RM {ex.myrSpent}</span>
-                      <button onClick={() => onRemoveExchange(ex.id)} className="text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100">
-                        <Trash2 size={10} />
+                      <button onClick={() => onRemoveExchange(ex.id)} className="text-gray-400 hover:text-red-500 transition-colors">
+                        <Trash2 size={12} />
                       </button>
                     </div>
                   ))}

@@ -77,8 +77,9 @@ function GoalItem({ goal, trip, onUpdateTrip, onEdit, onDelete, t }: GoalItemPro
         <div className="flex items-center gap-2">
           <span className="text-xs text-gray-500 dark:text-gray-400">Manual Entry:</span>
           <input
-            type="number"
+            type="text"
             inputMode="decimal"
+            pattern="[0-9]*\.?[0-9]*"
             value={localAmount}
             onChange={(e) => setLocalAmount(e.target.value)}
             onBlur={handleBlur}
@@ -154,7 +155,7 @@ export function Goals({ trip, onUpdateTrip }: GoalsProps) {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-colors duration-200">
+    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-colors duration-200">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
           <Target className="w-6 h-6 text-blue-500" />
@@ -187,9 +188,9 @@ export function Goals({ trip, onUpdateTrip }: GoalsProps) {
               <div>
                 <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Target Amount</label>
                 <input
-                  type="number"
-                  step="0.01"
+                  type="text"
                   inputMode="decimal"
+                  pattern="[0-9]*\.?[0-9]*"
                   value={targetAmount}
                   onChange={e => setTargetAmount(e.target.value)}
                   className="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white"
@@ -199,9 +200,9 @@ export function Goals({ trip, onUpdateTrip }: GoalsProps) {
               <div>
                 <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Current Amount</label>
                 <input
-                  type="number"
-                  step="0.01"
+                  type="text"
                   inputMode="decimal"
+                  pattern="[0-9]*\.?[0-9]*"
                   value={currentAmount}
                   onChange={e => setCurrentAmount(e.target.value)}
                   className="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white"

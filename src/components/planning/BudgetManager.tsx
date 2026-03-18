@@ -98,7 +98,7 @@ export function BudgetManager({ trip, onUpdateTrip }: BudgetManagerProps) {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-colors duration-200">
+    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-colors duration-200">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
           <Wallet className="w-6 h-6 text-emerald-500" />
@@ -174,9 +174,9 @@ export function BudgetManager({ trip, onUpdateTrip }: BudgetManagerProps) {
                   <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Budget Amount</label>
                   <div className="flex gap-2">
                     <input
-                      type="number"
-                      step="0.01"
+                      type="text"
                       inputMode="decimal"
+                      pattern="[0-9]*\.?[0-9]*"
                       value={amount}
                       onChange={e => setAmount(e.target.value)}
                       placeholder="0.00"
@@ -276,7 +276,7 @@ export function BudgetManager({ trip, onUpdateTrip }: BudgetManagerProps) {
         })}
 
         {budgets.length === 0 && !isAdding && (
-          <div className="text-center py-10 border-2 border-dashed border-gray-100 dark:border-gray-700 rounded-3xl">
+          <div className="text-center py-10 border-2 border-dashed border-gray-100 dark:border-gray-700 rounded-2xl">
             <PieChart className="w-10 h-10 text-gray-200 dark:text-gray-700 mx-auto mb-3" />
             <p className="text-sm text-gray-400 dark:text-gray-500 italic">
               No budgets set yet. Track your spending limits!

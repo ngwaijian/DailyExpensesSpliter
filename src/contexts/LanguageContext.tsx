@@ -19,8 +19,8 @@ const translations: Record<Language, Translations> = {
     plan_recurring: "Recurring",
     
     // Header
-    header_select_trip: "Select Group",
-    header_new_trip: "New Group",
+    header_select_trip: "Select Account",
+    header_new_trip: "New Account",
     
     // Expense Form
     form_type_expense: "Expense",
@@ -181,14 +181,14 @@ const translations: Record<Language, Translations> = {
     trip_log_exchange: "Log Exchange",
     trip_avg_rate: "Avg:",
     trip_no_exchanges: "No exchanges logged. Rate 1:1.",
-    trip_new: "New Group",
-    trip_rename: "Rename Group",
-    trip_delete: "Delete Group",
+    trip_new: "New Account",
+    trip_rename: "Rename Account",
+    trip_delete: "Delete Account",
     
     // App
-    app_new_trip_prompt: "New Group Name:",
-    app_delete_trip_confirm: "Delete current group?",
-    app_rename_trip_prompt: "Rename Group:",
+    app_new_trip_prompt: "New Account Name:",
+    app_delete_trip_confirm: "Delete current account?",
+    app_rename_trip_prompt: "Rename Account:",
     app_delete_expense_confirm: "Delete this expense?",
     app_person_exists: "A person with this name already exists.",
     app_remove_person_confirm: "Remove ",

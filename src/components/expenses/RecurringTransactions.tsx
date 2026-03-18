@@ -116,7 +116,7 @@ export function RecurringTransactions({ trip, onUpdateTrip }: RecurringTransacti
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-colors duration-200">
+    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-colors duration-200">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
           <Repeat className="w-6 h-6 text-blue-500" />
@@ -209,9 +209,9 @@ export function RecurringTransactions({ trip, onUpdateTrip }: RecurringTransacti
                 <div>
                   <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Amount</label>
                   <input
-                    type="number"
-                    step="0.01"
+                    type="text"
                     inputMode="decimal"
+                    pattern="[0-9]*\.?[0-9]*"
                     value={amount}
                     onChange={e => setAmount(e.target.value)}
                     className="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white"

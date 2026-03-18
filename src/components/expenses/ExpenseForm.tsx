@@ -462,7 +462,7 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
 
   return (
     <div 
-      className="bg-white dark:bg-gray-800 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 p-3 sm:p-6 mb-4 sm:mb-6 transition-colors duration-200"
+      className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-3 sm:p-6 mb-4 sm:mb-6 transition-colors duration-200"
     >
       <div className="flex justify-between items-center mb-3 sm:mb-4">
         <div className="flex items-center gap-2">

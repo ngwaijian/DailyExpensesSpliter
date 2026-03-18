@@ -15,11 +15,11 @@ export const LoanManager: React.FC<{
   const [editingLoan, setEditingLoan] = useState<Loan | undefined>(undefined);
 
   return (
-    <div className="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700">
+    <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
       <div className="flex justify-between items-center mb-6">
         <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
           <TrendingUp className="w-5 h-5 text-blue-600" />
-          Loans
+          Loans & Installments
         </h3>
         <button 
           onClick={() => { setEditingLoan(undefined); setIsModalOpen(true); }} 
@@ -36,7 +36,7 @@ export const LoanManager: React.FC<{
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {loans.map(loan => {
-            const progress = ((loan.totalAmount - loan.remainingAmount) / loan.totalAmount) * 100;
+            const progress = loan.totalAmount > 0 ? ((loan.totalAmount - loan.remainingAmount) / loan.totalAmount) * 100 : 0;
             return (
               <div key={loan.id} className="bg-gray-50 dark:bg-gray-900 p-5 rounded-2xl border border-gray-100 dark:border-gray-800 space-y-3">
                 <div className="flex justify-between items-start">
@@ -56,18 +56,18 @@ export const LoanManager: React.FC<{
                     <span className="font-medium">{progress.toFixed(0)}%</span>
                   </div>
                   <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                    <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${progress}%` }}></div>
+                    <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}></div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div>
-                    <p className="text-xs text-gray-500">Remaining</p>
-                    <p className="font-semibold">{formatCurrency(loan.remainingAmount)}</p>
+                <div className="flex justify-between items-end gap-2 text-sm pt-2">
+                  <div className="min-w-0">
+                    <p className="text-xs text-gray-500 truncate">Remaining</p>
+                    <p className="font-semibold truncate">{formatCurrency(loan.remainingAmount)}</p>
                   </div>
-                  <div className="text-right">
-                    <p className="text-xs text-gray-500">Installment</p>
-                    <p className="font-semibold">{formatCurrency(loan.installmentAmount)}/mo</p>
+                  <div className="text-right min-w-0">
+                    <p className="text-xs text-gray-500 truncate">Installment</p>
+                    <p className="font-semibold truncate">{formatCurrency(loan.installmentAmount)}<span className="text-xs font-normal text-gray-500">/mo</span></p>
                   </div>
                 </div>
               </div>
