@@ -7,9 +7,11 @@ interface LoanModalProps {
   onClose: () => void;
   onSave: (loan: Loan) => void;
   initialData?: Loan;
+  users: string[];
+  defaultCurrency: string;
 }
 
-export const LoanModal: React.FC<LoanModalProps> = ({ isOpen, onClose, onSave, initialData }) => {
+export const LoanModal: React.FC<LoanModalProps> = ({ isOpen, onClose, onSave, initialData, users, defaultCurrency }) => {
   const [name, setName] = useState(initialData?.name || '');
   const [type, setType] = useState<'loan' | 'installment'>(initialData?.type || 'loan');
   const [totalAmount, setTotalAmount] = useState(initialData?.totalAmount.toString() || '');
@@ -17,11 +19,11 @@ export const LoanModal: React.FC<LoanModalProps> = ({ isOpen, onClose, onSave, i
   const [installmentAmount, setInstallmentAmount] = useState(initialData?.installmentAmount.toString() || '');
   const [interestRate, setInterestRate] = useState(initialData?.interestRate.toString() || '');
   const [termMonths, setTermMonths] = useState(initialData?.termMonths.toString() || '');
-  const [currency, setCurrency] = useState(initialData?.currency || 'MYR');
-  const [startDate, setStartDate] = useState(initialData?.startDate || '');
+  const [currency, setCurrency] = useState(initialData?.currency || defaultCurrency);
+  const [startDate, setStartDate] = useState(initialData?.startDate || new Date().toISOString().split('T')[0]);
   const [dueDate, setDueDate] = useState(initialData?.dueDate || '');
   const [nextInstallmentDate, setNextInstallmentDate] = useState(initialData?.nextInstallmentDate || '');
-  const [paidBy, setPaidBy] = useState(initialData?.paidBy || '');
+  const [paidBy, setPaidBy] = useState(initialData?.paidBy || users[0] || '');
   const [status, setStatus] = useState(initialData?.status || 'active');
 
   React.useEffect(() => {
@@ -100,12 +102,27 @@ export const LoanModal: React.FC<LoanModalProps> = ({ isOpen, onClose, onSave, i
             </select>
           </div>
           <div className="space-y-1">
-            <label className="text-xs font-medium text-gray-500">Paid By</label>
-            <input type="text" value={paidBy} onChange={e => setPaidBy(e.target.value)} className="w-full p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl" required />
+            <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">Paid By</label>
+            <select 
+              value={paidBy} 
+              onChange={e => setPaidBy(e.target.value)} 
+              className="w-full p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+              required
+            >
+              {users.map(user => (
+                <option key={user} value={user}>{user}</option>
+              ))}
+            </select>
           </div>
           <div className="space-y-1">
-            <label className="text-xs font-medium text-gray-500">Currency</label>
-            <input type="text" value={currency} onChange={e => setCurrency(e.target.value)} className="w-full p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl" required />
+            <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">Currency</label>
+            <input 
+              type="text" 
+              value={currency} 
+              onChange={e => setCurrency(e.target.value)} 
+              className="w-full p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all" 
+              required 
+            />
           </div>
           <div className="space-y-1">
             <label className="text-xs font-medium text-gray-500">Total Amount</label>

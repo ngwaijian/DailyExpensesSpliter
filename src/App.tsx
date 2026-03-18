@@ -491,7 +491,7 @@ function App() {
             <BudgetManager trip={currentTrip} onUpdateTrip={updateTrip} />
             <Goals trip={currentTrip} onUpdateTrip={updateTrip} />
             <RecurringTransactions trip={currentTrip} onUpdateTrip={updateTrip} />
-            <LoanManager loans={currentTrip.loans || []} onAdd={handleAddLoan} onEdit={handleEditLoan} onDelete={handleDeleteLoan} />
+            <LoanManager trip={currentTrip} onAdd={handleAddLoan} onEdit={handleEditLoan} onDelete={handleDeleteLoan} />
           </div>
 
           {/* Mobile Only Views */}
@@ -507,7 +507,7 @@ function App() {
               <BudgetManager trip={currentTrip} onUpdateTrip={updateTrip} />
               <Goals trip={currentTrip} onUpdateTrip={updateTrip} />
               <RecurringTransactions trip={currentTrip} onUpdateTrip={updateTrip} />
-              <LoanManager loans={currentTrip.loans || []} onAdd={handleAddLoan} onEdit={handleEditLoan} onDelete={handleDeleteLoan} />
+              <LoanManager trip={currentTrip} onAdd={handleAddLoan} onEdit={handleEditLoan} onDelete={handleDeleteLoan} />
             </div>
           </div>
 
