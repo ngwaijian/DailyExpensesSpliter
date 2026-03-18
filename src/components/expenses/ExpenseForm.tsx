@@ -163,6 +163,7 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
   }, [trip.expenses]);
 
   const [showCalculator, setShowCalculator] = useState(false);
+  const [errors, setErrors] = useState<{ [key: string]: boolean }>({});
   
   const [locationName, setLocationName] = useState(initialData?.location?.name || '');
   const [locationCoords, setLocationCoords] = useState<{lat: number, lng: number} | undefined>(
@@ -197,6 +198,8 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    const newErrors: { [key: string]: boolean } = {};
+
     let finalDesc = desc.trim();
     if (!finalDesc) {
       if (subCategory) {
@@ -204,31 +207,28 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
       } else if (category) {
         finalDesc = category;
       } else {
-        alert('Please enter a description.');
-        return;
+        newErrors.desc = true;
       }
     }
 
     if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
-      alert('Please enter a valid amount greater than 0.');
-      return;
+      newErrors.amount = true;
     }
     if (!date) {
-      alert('Please select a date.');
-      return;
+      newErrors.date = true;
     }
     if (!paidBy) {
-      alert(type === 'sponsorship' ? 'Please select a sponsor.' : 'Please select who paid.');
-      return;
+      newErrors.paidBy = true;
     }
     if (splitAmong.length === 0) {
-      if (type === 'sponsorship') {
-        alert('Please select at least one beneficiary.');
-        return;
-      } else if (!isSponsored) {
-        alert('Please select at least one person to split the cost with.');
-        return;
+      if (type === 'sponsorship' || !isSponsored) {
+        newErrors.splitAmong = true;
       }
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
     }
 
     let finalSplitDetails: { [key: string]: number } | undefined = undefined;
@@ -276,6 +276,7 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
     if (!initialData) {
       handleReset();
     }
+    setErrors({});
   };
 
   const handleReset = () => {
@@ -551,10 +552,16 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
               id="desc-input"
               type="text" 
               value={desc}
-              onChange={e => setDesc(e.target.value)}
+              onChange={e => {
+                setDesc(e.target.value);
+                if (errors.desc) setErrors(prev => ({ ...prev, desc: false }));
+              }}
               placeholder={type === 'settlement' ? t('form_desc_settlement') : t('form_desc_placeholder')}
               list="description-suggestions"
-              className="w-full p-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-colors min-h-[42px]"
+              className={cn(
+                "w-full p-2.5 bg-gray-50 dark:bg-gray-700 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-colors min-h-[42px]",
+                errors.desc ? "border-red-500 dark:border-red-500" : "border-gray-200 dark:border-gray-600"
+              )}
             />
             <datalist id="description-suggestions">
               {descriptionSuggestions.map(suggestion => (
@@ -570,8 +577,14 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
               <input 
                 type="date" 
                 value={date.split('T')[0]}
-                onChange={e => setDate(e.target.value + 'T' + (date.split('T')[1] || '00:00'))}
-                className="flex-1 min-w-0 p-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white transition-colors text-sm min-h-[42px]"
+                onChange={e => {
+                  setDate(e.target.value + 'T' + (date.split('T')[1] || '00:00'));
+                  if (errors.date) setErrors(prev => ({ ...prev, date: false }));
+                }}
+                className={cn(
+                  "flex-1 min-w-0 p-2.5 bg-gray-50 dark:bg-gray-700 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white transition-colors text-sm min-h-[42px]",
+                  errors.date ? "border-red-500 dark:border-red-500" : "border-gray-200 dark:border-gray-600"
+                )}
               />
               <input 
                 type="time" 
@@ -690,6 +703,7 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
                   pattern="[0-9]*\.?[0-9]*"
                   value={amount}
                   onChange={e => {
+                    if (errors.amount) setErrors(prev => ({ ...prev, amount: false }));
                     const val = e.target.value;
                     
                     // If the user pasted a value, just set it
@@ -729,7 +743,10 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
                       } catch (e) {}
                     }
                   }}
-                  className="w-full pl-9 pr-10 p-2.5 bg-transparent border-none outline-none font-mono text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                  className={cn(
+                    "w-full pl-9 pr-10 p-2.5 bg-transparent border-none outline-none font-mono text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500",
+                    errors.amount ? "text-red-500" : ""
+                  )}
                   placeholder="0.00"
                 />
                 <button 
@@ -906,13 +923,17 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
             <select 
               value={paidBy}
               onChange={e => {
+                if (errors.paidBy) setErrors(prev => ({ ...prev, paidBy: false }));
                 const newPaidBy = e.target.value;
                 if (splitAmong.length === 1 && splitAmong[0] === paidBy) {
                   setSplitAmong([newPaidBy]);
                 }
                 setPaidBy(newPaidBy);
               }}
-              className="w-full p-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white transition-colors"
+              className={cn(
+                "w-full p-2.5 bg-gray-50 dark:bg-gray-700 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white transition-colors",
+                errors.paidBy ? "border-red-500 dark:border-red-500" : "border-gray-200 dark:border-gray-600"
+              )}
             >
               <option value="" disabled>{t('form_select_person')}</option>
               {trip.users.map(u => <option key={u} value={u}>{u}</option>)}
@@ -996,12 +1017,18 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
                     <button type="button" onClick={selectNone} className="hover:underline">{t('form_none')}</button>
                   </div>
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div className={cn(
+                  "flex flex-wrap gap-2 p-2 rounded-xl border",
+                  errors.splitAmong ? "border-red-500 dark:border-red-500" : "border-transparent"
+                )}>
                   {trip.users.map(user => (
                     <button
                       key={user}
                       type="button"
-                      onClick={() => toggleUser(user)}
+                      onClick={() => {
+                        if (errors.splitAmong) setErrors(prev => ({ ...prev, splitAmong: false }));
+                        toggleUser(user);
+                      }}
                       className={cn(
                         "px-3 py-1.5 rounded-full text-sm border transition-colors",
                         splitAmong.includes(user) 

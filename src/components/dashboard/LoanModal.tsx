@@ -81,7 +81,7 @@ export const LoanModal: React.FC<LoanModalProps> = ({ isOpen, onClose, onSave, i
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl w-full max-w-lg space-y-6 max-h-[90vh] overflow-y-auto">
+      <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl w-full max-w-2xl space-y-6 max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800 z-10 pb-4 border-b border-gray-100 dark:border-gray-700">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{initialData ? 'Edit Loan' : 'Add New Loan'}</h2>
           <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-600"><X className="w-6 h-6" /></button>
@@ -104,6 +104,10 @@ export const LoanModal: React.FC<LoanModalProps> = ({ isOpen, onClose, onSave, i
             <input type="text" value={paidBy} onChange={e => setPaidBy(e.target.value)} className="w-full p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl" required />
           </div>
           <div className="space-y-1">
+            <label className="text-xs font-medium text-gray-500">Currency</label>
+            <input type="text" value={currency} onChange={e => setCurrency(e.target.value)} className="w-full p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl" required />
+          </div>
+          <div className="space-y-1">
             <label className="text-xs font-medium text-gray-500">Total Amount</label>
             <input type="text" inputMode="decimal" pattern="[0-9]*\.?[0-9]*" value={totalAmount} onChange={e => setTotalAmount(e.target.value)} className="w-full p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl" required />
           </div>
@@ -122,10 +126,6 @@ export const LoanModal: React.FC<LoanModalProps> = ({ isOpen, onClose, onSave, i
           <div className="space-y-1">
             <label className="text-xs font-medium text-gray-500">Term (Months)</label>
             <input type="text" inputMode="numeric" pattern="[0-9]*" value={termMonths} onChange={e => setTermMonths(e.target.value)} className="w-full p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl" required />
-          </div>
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-gray-500">Currency</label>
-            <input type="text" value={currency} onChange={e => setCurrency(e.target.value)} className="w-full p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl" required />
           </div>
           <div className="space-y-1">
             <label className="text-xs font-medium text-gray-500">Start Date</label>
