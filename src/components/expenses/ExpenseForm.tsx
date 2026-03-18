@@ -675,7 +675,32 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
                   inputMode="decimal"
                   pattern="[0-9]*\.?[0-9]*"
                   value={amount}
-                  onChange={e => setAmount(e.target.value)}
+                  onChange={e => {
+                    const val = e.target.value;
+                    
+                    // If the user pasted a value, just set it
+                    if (val.length > amount.length + 1) {
+                      setAmount(val);
+                      return;
+                    }
+
+                    // If the user deleted
+                    if (val.length < amount.length) {
+                      // Calculator-like delete:
+                      const currentNumeric = parseInt(amount.replace('.', '')) || 0;
+                      const newNumeric = Math.floor(currentNumeric / 10) / 100;
+                      setAmount(newNumeric.toFixed(2));
+                      return;
+                    }
+
+                    // If the user typed a digit
+                    const lastChar = val.slice(-1);
+                    if (/[0-9]/.test(lastChar)) {
+                      const currentNumeric = parseInt(amount.replace('.', '')) || 0;
+                      const newNumeric = (currentNumeric * 10 + parseInt(lastChar)) / 100;
+                      setAmount(newNumeric.toFixed(2));
+                    }
+                  }}
                   onBlur={() => {
                     // Only auto-calc on blur if calculator is NOT open
                     if (!showCalculator) {
