@@ -335,11 +335,23 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
   const selectAll = () => setSplitAmong(trip.users);
   const selectNone = () => setSplitAmong([]);
 
+  const updateAmountWithDigit = (digit: number) => {
+    const currentNumeric = parseInt(amount.toString().replace('.', '')) || 0;
+    const newNumeric = (currentNumeric * 10 + digit) / 100;
+    setAmount(newNumeric.toFixed(2));
+  };
+
+  const updateAmountWithDelete = () => {
+    const currentNumeric = parseInt(amount.toString().replace('.', '')) || 0;
+    const newNumeric = Math.floor(currentNumeric / 10) / 100;
+    setAmount(newNumeric.toFixed(2));
+  };
+
   const handleCalcInput = (key: string) => {
     if (key === 'C') {
       setAmount('');
     } else if (key === 'DEL') {
-      setAmount(prev => prev.toString().slice(0, -1));
+      updateAmountWithDelete();
     } else if (key === '=') {
       try {
         const sanitized = amount.toString().replace(/[^0-9+\-*/().\s]/g, '');
@@ -353,6 +365,8 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
       } catch (e) {
         // ignore
       }
+    } else if (/[0-9]/.test(key)) {
+      updateAmountWithDigit(parseInt(key));
     } else {
       setAmount(prev => prev + key);
     }
