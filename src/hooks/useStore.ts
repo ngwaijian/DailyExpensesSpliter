@@ -69,6 +69,38 @@ export function useStore() {
     };
   }, []);
 
+  // Sync across tabs
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === STORAGE_KEY && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          // MERGE STRATEGY: Instead of blind overwrite, ensure we keep our trips
+          // and update/add based on IDs.
+          setAppData(prev => {
+            const newTrips = [...prev.trips];
+            parsed.trips.forEach((newTrip: Trip) => {
+              const index = newTrips.findIndex(t => t.id === newTrip.id);
+              if (index >= 0) {
+                newTrips[index] = newTrip; // Update existing
+              } else {
+                newTrips.push(newTrip); // Add new
+              }
+            });
+            return { ...prev, trips: newTrips };
+          });
+        } catch (e) {
+          console.error("Failed to parse storage data from another tab:", e);
+        }
+      }
+      if (e.key === CURRENT_TRIP_KEY && e.newValue) {
+        setCurrentTripId(e.newValue);
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
   // Process recurring transactions
   useEffect(() => {
     if (appData.trips.length === 0) return;
