@@ -3,6 +3,7 @@ import { Trip, CATEGORIES } from '../../types';
 import { CATEGORY_COLORS, CATEGORY_STRIP_COLORS } from '../../constants';
 import { Calendar, Tag, DollarSign, Users, X, Calculator, MapPin, Loader2, Search } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { motion, AnimatePresence } from 'framer-motion';
 import { getAverageRates, formatCurrency } from '../../utils/currency';
 import { calculateBalances, getSimplifiedDebts } from '../../utils/balances';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -352,7 +353,14 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
     if (key === 'C') {
       setAmount('');
     } else if (key === 'DEL') {
-      updateAmountWithDelete();
+      // If it's a simple number, use the cash register delete
+      // Otherwise, just remove the last character
+      const hasOperators = /[+\-*/()]/.test(amount.toString());
+      if (!hasOperators && amount.toString().length > 0 && !isNaN(parseFloat(amount.toString()))) {
+        updateAmountWithDelete();
+      } else {
+        setAmount(prev => prev.toString().slice(0, -1));
+      }
     } else if (key === '=') {
       try {
         const sanitized = amount.toString().replace(/[^0-9+\-*/().\s]/g, '');
@@ -367,7 +375,14 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
         // ignore
       }
     } else if (/[0-9]/.test(key)) {
-      updateAmountWithDigit(parseInt(key));
+      // If it's a simple number (or empty), use cash register style
+      // If it already has operators, just append
+      const hasOperators = /[+\-*/()]/.test(amount.toString());
+      if (!hasOperators) {
+        updateAmountWithDigit(parseInt(key));
+      } else {
+        setAmount(prev => prev + key);
+      }
     } else {
       setAmount(prev => prev + key);
     }
@@ -572,65 +587,80 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
 
           {/* Date and Time - Side-by-side on mobile */}
           <div className="col-span-2 md:col-span-5 min-w-0">
-            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{t('form_date')}</label>
-            <div className="flex gap-2">
-              <input 
-                type="date" 
-                value={date.split('T')[0]}
-                onChange={e => {
-                  setDate(e.target.value + 'T' + (date.split('T')[1] || '00:00'));
-                  if (errors.date) setErrors(prev => ({ ...prev, date: false }));
-                }}
-                className={cn(
-                  "flex-1 min-w-0 p-2.5 bg-gray-50 dark:bg-gray-700 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white transition-colors text-sm min-h-[42px]",
-                  errors.date ? "border-red-500 dark:border-red-500" : "border-gray-200 dark:border-gray-600"
-                )}
-              />
-              <input 
-                type="time" 
-                value={date.split('T')[1] || '00:00'}
-                onChange={e => setDate(date.split('T')[0] + 'T' + e.target.value)}
-                className="flex-1 min-w-0 p-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white transition-colors text-sm min-h-[42px]"
-              />
+            <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2">{t('form_date')}</label>
+            <div className="flex gap-3">
+              <div className="relative flex-1 min-w-0">
+                <input 
+                  type="date" 
+                  value={date.split('T')[0]}
+                  onChange={e => {
+                    setDate(e.target.value + 'T' + (date.split('T')[1] || '00:00'));
+                    if (errors.date) setErrors(prev => ({ ...prev, date: false }));
+                  }}
+                  className={cn(
+                    "w-full p-3 bg-gray-50 dark:bg-gray-700/50 border rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white transition-all text-sm min-h-[48px]",
+                    errors.date ? "border-red-500 dark:border-red-500" : "border-gray-100 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500"
+                  )}
+                />
+              </div>
+              <div className="relative flex-1 min-w-0">
+                <input 
+                  type="time" 
+                  value={date.split('T')[1] || '00:00'}
+                  onChange={e => setDate(date.split('T')[0] + 'T' + e.target.value)}
+                  className="w-full p-3 bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-600 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white transition-all text-sm min-h-[48px] hover:border-gray-300 dark:hover:border-gray-500"
+                />
+              </div>
             </div>
           </div>
 
           {/* Category - Full width on mobile */}
           {type === 'expense' && (
             <div className="col-span-2 md:col-span-12">
-              <div className="flex items-center justify-between mb-2">
-                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">{t('form_category')}</label>
+              <div className="flex items-center justify-between mb-3">
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">{t('form_category')}</label>
                 <button
                   type="button"
                   onClick={() => setIsCategoryManagerOpen(true)}
-                  className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                  className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
                 >
-                  Edit Categories
+                  {t('edit_categories', 'Edit Categories')}
                 </button>
               </div>
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2">
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-3">
                 {tripCategories.map(c => (
                   <button
                     key={c.name}
                     type="button"
                     onClick={() => { setCategory(c.name); setSubCategory(''); }}
                     className={cn(
-                      "flex flex-col items-center justify-center p-2 rounded-xl border transition-all gap-1",
+                      "flex flex-col items-center justify-center p-3 rounded-2xl border transition-all gap-1.5 group relative overflow-hidden",
                       category === c.name 
-                        ? "bg-blue-50 dark:bg-blue-900/30 border-blue-500 text-blue-700 dark:text-blue-400 ring-1 ring-blue-500" 
-                        : "bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-gray-400"
+                        ? "bg-blue-50 dark:bg-blue-900/30 border-blue-500 text-blue-700 dark:text-blue-400 shadow-sm" 
+                        : "bg-gray-50 dark:bg-gray-700/30 border-gray-100 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-500"
                     )}
                   >
-                    <span className="text-xl">{c.name.split(' ')[0]}</span>
-                    <span className="text-[10px] text-center leading-tight truncate w-full">
+                    <span className={cn(
+                      "text-2xl transition-transform duration-200",
+                      category === c.name ? "scale-110" : "group-hover:scale-110"
+                    )}>
+                      {c.name.split(' ')[0]}
+                    </span>
+                    <span className="text-[10px] font-bold uppercase tracking-tight text-center leading-tight truncate w-full">
                       {c.name.split(' ').slice(1).join(' ')}
                     </span>
+                    {category === c.name && (
+                      <motion.div 
+                        layoutId="category-active"
+                        className="absolute inset-0 border-2 border-blue-500 rounded-2xl pointer-events-none"
+                      />
+                    )}
                   </button>
                 ))}
               </div>
               {category && tripCategories.find(c => c.name === category)?.subCategories && tripCategories.find(c => c.name === category)!.subCategories!.length > 0 && (
-                <div className="mt-2">
-                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Sub-category</label>
+                <div className="mt-4">
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2">Sub-category</label>
                   <div className="flex gap-2 flex-wrap">
                     {tripCategories.find(c => c.name === category)!.subCategories!.map(sub => (
                       <button
@@ -638,10 +668,10 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
                         type="button"
                         onClick={() => setSubCategory(sub)}
                         className={cn(
-                          "px-3 py-1.5 rounded-lg border text-xs transition-all",
+                          "px-4 py-2 rounded-xl border text-[11px] font-bold uppercase tracking-tight transition-all",
                           subCategory === sub
-                            ? "bg-blue-100 dark:bg-blue-900/30 border-blue-500 text-blue-700 dark:text-blue-400"
-                            : "bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400"
+                            ? "bg-blue-100 dark:bg-blue-900/40 border-blue-500 text-blue-700 dark:text-blue-400 shadow-sm"
+                            : "bg-gray-50 dark:bg-gray-700/30 border-gray-100 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-500"
                         )}
                       >
                         {sub}
@@ -694,73 +724,68 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
                 </div>
               </div>
               
-              <div className="relative flex-1 flex items-center">
-                <DollarSign className="absolute left-3 w-4 h-4 text-gray-400" />
+              <div className="relative flex-1 flex items-center bg-white dark:bg-gray-800">
+                <div className="absolute left-3 pointer-events-none">
+                  <DollarSign className="w-4 h-4 text-gray-400" />
+                </div>
                 <input 
                   id="amount-input"
                   type="text" 
                   inputMode="decimal"
-                  pattern="[0-9]*\.?[0-9]*"
                   value={amount}
                   onChange={e => {
                     if (errors.amount) setErrors(prev => ({ ...prev, amount: false }));
                     const val = e.target.value;
                     
-                    // If the user pasted a value, just set it
-                    if (val.length > amount.length + 1) {
+                    // Allow numbers, decimal point, and math operators
+                    if (val === '' || /^[0-9+\-*/().\s,.]*$/.test(val)) {
                       setAmount(val);
-                      return;
-                    }
-
-                    // If the user deleted
-                    if (val.length < amount.length) {
-                      // Calculator-like delete:
-                      const currentNumeric = parseInt(amount.replace('.', '')) || 0;
-                      const newNumeric = Math.floor(currentNumeric / 10) / 100;
-                      setAmount(newNumeric.toFixed(2));
-                      return;
-                    }
-
-                    // If the user typed a digit
-                    const lastChar = val.slice(-1);
-                    if (/[0-9]/.test(lastChar)) {
-                      const currentNumeric = parseInt(amount.replace('.', '')) || 0;
-                      const newNumeric = (currentNumeric * 10 + parseInt(lastChar)) / 100;
-                      setAmount(newNumeric.toFixed(2));
                     }
                   }}
                   onBlur={() => {
                     // Only auto-calc on blur if calculator is NOT open
-                    if (!showCalculator) {
+                    if (!showCalculator && amount) {
                       try {
-                        const sanitized = amount.toString().replace(/[^0-9+\-*/().\s]/g, '');
-                        if (!sanitized) return;
-                        // eslint-disable-next-line no-new-func
-                        const result = new Function('return ' + sanitized)();
-                        if (isFinite(result)) {
-                          setAmount(parseFloat(result).toFixed(2));
+                        // Try to evaluate if it's an expression or has math operators
+                        const hasOperators = /[+\-*/()]/.test(amount.toString());
+                        if (hasOperators) {
+                          const sanitized = amount.toString().replace(/[^0-9+\-*/().\s.]/g, '');
+                          if (!sanitized) return;
+                          // eslint-disable-next-line no-new-func
+                          const result = new Function('return ' + sanitized)();
+                          if (isFinite(result)) {
+                            setAmount(parseFloat(result).toFixed(2));
+                          }
+                        } else {
+                          // Simple number, just format to 2 decimal places
+                          const parsed = parseFloat(amount.toString().replace(/,/g, ''));
+                          if (!isNaN(parsed)) {
+                            setAmount(parsed.toFixed(2));
+                          }
                         }
                       } catch (e) {}
                     }
                   }}
                   className={cn(
-                    "w-full pl-9 pr-10 p-2.5 bg-transparent border-none outline-none font-mono text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500",
+                    "w-full p-3 pl-10 pr-10 bg-transparent border-none outline-none font-mono text-lg font-semibold text-gray-900 dark:text-white placeholder-gray-300 dark:placeholder-gray-600",
                     errors.amount ? "text-red-500" : ""
                   )}
                   placeholder="0.00"
                 />
-                <button 
-                  type="button"
-                  onClick={() => setShowCalculator(!showCalculator)}
-                  className={cn(
-                    "absolute right-2 p-1.5 rounded-lg transition-colors",
-                    showCalculator 
-                      ? "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400" 
-                      : "text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600"
-                  )}
-                >
-                  <Calculator size={16} />
-                </button>
+                <div className="absolute right-2 flex items-center gap-1">
+                  <button 
+                    type="button"
+                    onClick={() => setShowCalculator(!showCalculator)}
+                    className={cn(
+                      "p-1.5 rounded-lg transition-colors",
+                      showCalculator 
+                        ? "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400" 
+                        : "text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600"
+                    )}
+                  >
+                    <Calculator size={18} />
+                  </button>
+                </div>
               </div>
             </div>
             
@@ -802,8 +827,9 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
             )}
 
             {currentMyrEquivalent !== null && (
-              <div className="mt-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 flex items-center gap-1 animate-in fade-in">
-                <span className="text-gray-400 dark:text-gray-500">≈</span> {formatCurrency(currentMyrEquivalent)}
+              <div className="mt-2 text-xs font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1.5 animate-in fade-in py-1 px-2 bg-blue-50/50 dark:bg-blue-900/20 rounded-lg w-fit">
+                <span className="text-gray-400 dark:text-gray-500 font-normal">≈</span> 
+                <span>{formatCurrency(currentMyrEquivalent)}</span>
               </div>
             )}
 
@@ -914,8 +940,8 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
           )}
         </div>
 
-        {/* Payer & Split */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+        {/* Payer & Split - Hidden for personal finance tracker */}
+        <div className="hidden grid-cols-1 md:grid-cols-2 gap-6 pt-2">
           <div>
             <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
               {type === 'sponsorship' ? t('form_sponsored_by') : type === 'settlement' ? t('form_paid_by') : t('form_paid_by')}

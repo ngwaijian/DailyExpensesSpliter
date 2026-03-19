@@ -8,18 +8,56 @@
   --color-gray-50: #f9fafb;
 }
 
-/* Custom scrollbar for dark mode if needed */
-.dark ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+/* Custom scrollbar for all modes */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
 }
-.dark ::-webkit-scrollbar-track {
-  background: #1f2937; 
+::-webkit-scrollbar-track {
+  background: transparent;
 }
+::-webkit-scrollbar-thumb {
+  background: #e5e7eb; /* gray-200 */
+  border-radius: 10px;
+  transition: background 0.2s ease;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #d1d5db; /* gray-300 */
+}
+
 .dark ::-webkit-scrollbar-thumb {
-  background: #4b5563; 
-  border-radius: 4px;
+  background: #374151; /* gray-700 */
 }
 .dark ::-webkit-scrollbar-thumb:hover {
-  background: #6b7280; 
+  background: #4b5563; /* gray-600 */
+}
+
+@layer base {
+  input[type="date"],
+  input[type="time"],
+  select {
+    @apply appearance-none bg-transparent;
+  }
+
+  /* Remove default date picker icon on some browsers if needed, 
+     but usually we want a consistent look. 
+     On Windows, the default icon is often ugly. */
+  input::-webkit-calendar-picker-indicator {
+    @apply cursor-pointer opacity-40 hover:opacity-100 transition-opacity p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800;
+    filter: invert(0.4);
+  }
+
+  .dark input::-webkit-calendar-picker-indicator {
+    filter: invert(0.8);
+  }
+
+  /* Fix for number pad on mobile */
+  input[type="number"] {
+    -moz-appearance: textfield;
+  }
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
 }

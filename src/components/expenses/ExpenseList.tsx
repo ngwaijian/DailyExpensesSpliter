@@ -8,6 +8,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { useTheme } from '../../hooks/useTheme';
 import { CategoryManager } from '../settings/CategoryManager';
 import { useStore } from '../../hooks/useStore';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface ExpenseListProps {
   trip: Trip;
@@ -384,126 +385,135 @@ export function ExpenseList({ trip, onEdit, onView, onDelete, lastUpdatedId, onU
         </div>
       ) : (
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-          {filteredAndSortedExpenses.map((exp, index) => {
-            const rate = rates[exp.currency] || exp.rate || 1;
-            const myrAmount = exp.amountOriginal * rate;
-            
-            const getDatePart = (d: string) => d.includes('T') ? d.split('T')[0] : d;
-            const showDateHeader = (sortOrder === 'date-desc' || sortOrder === 'date-asc') && 
-              (index === 0 || getDatePart(filteredAndSortedExpenses[index - 1].date) !== getDatePart(exp.date));
+          <AnimatePresence initial={false}>
+            {filteredAndSortedExpenses.map((exp, index) => {
+              const rate = rates[exp.currency] || exp.rate || 1;
+              const myrAmount = exp.amountOriginal * rate;
+              
+              const getDatePart = (d: string) => d.includes('T') ? d.split('T')[0] : d;
+              const showDateHeader = (sortOrder === 'date-desc' || sortOrder === 'date-asc') && 
+                (index === 0 || getDatePart(filteredAndSortedExpenses[index - 1].date) !== getDatePart(exp.date));
 
-            let dailyNet = 0;
-            if (showDateHeader) {
-              const currentDay = getDatePart(exp.date);
-              dailyNet = filteredAndSortedExpenses
-                .filter(e => getDatePart(e.date) === currentDay && e.type !== 'settlement')
-                .reduce((sum, e) => {
-                  const r = rates[e.currency] || e.rate || 1;
-                  const val = e.amountOriginal * r;
-                  return e.type === 'income' ? sum + val : sum - val;
-                }, 0);
-            }
+              let dailyNet = 0;
+              if (showDateHeader) {
+                const currentDay = getDatePart(exp.date);
+                dailyNet = filteredAndSortedExpenses
+                  .filter(e => getDatePart(e.date) === currentDay && e.type !== 'settlement')
+                  .reduce((sum, e) => {
+                    const r = rates[e.currency] || e.rate || 1;
+                    const val = e.amountOriginal * r;
+                    return e.type === 'income' ? sum + val : sum - val;
+                  }, 0);
+              }
 
-            return (
-              <React.Fragment key={exp.id}>
-                {showDateHeader && (
-                  <div className="bg-gray-50/50 dark:bg-gray-900/30 px-6 py-3 flex justify-between items-center border-b border-gray-100 dark:border-gray-700/50">
-                    <span className="text-[11px] uppercase tracking-wider font-bold text-gray-400 dark:text-gray-500">
-                      {new Date(exp.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
-                    </span>
-                    <span className={cn(
-                      "text-[11px] font-bold px-2 py-0.5 rounded-full",
-                      dailyNet >= 0 
-                        ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400" 
-                        : "bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400"
-                    )}>
-                      {formatCurrency(dailyNet)}
-                    </span>
-                  </div>
-                )}
-                <div 
-                  id={`expense-${exp.id}`}
-                  onClick={() => onView(exp.id)}
-                  className={cn(
-                    "group px-6 py-4 flex items-center gap-4 transition-colors relative cursor-pointer",
-                    index !== filteredAndSortedExpenses.length - 1 && !filteredAndSortedExpenses[index + 1]?.date.startsWith(getDatePart(exp.date)) && "border-b border-gray-50 dark:border-gray-700/50",
-                    index !== filteredAndSortedExpenses.length - 1 && "border-b border-gray-50 dark:border-gray-700/30",
-                    highlightedId === exp.id ? "bg-blue-50/50 dark:bg-blue-900/10" : "hover:bg-gray-50/50 dark:hover:bg-gray-700/20"
-                  )}
+              return (
+                <motion.div
+                  key={exp.id}
+                  layout
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.2 }}
                 >
-                  {/* Minimal Category Icon */}
-                  <div className={cn(
-                    "w-10 h-10 shrink-0 rounded-xl flex items-center justify-center text-xl transition-colors",
-                    exp.type === 'sponsorship' ? "bg-amber-50 dark:bg-amber-900/20" :
-                    exp.type === 'settlement' ? "bg-blue-50 dark:bg-blue-900/20" :
-                    "bg-gray-50 dark:bg-gray-700/50"
-                  )}>
-                    {exp.type === 'sponsorship' ? '🎁' : 
-                     exp.type === 'settlement' ? '🤝' : 
-                     (typeof exp.category === 'string' ? exp.category : exp.category?.name || 'Other').split(' ')[0]}
-                  </div>
-
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <h4 className="font-semibold text-gray-900 dark:text-white truncate text-sm">{exp.desc}</h4>
-                      {exp.isSettled && exp.type !== 'settlement' && (
-                        <span className="text-[8px] px-1 rounded bg-gray-100 dark:bg-gray-700 text-gray-500">FIXED</span>
-                      )}
-                    </div>
-                    
-                    <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10px] text-gray-400 dark:text-gray-500">
-                      <span className="text-blue-500 dark:text-blue-400 font-medium">{exp.paidBy}</span>
-                      <span>•</span>
-                      <span className="truncate max-w-[120px]">
-                        {t(`cat_${typeof exp.category === 'string' ? exp.category : exp.category?.name}`, typeof exp.category === 'string' ? exp.category : exp.category?.name || 'Other').replace(/^[^\s]+\s/, '')}
-                        {exp.subCategory ? ` / ${exp.subCategory}` : ''}
+                  {showDateHeader && (
+                    <div className="bg-gray-50/50 dark:bg-gray-900/30 px-6 py-3 flex justify-between items-center border-b border-gray-100 dark:border-gray-700/50">
+                      <span className="text-[11px] uppercase tracking-wider font-bold text-gray-400 dark:text-gray-500">
+                        {new Date(exp.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
                       </span>
-                      <span>•</span>
-                      <span className="whitespace-nowrap">{new Date(exp.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}</span>
-                      {exp.isSponsored && (
-                        <>
-                          <span>•</span>
-                          <span className="text-amber-500 flex items-center gap-0.5">
-                            <Gift size={10} /> {exp.sponsoredBy || 'Sponsor'}
-                          </span>
-                        </>
-                      )}
+                      <span className={cn(
+                        "text-[11px] font-bold px-2 py-0.5 rounded-full",
+                        dailyNet >= 0 
+                          ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400" 
+                          : "bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400"
+                      )}>
+                        {formatCurrency(dailyNet)}
+                      </span>
                     </div>
-                  </div>
-
-                  <div className="text-right shrink-0 flex flex-col items-end gap-1">
-                    <div className={cn(
-                      "font-bold text-sm",
-                      exp.type === 'income' ? "text-emerald-600 dark:text-emerald-400" : "text-gray-900 dark:text-white"
-                    )}>
-                      {exp.type === 'income' ? '+' : ''}{formatCurrency(myrAmount)}
-                    </div>
-                    {exp.currency !== 'MYR' && (
-                      <div className="text-[9px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-tight">
-                        {exp.amountOriginal.toFixed(2)} {exp.currency}
-                      </div>
+                  )}
+                  <div 
+                    id={`expense-${exp.id}`}
+                    onClick={() => onView(exp.id)}
+                    className={cn(
+                      "group px-6 py-4 flex items-center gap-4 transition-colors relative cursor-pointer",
+                      index !== filteredAndSortedExpenses.length - 1 && !filteredAndSortedExpenses[index + 1]?.date.startsWith(getDatePart(exp.date)) && "border-b border-gray-50 dark:border-gray-700/50",
+                      index !== filteredAndSortedExpenses.length - 1 && "border-b border-gray-50 dark:border-gray-700/30",
+                      highlightedId === exp.id ? "bg-blue-50/50 dark:bg-blue-900/10" : "hover:bg-gray-50/50 dark:hover:bg-gray-700/20"
                     )}
-                    
-                    {/* Subtle Actions */}
-                    <div className="flex gap-1 mt-1">
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); onEdit(exp.id); }} 
-                        className="p-1 text-gray-300 hover:text-blue-500 transition-colors"
-                      >
-                        <Edit2 size={12} />
-                      </button>
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); onDelete(exp.id); }} 
-                        className="p-1 text-gray-300 hover:text-red-500 transition-colors"
-                      >
-                        <Trash2 size={12} />
-                      </button>
+                  >
+                    {/* Minimal Category Icon */}
+                    <div className={cn(
+                      "w-10 h-10 shrink-0 rounded-xl flex items-center justify-center text-xl transition-colors",
+                      exp.type === 'sponsorship' ? "bg-amber-50 dark:bg-amber-900/20" :
+                      exp.type === 'settlement' ? "bg-blue-50 dark:bg-blue-900/20" :
+                      "bg-gray-50 dark:bg-gray-700/50"
+                    )}>
+                      {exp.type === 'sponsorship' ? '🎁' : 
+                       exp.type === 'settlement' ? '🤝' : 
+                       (typeof exp.category === 'string' ? exp.category : exp.category?.name || 'Other').split(' ')[0]}
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <h4 className="font-semibold text-gray-900 dark:text-white truncate text-sm">{exp.desc}</h4>
+                        {exp.isSettled && exp.type !== 'settlement' && (
+                          <span className="text-[8px] px-1 rounded bg-gray-100 dark:bg-gray-700 text-gray-500">FIXED</span>
+                        )}
+                      </div>
+                      
+                      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10px] text-gray-400 dark:text-gray-500">
+                        <span className="text-blue-500 dark:text-blue-400 font-medium">{exp.paidBy}</span>
+                        <span>•</span>
+                        <span className="truncate max-w-[120px]">
+                          {t(`cat_${typeof exp.category === 'string' ? exp.category : exp.category?.name}`, typeof exp.category === 'string' ? exp.category : exp.category?.name || 'Other').replace(/^[^\s]+\s/, '')}
+                          {exp.subCategory ? ` / ${exp.subCategory}` : ''}
+                        </span>
+                        <span>•</span>
+                        <span className="whitespace-nowrap">{new Date(exp.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}</span>
+                        {exp.isSponsored && (
+                          <>
+                            <span>•</span>
+                            <span className="text-amber-500 flex items-center gap-0.5">
+                              <Gift size={10} /> {exp.sponsoredBy || 'Sponsor'}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="text-right shrink-0 flex flex-col items-end gap-1">
+                      <div className={cn(
+                        "font-bold text-sm",
+                        exp.type === 'income' ? "text-emerald-600 dark:text-emerald-400" : "text-gray-900 dark:text-white"
+                      )}>
+                        {exp.type === 'income' ? '+' : ''}{formatCurrency(myrAmount)}
+                      </div>
+                      {exp.currency !== 'MYR' && (
+                        <div className="text-[9px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-tight">
+                          {exp.amountOriginal.toFixed(2)} {exp.currency}
+                        </div>
+                      )}
+                      
+                      {/* Actions */}
+                      <div className="flex gap-2 mt-1.5">
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); onEdit(exp.id); }} 
+                          className="p-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
+                        >
+                          <Edit2 size={14} />
+                        </button>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); onDelete(exp.id); }} 
+                          className="p-1.5 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </React.Fragment>
-            );
-          })}
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
         </div>
       )}
     </div>

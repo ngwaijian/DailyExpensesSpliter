@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Trip } from '../../types';
-import { Plus, Trash2, Edit2, MoreVertical, ChevronDown, Check, Users, X } from 'lucide-react';
+import { Plus, Trash2, Edit2, MoreVertical, ChevronDown, Check, Users, X, Wallet } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { getAverageRates } from '../../utils/currency';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface TripSelectorProps {
   trips: Trip[];
@@ -17,7 +18,9 @@ interface TripSelectorProps {
 export function TripSelector({ trips, currentTripId, onSelect, onAdd, onDelete, onRename }: TripSelectorProps) {
   const { t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
+  const [isTripListOpen, setIsTripListOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const tripListRef = useRef<HTMLDivElement>(null);
   const currentTrip = trips.find(t => t.id === currentTripId);
 
   useEffect(() => {
@@ -25,27 +28,61 @@ export function TripSelector({ trips, currentTripId, onSelect, onAdd, onDelete, 
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
+      if (tripListRef.current && !tripListRef.current.contains(event.target as Node)) {
+        setIsTripListOpen(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   return (
-    <div className="flex items-center gap-1" ref={menuRef}>
-      <div className="relative group">
-        <select 
-          value={currentTripId} 
-          onChange={(e) => onSelect(e.target.value)}
-          className="appearance-none bg-gray-100 dark:bg-gray-700 border-none text-gray-900 dark:text-white text-xs sm:text-sm font-bold rounded-xl pl-3 pr-8 py-2 sm:py-2.5 min-w-[100px] sm:min-w-[140px] max-w-[150px] sm:max-w-[200px] truncate focus:ring-2 focus:ring-blue-500 cursor-pointer transition-all hover:bg-gray-200 dark:hover:bg-gray-600 shadow-sm"
+    <div className="flex items-center gap-1">
+      {/* Custom Trip Selector Dropdown */}
+      <div className="relative" ref={tripListRef}>
+        <button
+          onClick={() => setIsTripListOpen(!isTripListOpen)}
+          className="flex items-center justify-between gap-2 bg-gray-100 dark:bg-gray-700/50 text-gray-900 dark:text-white text-xs sm:text-sm font-bold rounded-xl px-3 py-2 sm:py-2.5 min-w-[120px] sm:min-w-[160px] max-w-[180px] sm:max-w-[240px] transition-all hover:bg-gray-200 dark:hover:bg-gray-700 shadow-sm border border-transparent hover:border-gray-200 dark:hover:border-gray-600"
         >
-          {trips.map(t => (
-            <option key={t.id} value={t.id}>{t.name}</option>
-          ))}
-        </select>
-        <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500 dark:text-gray-400 pointer-events-none group-hover:text-gray-700 dark:group-hover:text-gray-200 transition-colors" />
+          <span className="truncate">{currentTrip?.name}</span>
+          <ChevronDown className={cn("w-4 h-4 text-gray-500 transition-transform duration-200", isTripListOpen && "rotate-180")} />
+        </button>
+
+        <AnimatePresence>
+          {isTripListOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: 8, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 8, scale: 0.95 }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
+              className="absolute top-full left-0 mt-2 w-full min-w-[200px] bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden z-50 origin-top-left"
+            >
+              <div className="p-1.5 space-y-0.5 max-h-[300px] overflow-y-auto custom-scrollbar">
+                {trips.map(t => (
+                  <button
+                    key={t.id}
+                    onClick={() => {
+                      onSelect(t.id);
+                      setIsTripListOpen(false);
+                    }}
+                    className={cn(
+                      "w-full flex items-center justify-between px-3 py-2.5 text-sm font-medium rounded-xl transition-colors text-left",
+                      t.id === currentTripId
+                        ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+                        : "text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                    )}
+                  >
+                    <span className="truncate">{t.name}</span>
+                    {t.id === currentTripId && <Check size={16} />}
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
       
-      <div className="relative">
+      <div className="relative" ref={menuRef}>
         <button 
           onClick={() => setIsOpen(!isOpen)} 
           className={cn(
@@ -58,45 +95,53 @@ export function TripSelector({ trips, currentTripId, onSelect, onAdd, onDelete, 
           <MoreVertical size={18} />
         </button>
 
-        {isOpen && (
-          <div className="absolute top-full right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-100 origin-top-right">
-            <div className="p-1.5 space-y-0.5">
-              <button 
-                onClick={() => { onAdd(); setIsOpen(false); }}
-                className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-xl transition-colors text-left"
-              >
-                <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
-                  <Plus size={16} />
-                </div>
-                {t('trip_new')}
-              </button>
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: 8, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 8, scale: 0.95 }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
+              className="absolute top-full right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden z-50 origin-top-right"
+            >
+              <div className="p-1.5 space-y-0.5">
+                <button 
+                  onClick={() => { onAdd(); setIsOpen(false); }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-xl transition-colors text-left"
+                >
+                  <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
+                    <Plus size={16} />
+                  </div>
+                  {t('trip_new')}
+                </button>
 
-              <button 
-                onClick={() => { onRename(); setIsOpen(false); }}
-                className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-xl transition-colors text-left"
-              >
-                <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
-                  <Edit2 size={16} />
-                </div>
-                {t('trip_rename')}
-              </button>
-            </div>
+                <button 
+                  onClick={() => { onRename(); setIsOpen(false); }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-xl transition-colors text-left"
+                >
+                  <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
+                    <Edit2 size={16} />
+                  </div>
+                  {t('trip_rename')}
+                </button>
+              </div>
 
-            <div className="h-px bg-gray-100 dark:bg-gray-700 my-0.5" />
+              <div className="h-px bg-gray-100 dark:bg-gray-700 my-0.5" />
 
-            <div className="p-1.5">
-              <button 
-                onClick={() => { onDelete(); setIsOpen(false); }}
-                className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors text-left"
-              >
-                <div className="p-1.5 bg-red-100 dark:bg-red-900/30 rounded-lg text-red-500 dark:text-red-400">
-                  <Trash2 size={16} />
-                </div>
-                {t('trip_delete')}
-              </button>
-            </div>
-          </div>
-        )}
+              <div className="p-1.5">
+                <button 
+                  onClick={() => { onDelete(); setIsOpen(false); }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors text-left"
+                >
+                  <div className="p-1.5 bg-red-100 dark:bg-red-900/30 rounded-lg text-red-500 dark:text-red-400">
+                    <Trash2 size={16} />
+                  </div>
+                  {t('trip_delete')}
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
@@ -162,7 +207,8 @@ export function PeopleWallet({ trip, onAddPerson, onEditPerson, onRemovePerson, 
 
   return (
     <div className="space-y-4">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-colors duration-200">
+      {/* People Section - Hidden for personal finance tracker */}
+      <div className="hidden bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-colors duration-200">
         <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-4 flex items-center gap-2">
           <Users className="w-4 h-4" />
           {t('trip_people')}
@@ -207,7 +253,7 @@ export function PeopleWallet({ trip, onAddPerson, onEditPerson, onRemovePerson, 
               ) : (
                 <>
                   <span className="font-medium text-gray-700 dark:text-gray-300">{user}</span>
-                  <div className="flex items-center gap-1 transition-opacity">
+                  <div className="flex items-center gap-1">
                     <button 
                       onClick={() => startEdit(user)}
                       className="p-1 text-gray-400 hover:text-blue-500 transition-colors"
@@ -230,37 +276,52 @@ export function PeopleWallet({ trip, onAddPerson, onEditPerson, onRemovePerson, 
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-colors duration-200">
-        <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-4">{t('trip_wallet')}</h3>
+        <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+          <Wallet className="w-4 h-4" />
+          {t('trip_wallet')}
+        </h3>
         
-        <form onSubmit={handleAddExchange} className="space-y-2 mb-6">
-          <div className="grid grid-cols-3 gap-2">
-            <input 
-              type="text" 
-              value={currency} onChange={e => setCurrency(e.target.value)}
-              placeholder={t('trip_cur_placeholder')}
-              className="p-2.5 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl text-xs uppercase text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
-              required
-            />
-            <input 
-              type="text" 
-              inputMode="decimal"
-              pattern="[0-9]*\\.?[0-9]*"
-              value={foreign} onChange={e => setForeign(e.target.value)}
-              placeholder={t('trip_foreign_placeholder')}
-              className="p-2.5 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl text-xs text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
-              required
-            />
-            <input 
-              type="text" 
-              inputMode="decimal"
-              pattern="[0-9]*\\.?[0-9]*"
-              value={myr} onChange={e => setMyr(e.target.value)}
-              placeholder={t('trip_myr_placeholder')}
-              className="p-2.5 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl text-xs text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
-              required
-            />
+        <form onSubmit={handleAddExchange} className="space-y-3 mb-6">
+          <div className="grid grid-cols-1 gap-3">
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider ml-1">{t('trip_cur_placeholder')}</label>
+              <input 
+                type="text" 
+                value={currency} onChange={e => setCurrency(e.target.value)}
+                placeholder="USD, EUR, etc."
+                className="w-full p-2.5 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl text-sm uppercase text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                required
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider ml-1">{t('trip_foreign_placeholder')}</label>
+                <input 
+                  type="text" 
+                  inputMode="decimal"
+                  pattern="[0-9]*\.?[0-9]*"
+                  value={foreign} onChange={e => setForeign(e.target.value)}
+                  placeholder="0.00"
+                  className="w-full p-2.5 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                  required
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider ml-1">{t('trip_myr_placeholder')}</label>
+                <input 
+                  type="text" 
+                  inputMode="decimal"
+                  pattern="[0-9]*\.?[0-9]*"
+                  value={myr} onChange={e => setMyr(e.target.value)}
+                  placeholder="0.00"
+                  className="w-full p-2.5 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                  required
+                />
+              </div>
+            </div>
           </div>
-          <button type="submit" className="w-full bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider hover:opacity-90 transition-all active:scale-[0.98] shadow-sm">
+          <button type="submit" className="w-full bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 py-3 rounded-xl text-xs font-bold uppercase tracking-wider hover:opacity-90 transition-all active:scale-[0.98] shadow-sm flex items-center justify-center gap-2">
+            <Plus size={14} />
             {t('trip_log_exchange')}
           </button>
         </form>

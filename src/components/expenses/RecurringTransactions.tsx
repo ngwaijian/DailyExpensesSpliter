@@ -211,9 +211,13 @@ export function RecurringTransactions({ trip, onUpdateTrip }: RecurringTransacti
                   <input
                     type="text"
                     inputMode="decimal"
-                    pattern="[0-9]*\.?[0-9]*"
                     value={amount}
-                    onChange={e => setAmount(e.target.value)}
+                    onChange={e => {
+                      const val = e.target.value;
+                      if (val === '' || /^[0-9+\-*/().\s,.]*$/.test(val)) {
+                        setAmount(val);
+                      }
+                    }}
                     className="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white"
                     placeholder="0.00"
                     required
@@ -284,7 +288,7 @@ export function RecurringTransactions({ trip, onUpdateTrip }: RecurringTransacti
                 Next: {new Date(tx.nextDate).toLocaleDateString()}
               </div>
             </div>
-            <div className="flex flex-col items-end gap-2 transition-opacity">
+            <div className="flex flex-col items-end gap-2">
               <button onClick={() => handleEdit(tx)} className="p-1.5 text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">
                 <Edit2 className="w-4 h-4" />
               </button>

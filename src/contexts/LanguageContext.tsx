@@ -90,7 +90,7 @@ const translations: Record<Language, Translations> = {
     dash_your_balance: "Your Balance",
     dash_recent: "Recent Expenses",
     dash_view_all: "View All",
-    dash_summary: "Group Summary",
+    dash_summary: "Financial Summary",
     dash_export: "Export Data",
     dash_export_pdf: "Export as PDF",
     dash_generating_pdf: "Generating PDF...",

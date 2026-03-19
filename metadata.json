@@ -1,6 +1,6 @@
 {
-  "name": "DailyExpensesSpliter",
-  "description": "Expense splitting app",
+  "name": "DailyBudgetTracker",
+  "description": "Daily budget and financial tracker",
   "requestFramePermissions": [
     "geolocation"
   ]

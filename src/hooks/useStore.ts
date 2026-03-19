@@ -4,11 +4,18 @@ import { GITHUB_TOKEN } from '../config';
 
 const STORAGE_KEY = 'sw_app_data';
 const CURRENT_TRIP_KEY = 'sw_current_trip';
-const SYNC_KEY = 'sw_needs_sync';
+const SYNC_KEY = 'sw_unsynced_trips'; // Changed to track multiple trips
 const GITHUB_TOKEN_KEY = 'sw_github_token';
 
 const DEFAULT_DATA: AppData = {
-  trips: [{ id: 'trip_' + Date.now(), name: 'My First Trip', users: [], expenses: [], exchanges: [] }]
+  trips: [{ 
+    id: 'trip_' + Date.now(), 
+    name: 'My First Trip', 
+    lastUpdated: new Date().toISOString(),
+    users: [], 
+    expenses: [], 
+    exchanges: [] 
+  }]
 };
 
 export function useStore() {
@@ -18,6 +25,11 @@ export function useStore() {
       if (storedData) {
         const parsed = JSON.parse(storedData);
         if (parsed && Array.isArray(parsed.trips) && parsed.trips.length > 0) {
+          // Ensure all trips have lastUpdated
+          parsed.trips = parsed.trips.map((t: Trip) => ({
+            ...t,
+            lastUpdated: t.lastUpdated || new Date().toISOString()
+          }));
           return parsed;
         }
       }
@@ -47,9 +59,15 @@ export function useStore() {
   });
 
   const [isSyncing, setIsSyncing] = useState(false);
-  const [needsSync, setNeedsSync] = useState(() => {
-    return localStorage.getItem(SYNC_KEY) === 'true';
+  const [unsyncedTripIds, setUnsyncedTripIds] = useState<string[]>(() => {
+    try {
+      const stored = localStorage.getItem(SYNC_KEY);
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
   });
+  const needsSync = unsyncedTripIds.includes(currentTripId);
   const [githubToken, setGithubToken] = useState(() => {
     return localStorage.getItem(GITHUB_TOKEN_KEY) || GITHUB_TOKEN;
   });
@@ -82,7 +100,12 @@ export function useStore() {
             parsed.trips.forEach((newTrip: Trip) => {
               const index = newTrips.findIndex(t => t.id === newTrip.id);
               if (index >= 0) {
-                newTrips[index] = newTrip; // Update existing
+                // Only update if the incoming trip is newer
+                const currentLastUpdated = newTrips[index].lastUpdated || '0';
+                const incomingLastUpdated = newTrip.lastUpdated || '0';
+                if (incomingLastUpdated > currentLastUpdated) {
+                  newTrips[index] = newTrip;
+                }
               } else {
                 newTrips.push(newTrip); // Add new
               }
@@ -95,6 +118,13 @@ export function useStore() {
       }
       if (e.key === CURRENT_TRIP_KEY && e.newValue) {
         setCurrentTripId(e.newValue);
+      }
+      if (e.key === SYNC_KEY && e.newValue) {
+        try {
+          setUnsyncedTripIds(JSON.parse(e.newValue));
+        } catch {
+          setUnsyncedTripIds([]);
+        }
       }
     };
     window.addEventListener('storage', handleStorageChange);
@@ -165,9 +195,9 @@ export function useStore() {
     
     if (hasChanges) {
       setAppData(prev => ({ ...prev, trips: newTrips }));
-      setNeedsSync(true);
+      setUnsyncedTripIds(prev => prev.includes(currentTripId) ? prev : [...prev, currentTripId]);
     }
-  }, [appData.trips]);
+  }, [appData.trips, currentTripId]);
 
   // Persist data whenever it changes
   useEffect(() => {
@@ -178,8 +208,8 @@ export function useStore() {
 
   // Sync flag
   useEffect(() => {
-    localStorage.setItem(SYNC_KEY, String(needsSync));
-  }, [needsSync]);
+    localStorage.setItem(SYNC_KEY, JSON.stringify(unsyncedTripIds));
+  }, [unsyncedTripIds]);
 
   // Settings persistence
   useEffect(() => {
@@ -200,24 +230,28 @@ export function useStore() {
     const [lastState, ...remainingHistory] = history;
     setAppData(lastState);
     setHistory(remainingHistory);
-    setNeedsSync(true);
-  }, [history]);
+    setUnsyncedTripIds(prev => prev.includes(currentTripId) ? prev : [...prev, currentTripId]);
+  }, [history, currentTripId]);
 
   const updateTrip = (updatedTrip: Trip) => {
+    const now = new Date().toISOString();
+    const tripWithTimestamp = { ...updatedTrip, lastUpdated: now };
     saveToHistory(appData);
     setAppData(prev => ({
       ...prev,
-      trips: prev.trips.map(t => t.id === updatedTrip.id ? updatedTrip : t)
+      trips: prev.trips.map(t => t.id === updatedTrip.id ? tripWithTimestamp : t)
     }));
-    setNeedsSync(true);
+    setUnsyncedTripIds(prev => prev.includes(updatedTrip.id) ? prev : [...prev, updatedTrip.id]);
   };
 
   const addTrip = (name: string) => {
     saveToHistory(appData);
+    const now = new Date().toISOString();
     const newTrip: Trip = {
       id: 'trip_' + Date.now(),
       name,
-      users: [],
+      lastUpdated: now,
+      users: ['Me'],
       expenses: [],
       exchanges: [],
       categories: CATEGORIES,
@@ -225,7 +259,7 @@ export function useStore() {
     };
     setAppData(prev => ({ ...prev, trips: [...prev.trips, newTrip] }));
     setCurrentTripId(newTrip.id);
-    setNeedsSync(true);
+    setUnsyncedTripIds(prev => [...prev, newTrip.id]);
   };
 
   const deleteTrip = (id: string) => {
@@ -234,22 +268,35 @@ export function useStore() {
     const newTrips = appData.trips.filter(t => t.id !== id);
     setAppData(prev => ({ ...prev, trips: newTrips }));
     setCurrentTripId(newTrips[0].id);
-    setNeedsSync(true);
+    setUnsyncedTripIds(prev => prev.filter(tid => tid !== id));
   };
 
   const renameTrip = (id: string, name: string) => {
     saveToHistory(appData);
+    const now = new Date().toISOString();
     setAppData(prev => ({
       ...prev,
-      trips: prev.trips.map(t => t.id === id ? { ...t, name } : t)
+      trips: prev.trips.map(t => t.id === id ? { ...t, name, lastUpdated: now } : t)
     }));
-    setNeedsSync(true);
+    setUnsyncedTripIds(prev => prev.includes(id) ? prev : [...prev, id]);
   };
 
   // Cloud Sync Logic (Per Trip)
   const fetchFromCloud = useCallback(async (overrideGistId?: string | any) => {
     const targetGistId = typeof overrideGistId === 'string' ? overrideGistId : currentTrip?.gistId;
     if (!targetGistId) return;
+    
+    // CRITICAL: If we have unsynced local changes for THIS trip, DO NOT pull and overwrite
+    // unless explicitly requested (e.g. initial load or manual pull)
+    const storedUnsynced = localStorage.getItem(SYNC_KEY);
+    const unsyncedIds: string[] = storedUnsynced ? JSON.parse(storedUnsynced) : [];
+    const localNeedsSync = unsyncedIds.includes(targetGistId === currentTrip?.gistId ? currentTripId : '');
+    
+    if (localNeedsSync && typeof overrideGistId !== 'string') {
+      console.log("Skipping cloud pull: Local changes pending sync for this trip.");
+      return;
+    }
+
     if (!navigator.onLine) {
       setSyncError("Offline: Cannot pull data.");
       return;
@@ -269,16 +316,23 @@ export function useStore() {
       if (tripContent) {
         const parsedTrip = JSON.parse(tripContent);
         parsedTrip.gistId = targetGistId; // Ensure gistId is set
+        
         setAppData(prev => {
-          const exists = prev.trips.some(t => t.id === parsedTrip.id);
-          if (exists) {
-            return { ...prev, trips: prev.trips.map(t => t.id === parsedTrip.id ? parsedTrip : t) };
+          const index = prev.trips.findIndex(t => t.id === parsedTrip.id);
+          if (index >= 0) {
+            // Only update if the incoming trip is newer
+            const currentLastUpdated = prev.trips[index].lastUpdated || '0';
+            const incomingLastUpdated = parsedTrip.lastUpdated || '0';
+            if (incomingLastUpdated > currentLastUpdated || typeof overrideGistId === 'string') {
+              return { ...prev, trips: prev.trips.map(t => t.id === parsedTrip.id ? parsedTrip : t) };
+            }
+            return prev;
           } else {
             return { ...prev, trips: [...prev.trips, parsedTrip] };
           }
         });
         if (typeof overrideGistId === 'string') setCurrentTripId(parsedTrip.id);
-        setNeedsSync(false);
+        setUnsyncedTripIds(prev => prev.filter(id => id !== parsedTrip.id));
       } else {
         // Fallback for legacy global data format
         const content = data.files['data.json']?.content;
@@ -286,7 +340,7 @@ export function useStore() {
           const parsed = JSON.parse(content);
           if (parsed.appData) {
             setAppData(parsed.appData);
-            setNeedsSync(false);
+            setUnsyncedTripIds([]);
             if (!parsed.appData.trips.find((t: Trip) => t.id === currentTripId)) {
                if (parsed.appData.trips.length > 0) setCurrentTripId(parsed.appData.trips[0].id);
             }
@@ -301,8 +355,10 @@ export function useStore() {
     }
   }, [githubToken, currentTrip?.gistId, currentTripId]);
 
-  const pushToCloud = useCallback(async () => {
-    if (!githubToken || !currentTrip?.gistId) return;
+  const pushToCloud = useCallback(async (tripId?: string) => {
+    const targetId = tripId || currentTripId;
+    let targetTrip = appData.trips.find(t => t.id === targetId);
+    if (!githubToken || !targetTrip?.gistId) return;
     if (!navigator.onLine) {
       setSyncError(null); 
       return;
@@ -310,8 +366,55 @@ export function useStore() {
     setIsSyncing(true);
     setSyncError(null);
     try {
-      const payload = { files: { 'trip.json': { content: JSON.stringify(currentTrip, null, 2) } } };
-      const res = await fetch(`https://api.github.com/gists/${currentTrip.gistId}`, {
+      // --- NEW: Timestamp Verification & Conflict Resolution ---
+      const checkRes = await fetch(`https://api.github.com/gists/${targetTrip.gistId}?t=${Date.now()}`, {
+        headers: { 'Authorization': `Bearer ${githubToken}` }
+      });
+      if (checkRes.ok) {
+        const checkData = await checkRes.json();
+        const cloudTripContent = checkData.files['trip.json']?.content;
+        if (cloudTripContent) {
+          const cloudTrip = JSON.parse(cloudTripContent);
+          const cloudLastUpdated = cloudTrip.lastUpdated || '0';
+          const localLastUpdated = targetTrip.lastUpdated || '0';
+          
+          if (cloudLastUpdated > localLastUpdated) {
+            console.warn("Cloud data is newer than local data. Merging before push.");
+            
+            // Merge strategy: combine arrays by ID, keep local changes if conflict
+            const mergeArrays = <T extends { id: string }>(arr1: T[] = [], arr2: T[] = []) => {
+              const map = new Map<string, T>();
+              arr2.forEach(item => map.set(item.id, item)); // cloud first
+              arr1.forEach(item => map.set(item.id, item)); // local overwrites
+              return Array.from(map.values());
+            };
+
+            const mergedTrip = {
+              ...(localLastUpdated > cloudLastUpdated ? targetTrip : cloudTrip),
+              lastUpdated: new Date().toISOString(), // Update timestamp to now
+              expenses: mergeArrays(targetTrip.expenses, cloudTrip.expenses),
+              exchanges: mergeArrays(targetTrip.exchanges, cloudTrip.exchanges),
+              goals: mergeArrays(targetTrip.goals, cloudTrip.goals),
+              recurringTransactions: mergeArrays(targetTrip.recurringTransactions, cloudTrip.recurringTransactions),
+              loans: mergeArrays(targetTrip.loans, cloudTrip.loans),
+              budgets: mergeArrays(targetTrip.budgets, cloudTrip.budgets),
+              gistId: targetTrip.gistId
+            };
+            
+            // Update local state with merged data
+            setAppData(prev => ({
+              ...prev,
+              trips: prev.trips.map(t => t.id === mergedTrip.id ? mergedTrip : t)
+            }));
+            
+            targetTrip = mergedTrip; // Use merged trip for pushing
+          }
+        }
+      }
+      // ---------------------------------------------------------
+
+      const payload = { files: { 'trip.json': { content: JSON.stringify(targetTrip, null, 2) } } };
+      const res = await fetch(`https://api.github.com/gists/${targetTrip.gistId}`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${githubToken}`,
@@ -320,14 +423,14 @@ export function useStore() {
         body: JSON.stringify(payload)
       });
       if (!res.ok) throw new Error("Failed to push to gist");
-      setNeedsSync(false);
+      setUnsyncedTripIds(prev => prev.filter(id => id !== targetId));
     } catch (error) {
       console.error("Sync error:", error);
       setSyncError("Failed to push data to cloud.");
     } finally {
       setIsSyncing(false);
     }
-  }, [githubToken, currentTrip]);
+  }, [githubToken, currentTripId, appData.trips]);
 
   const fetchAllTripsFromCloud = useCallback(async () => {
     if (!githubToken) return;
@@ -370,7 +473,12 @@ export function useStore() {
           newTrips.forEach(newTrip => {
             const index = updatedTrips.findIndex(t => t.id === newTrip.id);
             if (index >= 0) {
-              updatedTrips[index] = newTrip;
+              // Only update if the incoming trip is newer
+              const currentLastUpdated = updatedTrips[index].lastUpdated || '0';
+              const incomingLastUpdated = newTrip.lastUpdated || '0';
+              if (incomingLastUpdated > currentLastUpdated) {
+                updatedTrips[index] = newTrip;
+              }
             } else {
               updatedTrips.push(newTrip);
             }
@@ -386,7 +494,7 @@ export function useStore() {
           
           return { ...prev, trips: updatedTrips };
         });
-        setNeedsSync(false);
+        // We don't setUnsyncedTripIds([]) here because we might have local changes in other trips
       }
     } catch (error) {
       console.error("Fetch all trips error:", error);
@@ -456,8 +564,12 @@ export function useStore() {
   // Initial sync on mount/credential change if online
   useEffect(() => {
     if (navigator.onLine && githubToken && !isSyncing) {
-      if (needsSync && currentTrip?.gistId) {
-        pushToCloud();
+      if (unsyncedTripIds.length > 0) {
+        // Push all unsynced trips
+        unsyncedTripIds.forEach(id => {
+          const trip = appData.trips.find(t => t.id === id);
+          if (trip?.gistId) pushToCloud(id);
+        });
       } else {
         // Fetch all trips to ensure we have the latest list of trips
         fetchAllTripsFromCloud();
@@ -469,25 +581,30 @@ export function useStore() {
   useEffect(() => {
     if (needsSync && githubToken && currentTrip?.gistId && !isSyncing && isOnline) {
       const timer = setTimeout(() => {
-        pushToCloud();
+        pushToCloud(currentTripId);
       }, 2000); // 2 second debounce
       return () => clearTimeout(timer);
     }
-  }, [needsSync, githubToken, currentTrip?.gistId, appData, isSyncing, pushToCloud, isOnline]);
+  }, [needsSync, githubToken, currentTripId, currentTrip?.gistId, isSyncing, pushToCloud, isOnline]);
 
   // Background polling (Auto-pull)
   useEffect(() => {
     if (!currentTrip?.gistId || !isOnline) return;
 
     const interval = setInterval(() => {
-      if (!needsSync && !isSyncing) {
+      // Check localStorage directly to be tab-aware
+      const storedUnsynced = localStorage.getItem(SYNC_KEY);
+      const unsyncedIds: string[] = storedUnsynced ? JSON.parse(storedUnsynced) : [];
+      const currentNeedsSync = unsyncedIds.includes(currentTripId);
+      
+      if (!currentNeedsSync && !isSyncing) {
         console.log("Auto-syncing: Pulling data from cloud...");
         fetchFromCloud();
       }
-    }, 5000); // Poll every 5 seconds
+    }, 10000); // Increased to 10 seconds to reduce race conditions
 
     return () => clearInterval(interval);
-  }, [currentTrip?.gistId, isOnline, needsSync, isSyncing, fetchFromCloud]);
+  }, [currentTrip?.gistId, isOnline, isSyncing, fetchFromCloud]);
 
   const getTripCategories = useCallback((trip: Trip) => {
     return trip.categories || CATEGORIES;

@@ -14,7 +14,7 @@ import { RecurringTransactions } from './components/expenses/RecurringTransactio
 import { BudgetManager } from './components/planning/BudgetManager';
 import { LoanManager } from './components/dashboard/LoanManager';
 import { ExpenseDetailsModal } from './components/expenses/ExpenseDetailsModal';
-import { ShieldCheck, LayoutGrid, List, Users, RefreshCw, Plus, Globe, Target, RotateCcw, Settings, Sun, Moon, Monitor } from 'lucide-react';
+import { ShieldCheck, LayoutGrid, List, Users, RefreshCw, Plus, Globe, Target, RotateCcw, Settings, Sun, Moon, Monitor, Wallet } from 'lucide-react';
 import { cn } from './lib/utils';
 
 function App() {
@@ -44,6 +44,23 @@ function App() {
   const [shortcutDesc, setShortcutDesc] = useState<string | null>(null);
   const [shortcutCurrency, setShortcutCurrency] = useState<string | null>(null);
   const [shortcutGoalId, setShortcutGoalId] = useState<string | null>(null);
+
+  // Auto-Fetch on Wake
+  React.useEffect(() => {
+    const handleWake = () => {
+      if (document.visibilityState === 'visible') {
+        fetchFromCloud();
+      }
+    };
+
+    window.addEventListener('visibilitychange', handleWake);
+    window.addEventListener('focus', handleWake);
+
+    return () => {
+      window.removeEventListener('visibilitychange', handleWake);
+      window.removeEventListener('focus', handleWake);
+    };
+  }, [fetchFromCloud]);
 
   React.useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -236,13 +253,21 @@ function App() {
     const newExpenses = [...currentTrip.expenses];
     const tripCategories = (currentTrip.categories || CATEGORIES).map(c => typeof c === 'string' ? { name: c, subCategories: [] } : c);
     const categoryObj = tripCategories.find(c => c.name === data.category) || { name: data.category, subCategories: [] };
-    const expenseData = { ...data, category: categoryObj };
+    
+    // Ensure subCategory is explicitly handled to allow clearing it
+    const expenseData = { 
+      ...data, 
+      category: categoryObj,
+      subCategory: data.subCategory || undefined 
+    };
     
     let updatedId = '';
     if (editingExpenseId) {
       const idx = newExpenses.findIndex(e => e.id === editingExpenseId);
       if (idx !== -1) {
-        newExpenses[idx] = { ...newExpenses[idx], ...expenseData };
+        // Explicitly clear subCategory if it's not in expenseData
+        const { subCategory, ...rest } = newExpenses[idx];
+        newExpenses[idx] = { ...rest, ...expenseData };
         updatedId = editingExpenseId;
       }
     } else {
@@ -373,7 +398,7 @@ function App() {
                 className="w-6 h-6 sm:w-8 sm:h-8 object-contain" 
               />
             </div>
-            <h1 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-white hidden md:block">DailyExpensesSpliter</h1>
+            <h1 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-white hidden md:block">DailyBudgetTracker</h1>
           </div>
 
           <TripSelector 
@@ -396,11 +421,10 @@ function App() {
           <div className="flex items-center gap-1 sm:gap-2">
             <button
               onClick={toggleTheme}
-              className="flex items-center gap-1.5 px-2 sm:px-3 py-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors"
+              className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-all active:scale-95"
               title={`Theme: ${theme}`}
             >
               {getThemeIcon()}
-              <span className="text-xs font-bold hidden sm:inline capitalize">{theme}</span>
             </button>
 
             {canUndo && (
@@ -577,8 +601,8 @@ function App() {
                 : "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
             )}
           >
-            <Users className="w-6 h-6" />
-            {t('nav_people')}
+            <Wallet className="w-6 h-6" />
+            {t('trip_wallet')}
           </button>
         </div>
       </div>
@@ -613,7 +637,7 @@ function App() {
         className={cn(
           "fixed z-50 bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 hover:shadow-xl transition-all duration-300 flex items-center justify-center border-4 border-white dark:border-gray-800",
           "bottom-8 left-1/2 -translate-x-1/2 lg:bottom-8 lg:left-auto lg:right-8 lg:translate-x-0 lg:border-none",
-          showFab || activeTab !== 'expenses' ? "translate-y-0 opacity-100" : "lg:translate-y-16 lg:opacity-0"
+          "translate-y-0 opacity-100"
         )}
         title={t('app_add_new_entry')}
       >

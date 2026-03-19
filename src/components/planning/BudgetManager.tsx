@@ -99,49 +99,107 @@ export function BudgetManager({ trip, onUpdateTrip }: BudgetManagerProps) {
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-colors duration-200">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
-          <Wallet className="w-6 h-6 text-emerald-500" />
+      <div className="flex items-center justify-between mb-8">
+        <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+          <Wallet className="w-6 h-6 text-indigo-500" />
           {t('plan_budgets') || 'Budgets'}
         </h3>
         {!isAdding && (
           <button
             onClick={() => setIsAdding(true)}
-            className="p-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:hover:bg-emerald-900/50 rounded-xl transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-400 dark:hover:bg-indigo-900/50 rounded-xl transition-all font-bold text-xs uppercase tracking-widest"
           >
-            <Plus className="w-5 h-5" />
+            <Plus className="w-4 h-4" />
+            Add Budget
           </button>
         )}
       </div>
 
       {isAdding && (
-        <form onSubmit={handleSave} className="mb-6 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-2xl border border-gray-100 dark:border-gray-600">
-          <div className="space-y-4">
-            <div>
-              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Budget Name</label>
-              <input
-                type="text"
-                value={name}
-                onChange={e => setName(e.target.value)}
-                placeholder="e.g. Food, Transport, etc."
-                className="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none text-gray-900 dark:text-white"
-              />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <form onSubmit={handleSave} className="mb-8 p-6 bg-gray-50/50 dark:bg-gray-900/20 rounded-2xl border border-gray-100 dark:border-gray-700/50 animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2">Budget Name</label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={e => setName(e.target.value)}
+                    placeholder="e.g. Food, Transport, etc."
+                    className="w-full p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none text-gray-900 dark:text-white transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2">Amount</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={amount}
+                      onChange={e => {
+                        const val = e.target.value;
+                        if (val === '' || /^[0-9+\-*/().\s,.]*$/.test(val)) {
+                          setAmount(val);
+                        }
+                      }}
+                      placeholder="0.00"
+                      className="flex-1 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none text-gray-900 dark:text-white transition-all font-bold"
+                      required
+                    />
+                    <select
+                      value={currency}
+                      onChange={e => setCurrency(e.target.value)}
+                      className="w-24 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none text-gray-900 dark:text-white font-bold"
+                    >
+                      <option value="MYR">MYR</option>
+                      {trip.exchanges.map(ex => (
+                        <option key={ex.currency} value={ex.currency}>{ex.currency}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2">Period</label>
+                  <div className="flex p-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl">
+                    <button
+                      type="button"
+                      onClick={() => setPeriod('trip')}
+                      className={cn(
+                        "flex-1 py-2 text-xs font-bold uppercase tracking-widest rounded-lg transition-all",
+                        period === 'trip' ? "bg-indigo-500 text-white shadow-sm" : "text-gray-400 hover:text-gray-600"
+                      )}
+                    >
+                      Entire Trip
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPeriod('monthly')}
+                      className={cn(
+                        "flex-1 py-2 text-xs font-bold uppercase tracking-widest rounded-lg transition-all",
+                        period === 'monthly' ? "bg-indigo-500 text-white shadow-sm" : "text-gray-400 hover:text-gray-600"
+                      )}
+                    >
+                      Monthly
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               <div>
-                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Categories</label>
-                <div className="max-h-40 overflow-y-auto p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm">
-                  <label className="flex items-center gap-2 p-1 cursor-pointer">
+                <label className="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2">Categories</label>
+                <div className="max-h-[220px] overflow-y-auto p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl space-y-2 custom-scrollbar">
+                  <label className="flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg cursor-pointer transition-colors group">
                     <input
                       type="checkbox"
                       checked={categories.includes('All')}
                       onChange={() => setCategories(['All'])}
-                      className="rounded text-emerald-600 focus:ring-emerald-500"
+                      className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                     />
-                    <span className="text-gray-900 dark:text-white">All Categories</span>
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors">All Categories</span>
                   </label>
                   {tripCategories.map(c => (
-                    <label key={c.name} className="flex items-center gap-2 p-1 cursor-pointer">
+                    <label key={c.name} className="flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg cursor-pointer transition-colors group">
                       <input
                         type="checkbox"
                         checked={!categories.includes('All') && categories.includes(c.name)}
@@ -151,72 +209,35 @@ export function BudgetManager({ trip, onUpdateTrip }: BudgetManagerProps) {
                             return next.includes(c.name) ? next.filter(i => i !== c.name) : [...next, c.name];
                           });
                         }}
-                        className="rounded text-emerald-600 focus:ring-emerald-500"
+                        className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                       />
-                      <span className="text-gray-900 dark:text-white">{c.name}</span>
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors">{c.name}</span>
                     </label>
                   ))}
                 </div>
               </div>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Period</label>
-                  <select
-                    value={period}
-                    onChange={e => setPeriod(e.target.value as any)}
-                    className="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none text-gray-900 dark:text-white"
-                  >
-                    <option value="trip">Entire Trip</option>
-                    <option value="monthly">Monthly</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Budget Amount</label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      inputMode="decimal"
-                      pattern="[0-9]*\.?[0-9]*"
-                      value={amount}
-                      onChange={e => setAmount(e.target.value)}
-                      placeholder="0.00"
-                      className="flex-1 p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none text-gray-900 dark:text-white"
-                      required
-                    />
-                    <select
-                      value={currency}
-                      onChange={e => setCurrency(e.target.value)}
-                      className="w-24 p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none text-gray-900 dark:text-white"
-                    >
-                      <option value="MYR">MYR</option>
-                      {trip.exchanges.map(ex => (
-                        <option key={ex.currency} value={ex.currency}>{ex.currency}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              </div>
             </div>
-            <div className="flex gap-2 pt-2">
+
+            <div className="flex gap-3 pt-4">
               <button
                 type="button"
                 onClick={resetForm}
-                className="flex-1 py-2.5 px-4 bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-800 dark:text-white rounded-xl text-sm font-medium transition-colors"
+                className="flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 rounded-xl text-xs font-bold uppercase tracking-widest transition-all"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="flex-1 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-medium transition-colors"
+                className="flex-[2] py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold uppercase tracking-widest shadow-lg shadow-indigo-200 dark:shadow-none transition-all"
               >
-                {editingId ? 'Update' : 'Save'}
+                {editingId ? 'Update Budget' : 'Save Budget'}
               </button>
             </div>
           </div>
         </form>
       )}
 
-      <div className="space-y-6">
+      <div className="space-y-8">
         {budgets.map(budget => {
           if (!budget || !budget.categories) return null;
           const spent = calculateSpending(budget);
@@ -226,48 +247,56 @@ export function BudgetManager({ trip, onUpdateTrip }: BudgetManagerProps) {
 
           return (
             <div key={budget.id} className="group">
-              <div className="flex justify-between items-start mb-2">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold text-gray-800 dark:text-white">
+              <div className="flex justify-between items-start mb-4">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-base font-black text-gray-900 dark:text-white truncate">
                       {budget.name || ((budget.categories || []).includes('All') ? 'Total Budget' : (budget.categories || []).map(c => c.split(' ')[0]).join(', '))}
                     </span>
-                    <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded uppercase font-bold tracking-wider">
+                    <span className="text-[10px] px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-lg uppercase font-black tracking-widest">
                       {budget.period}
                     </span>
                   </div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 flex flex-wrap gap-2">
-                    {formatCurrency(spent)} / {formatCurrency(budget.amount)}
+                  <div className="text-xs font-bold text-gray-400 dark:text-gray-500 flex items-center gap-2">
+                    <span className={cn(isOver ? "text-rose-500" : "text-indigo-500")}>{formatCurrency(spent)}</span>
+                    <span className="opacity-50">/</span>
+                    <span>{formatCurrency(budget.amount)}</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-1 transition-opacity">
-                  <button onClick={() => handleEdit(budget)} className="p-1.5 text-gray-400 hover:text-emerald-500 dark:hover:text-emerald-400 transition-colors">
+                <div className="flex items-center gap-1">
+                  <button onClick={() => handleEdit(budget)} className="p-2 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
                     <Edit2 className="w-4 h-4" />
                   </button>
-                  <button onClick={() => handleDelete(budget.id)} className="p-1.5 text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors">
+                  <button onClick={() => handleDelete(budget.id)} className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
               </div>
 
-              <div className="relative h-4 w-full bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+              <div className="relative h-3 w-full bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden mb-3">
                 <div 
                   className={cn(
-                    "h-full transition-all duration-500 rounded-full",
-                    isOver ? "bg-red-500" : percentage > 85 ? "bg-amber-500" : "bg-emerald-500"
+                    "h-full transition-all duration-1000 ease-out rounded-full",
+                    isOver ? "bg-rose-500" : percentage > 85 ? "bg-amber-500" : "bg-indigo-500"
                   )}
                   style={{ width: `${percentage}%` }}
                 />
               </div>
 
-              <div className="flex justify-between mt-1">
-                <span className={cn(
-                  "text-[10px] font-bold",
-                  isOver ? "text-red-500" : "text-gray-400 dark:text-gray-500"
-                )}>
-                  {isOver ? 'Over budget!' : `${percentage.toFixed(0)}% used`}
-                </span>
-                <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <div className={cn(
+                    "w-2 h-2 rounded-full",
+                    isOver ? "bg-rose-500" : percentage > 85 ? "bg-amber-500" : "bg-indigo-500"
+                  )} />
+                  <span className={cn(
+                    "text-[10px] font-black uppercase tracking-widest",
+                    isOver ? "text-rose-500" : "text-gray-400 dark:text-gray-500"
+                  )}>
+                    {isOver ? 'Over budget!' : `${percentage.toFixed(0)}% used`}
+                  </span>
+                </div>
+                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">
                   {remaining > 0 ? `${formatCurrency(remaining)} left` : '0 left'}
                 </span>
               </div>
@@ -276,9 +305,9 @@ export function BudgetManager({ trip, onUpdateTrip }: BudgetManagerProps) {
         })}
 
         {budgets.length === 0 && !isAdding && (
-          <div className="text-center py-10 border-2 border-dashed border-gray-100 dark:border-gray-700 rounded-2xl">
-            <PieChart className="w-10 h-10 text-gray-200 dark:text-gray-700 mx-auto mb-3" />
-            <p className="text-sm text-gray-400 dark:text-gray-500 italic">
+          <div className="text-center py-16 bg-gray-50/30 dark:bg-gray-900/10 rounded-3xl border-2 border-dashed border-gray-100 dark:border-gray-700">
+            <PieChart className="w-12 h-12 text-gray-200 dark:text-gray-700 mx-auto mb-4 opacity-50" />
+            <p className="text-gray-400 dark:text-gray-500 text-sm font-medium italic">
               No budgets set yet. Track your spending limits!
             </p>
           </div>
@@ -286,11 +315,14 @@ export function BudgetManager({ trip, onUpdateTrip }: BudgetManagerProps) {
       </div>
 
       {budgets.length > 0 && (
-        <div className="mt-8 pt-6 border-t border-gray-100 dark:border-gray-700">
-          <div className="flex items-center gap-3 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-2xl">
-            <TrendingUp className="w-5 h-5 text-blue-500" />
-            <div className="text-xs text-blue-700 dark:text-blue-300">
-              <span className="font-bold">Pro Tip:</span> Setting category budgets helps you identify where you're overspending most.
+        <div className="mt-12 pt-8 border-t border-gray-100 dark:border-gray-700">
+          <div className="flex items-center gap-4 p-5 bg-indigo-50/50 dark:bg-indigo-900/10 rounded-2xl border border-indigo-100/50 dark:border-indigo-900/20">
+            <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl">
+              <TrendingUp className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+            </div>
+            <div className="text-xs text-indigo-700 dark:text-indigo-300 leading-relaxed">
+              <span className="font-black uppercase tracking-widest block mb-1">Pro Tip</span>
+              Setting category budgets helps you identify where you're overspending most.
             </div>
           </div>
         </div>

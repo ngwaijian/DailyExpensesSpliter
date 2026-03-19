@@ -149,7 +149,7 @@ export function CategoryManager({ trip, onUpdateTrip }: CategoryManagerProps) {
                     <ChevronRight className={cn("w-4 h-4 text-gray-400 transition-transform", expandedCategory === index && "rotate-90")} />
                     <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{cat.name}</span>
                   </button>
-                  <div className="flex items-center gap-1 transition-opacity">
+                  <div className="flex items-center gap-1">
                     <button 
                       onClick={() => handleMove(index, 'up')}
                       disabled={index === 0}

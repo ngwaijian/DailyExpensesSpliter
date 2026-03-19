@@ -90,6 +90,7 @@ export interface Loan {
 export interface Trip {
   id: string;
   name: string;
+  lastUpdated: string;
   users: string[]; // names
   expenses: Expense[];
   exchanges: Exchange[];

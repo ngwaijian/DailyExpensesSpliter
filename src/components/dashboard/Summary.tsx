@@ -1,13 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Trip } from '../../types';
 import { getAverageRates, formatCurrency } from '../../utils/currency';
-import { TrendingUp, Download, FileText, Table, Users, PieChart as PieChartIcon, List, Calendar, Target } from 'lucide-react';
+import { TrendingUp, Download, FileText, Table, Users, PieChart as PieChartIcon, List, Calendar, Target, Wallet } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import jsPDF from 'jspdf';
 import { toJpeg } from 'html-to-image';
 
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useTheme } from '../../hooks/useTheme';
 
 interface SummaryProps {
   trip: Trip;
@@ -18,6 +19,8 @@ const COLORS = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'
 
 export function Summary({ trip, onUpdateTrip }: SummaryProps) {
   const { t } = useLanguage();
+  const { theme } = useTheme();
+  const isDarkMode = theme === 'dark';
   const [view, setView] = useState<'category' | 'person'>('category');
   const [selectedPerson, setSelectedPerson] = useState<string>('All');
   const [showExportMenu, setShowExportMenu] = useState(false);
@@ -483,41 +486,62 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 mb-8">
-        <div className="bg-gray-50/50 dark:bg-gray-900/20 p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50">
-          <div className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-widest mb-2">
-            {t('dash_net_balance', 'Net Balance')}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div className="bg-white dark:bg-gray-800/50 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm transition-all hover:shadow-md">
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl">
+              <Wallet className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+            </div>
+            <div className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-widest">
+              {t('dash_net_balance', 'Net Balance')}
+            </div>
           </div>
           <div className={cn(
-            "text-lg sm:text-xl md:text-2xl font-black break-words",
+            "text-2xl font-black tracking-tight",
             (totalIncomeMYR - totalMYR) >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"
           )} title={formatCurrency(totalIncomeMYR - totalMYR)}>
             {formatCurrency(totalIncomeMYR - totalMYR)}
           </div>
         </div>
-        <div className="bg-gray-50/50 dark:bg-gray-900/20 p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50">
-          <div className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-widest mb-2">
-            {t('dash_total_income', 'Total Income')}
+
+        <div className="bg-white dark:bg-gray-800/50 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm transition-all hover:shadow-md">
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl">
+              <TrendingUp className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <div className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-widest">
+              {t('dash_total_income', 'Total Income')}
+            </div>
           </div>
-          <div className="text-lg sm:text-xl md:text-2xl font-black text-emerald-600 dark:text-emerald-400 break-words" title={formatCurrency(totalIncomeMYR)}>{formatCurrency(totalIncomeMYR)}</div>
+          <div className="text-2xl font-black tracking-tight text-emerald-600 dark:text-emerald-400" title={formatCurrency(totalIncomeMYR)}>
+            {formatCurrency(totalIncomeMYR)}
+          </div>
         </div>
-        <div className="bg-gray-50/50 dark:bg-gray-900/20 p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50">
-          <div className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-widest mb-2">
-            {selectedPerson === 'All' ? t('dash_total_spent') : `${selectedPerson}'s Total`}
+
+        <div className="bg-white dark:bg-gray-800/50 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm transition-all hover:shadow-md">
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-2 bg-gray-50 dark:bg-gray-700 rounded-xl">
+              <Calendar className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+            </div>
+            <div className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-widest">
+              {selectedPerson === 'All' ? t('dash_total_spent') : `${selectedPerson}'s Total`}
+            </div>
           </div>
-          <div className="text-lg sm:text-xl md:text-2xl font-black text-gray-900 dark:text-white break-words" title={formatCurrency(-totalMYR)}>{formatCurrency(-totalMYR)}</div>
+          <div className="text-2xl font-black tracking-tight text-gray-900 dark:text-white" title={formatCurrency(-totalMYR)}>
+            {formatCurrency(-totalMYR)}
+          </div>
         </div>
       </div>
 
       <div className="mb-8">
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 p-1 bg-gray-50 dark:bg-gray-900/50 rounded-2xl w-fit">
           <button
             onClick={() => setSelectedPerson('All')}
             className={cn(
               "px-4 py-2 text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all",
               selectedPerson === 'All'
-                ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-lg"
-                : "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
+                ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm"
+                : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
             )}
           >
             All People
@@ -529,8 +553,8 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
               className={cn(
                 "px-4 py-2 text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all",
                 selectedPerson === user
-                  ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-lg"
-                  : "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
+                  ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm"
+                  : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
               )}
             >
               {user}
@@ -631,23 +655,84 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
         )}
       </div>
 
-      {/* Daily Spending Chart */}
-      <div className="mb-6">
-        <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Last 7 Days</h4>
-        <div className="h-32 w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={dailyData}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" opacity={0.5} />
-              <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#9ca3af' }} />
-              <Tooltip 
-                cursor={{ fill: 'rgba(59, 130, 246, 0.1)' }}
-                contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.9)', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-                itemStyle={{ color: '#1f2937', fontSize: '10px', fontWeight: 600 }}
-                labelStyle={{ fontSize: '10px', color: '#6b7280', marginBottom: '4px' }}
-              />
-              <Bar dataKey="value" fill="#3B82F6" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+      {/* Category Breakdown Chart */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm transition-all duration-200">
+          <h4 className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-6">Category Distribution</h4>
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={chartData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={65}
+                  outerRadius={85}
+                  paddingAngle={5}
+                  dataKey="value"
+                  stroke="none"
+                  animationBegin={0}
+                  animationDuration={1000}
+                >
+                  {chartData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
+                    borderColor: isDarkMode ? '#374151' : '#e5e7eb',
+                    borderRadius: '16px',
+                    border: 'none',
+                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    color: isDarkMode ? '#ffffff' : '#000000'
+                  }}
+                  itemStyle={{ padding: '2px 0' }}
+                  formatter={(value: number, name: string) => [formatCurrency(value), t(`cat_${name}`, name)]}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm transition-all duration-200">
+          <div className="flex items-center justify-between mb-6">
+            <h4 className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Last 7 Days Spending</h4>
+            <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+              <TrendingUp className="w-3 h-3" />
+              Stable
+            </div>
+          </div>
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={dailyData}>
+                <XAxis 
+                  dataKey="date" 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fontSize: 10, fill: isDarkMode ? '#9ca3af' : '#6b7280', fontWeight: 600 }} 
+                  dy={10}
+                />
+                <Tooltip 
+                  cursor={{ fill: isDarkMode ? '#374151' : 'rgba(59, 130, 246, 0.05)', radius: 8 }}
+                  contentStyle={{ 
+                    backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
+                    borderColor: isDarkMode ? '#374151' : '#e5e7eb',
+                    borderRadius: '16px',
+                    border: 'none',
+                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    color: isDarkMode ? '#ffffff' : '#000000'
+                  }}
+                  formatter={(value: number) => [formatCurrency(value), t('dash_spending')]}
+                />
+                <Bar dataKey="value" fill="#6366f1" radius={[6, 6, 6, 6]} barSize={20} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </div>
 
@@ -676,54 +761,77 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
           </div>
         </div>
 
-        <div className="space-y-4 w-full">
+        <div className="space-y-6 w-full">
           {view === 'category' ? (
             <>
-              {sortedCats.slice(0, 6).map(([cat, amt], idx) => (
-                <div key={cat} className="space-y-2">
-                  <div className="flex items-center justify-between gap-4 w-full min-w-0">
+              {sortedCats.slice(0, 8).map(([cat, amt], idx) => (
+                <div key={cat} className="group">
+                  <div className="flex items-center justify-between gap-4 w-full min-w-0 mb-2">
                     <div className="flex items-center gap-3 min-w-0">
-                      <span className="w-8 h-8 flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-xl text-base shrink-0">
+                      <div className="w-10 h-10 flex items-center justify-center bg-gray-50 dark:bg-gray-700/50 rounded-2xl text-lg shrink-0 transition-transform">
                         {cat.split(' ')[0]}
-                      </span>
+                      </div>
                       <div className="flex flex-col min-w-0 flex-1">
                         <span className="font-bold text-gray-900 dark:text-white truncate text-sm">
                           {t(`cat_${cat}`, cat).split(' ').slice(1).join(' ') || t(`cat_${cat}`, cat)}
                         </span>
-                        <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium">
-                          {((amt / totalMYR) * 100).toFixed(1)}% of total
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-wider">
+                            {((amt / totalMYR) * 100).toFixed(1)}%
+                          </span>
+                          <div className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
+                          <span className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-wider">
+                            {trip.expenses.filter(e => (typeof e.category === 'string' ? e.category : e.category?.name) === cat).length} Transactions
+                          </span>
+                        </div>
                       </div>
                     </div>
-                    <span className="font-black text-gray-900 dark:text-white text-sm shrink-0">{formatCurrency(amt)}</span>
+                    <div className="text-right shrink-0">
+                      <span className="font-black text-gray-900 dark:text-white text-sm block">{formatCurrency(amt)}</span>
+                    </div>
                   </div>
                   <div className="h-1.5 w-full bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
                     <div 
-                      className="h-full bg-blue-500 rounded-full"
-                      style={{ width: `${(amt / totalMYR) * 100}%`, opacity: 1 - (idx * 0.1) }}
+                      className="h-full bg-indigo-500 rounded-full transition-all duration-1000 ease-out"
+                      style={{ width: `${(amt / totalMYR) * 100}%`, opacity: 1 - (idx * 0.08) }}
                     />
                   </div>
                 </div>
               ))}
-              {sortedCats.length === 0 && <div className="text-gray-400 dark:text-gray-500 text-sm italic">{t('dash_no_data')}</div>}
+              {sortedCats.length === 0 && (
+                <div className="text-center py-12 bg-gray-50/50 dark:bg-gray-900/20 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700">
+                  <PieChartIcon className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                  <p className="text-gray-400 dark:text-gray-500 text-sm font-medium italic">{t('dash_no_data')}</p>
+                </div>
+              )}
             </>
           ) : (
             <>
               {sortedPeople.map(([name, stats]) => (
-                <div key={name} className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 flex items-center justify-center text-xs font-bold shrink-0">
+                <div key={name} className="flex items-center justify-between p-4 bg-gray-50/50 dark:bg-gray-900/20 rounded-2xl border border-gray-100 dark:border-gray-700/50 hover:border-indigo-100 dark:hover:border-indigo-900/50 transition-all">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-2xl bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 flex items-center justify-center text-sm font-black shrink-0">
                       {name.charAt(0).toUpperCase()}
                     </div>
-                    <span className="text-gray-700 dark:text-gray-300 truncate font-medium">{name}</span>
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-gray-900 dark:text-white truncate font-bold text-sm">{name}</span>
+                      <span className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-wider">
+                        {t('dash_paid')} {formatCurrency(stats.paid)}
+                      </span>
+                    </div>
                   </div>
                   <div className="text-right shrink-0">
-                    <div className="font-bold text-gray-900 dark:text-white">{formatCurrency(stats.share)}</div>
-                    <div className="text-[10px] text-gray-400 dark:text-gray-500">{t('dash_paid')} {formatCurrency(stats.paid)}</div>
+                    <div className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-widest mb-0.5">Share</div>
+                    <div className="font-black text-gray-900 dark:text-white text-base">{formatCurrency(stats.share)}</div>
                   </div>
                 </div>
               ))}
-              {sortedPeople.length === 0 && <div className="text-gray-400 dark:text-gray-500 text-sm italic">{t('dash_no_people')}</div>}
+              {sortedPeople.length === 0 && (
+                <div className="text-center py-12 bg-gray-50/50 dark:bg-gray-900/20 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700">
+                  <Users className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                  <p className="text-gray-400 dark:text-gray-500 text-sm font-medium italic">{t('dash_no_people')}</p>
+                </div>
+              )}
             </>
           )}
         </div>
