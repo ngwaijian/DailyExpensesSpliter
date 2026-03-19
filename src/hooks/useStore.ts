@@ -69,7 +69,8 @@ export function useStore() {
   });
   const needsSync = unsyncedTripIds.includes(currentTripId);
   const [githubToken, setGithubToken] = useState(() => {
-    return localStorage.getItem(GITHUB_TOKEN_KEY) || GITHUB_TOKEN;
+    const stored = localStorage.getItem(GITHUB_TOKEN_KEY);
+    return (stored || GITHUB_TOKEN || '').trim();
   });
   const [syncError, setSyncError] = useState<string | null>(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -305,10 +306,15 @@ export function useStore() {
     setSyncError(null);
     try {
       const headers: any = {};
-      if (githubToken) headers['Authorization'] = `Bearer ${githubToken}`;
+      const token = githubToken?.trim();
+      if (token) headers['Authorization'] = `Bearer ${token}`;
       
       const res = await fetch(`https://api.github.com/gists/${targetGistId}?t=${Date.now()}`, { headers });
-      if (!res.ok) throw new Error("Failed to fetch gist");
+      if (res.status === 401) throw new Error("401: Invalid GitHub token.");
+      if (res.status === 403) throw new Error("403: GitHub token lacks permission or rate limited.");
+      if (res.status === 404) throw new Error("404: Cloud storage (Gist) not found.");
+      if (!res.ok) throw new Error(`Failed to fetch gist: ${res.status}`);
+      
       const data = await res.json();
       
       // Check for new per-trip format first
@@ -347,9 +353,9 @@ export function useStore() {
           }
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Sync error:", error);
-      setSyncError("Failed to pull data from cloud.");
+      setSyncError(error.message || "Failed to pull data from cloud.");
     } finally {
       setIsSyncing(false);
     }
@@ -358,9 +364,10 @@ export function useStore() {
   const pushToCloud = useCallback(async (tripId?: string) => {
     const targetId = tripId || currentTripId;
     let targetTrip = appData.trips.find(t => t.id === targetId);
-    if (!githubToken || !targetTrip?.gistId) return;
+    const token = githubToken?.trim();
+    if (!token || !targetTrip?.gistId) return;
     if (!navigator.onLine) {
-      setSyncError(null); 
+      setSyncError("Offline: Cannot push data."); 
       return;
     }
     setIsSyncing(true);
@@ -368,7 +375,7 @@ export function useStore() {
     try {
       // --- NEW: Timestamp Verification & Conflict Resolution ---
       const checkRes = await fetch(`https://api.github.com/gists/${targetTrip.gistId}?t=${Date.now()}`, {
-        headers: { 'Authorization': `Bearer ${githubToken}` }
+        headers: { 'Authorization': `Bearer ${token}` }
       });
       if (checkRes.ok) {
         const checkData = await checkRes.json();
@@ -410,6 +417,10 @@ export function useStore() {
             targetTrip = mergedTrip; // Use merged trip for pushing
           }
         }
+      } else if (checkRes.status === 401) {
+        throw new Error("401: Invalid GitHub token.");
+      } else if (checkRes.status === 404) {
+        throw new Error("404: Cloud storage (Gist) not found.");
       }
       // ---------------------------------------------------------
 
@@ -417,16 +428,24 @@ export function useStore() {
       const res = await fetch(`https://api.github.com/gists/${targetTrip.gistId}`, {
         method: 'PATCH',
         headers: {
-          'Authorization': `Bearer ${githubToken}`,
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(payload)
       });
-      if (!res.ok) throw new Error("Failed to push to gist");
+      
+      if (res.status === 401) throw new Error("401: Invalid GitHub token.");
+      if (res.status === 403) throw new Error("403: GitHub token lacks permission or rate limited.");
+      if (res.status === 404) throw new Error("404: Cloud storage (Gist) not found.");
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(`Failed to push to gist: ${res.status} ${JSON.stringify(errorData)}`);
+      }
+      
       setUnsyncedTripIds(prev => prev.filter(id => id !== targetId));
-    } catch (error) {
+    } catch (error: any) {
       console.error("Sync error:", error);
-      setSyncError("Failed to push data to cloud.");
+      setSyncError(error.message || "Failed to push data to cloud.");
     } finally {
       setIsSyncing(false);
     }
