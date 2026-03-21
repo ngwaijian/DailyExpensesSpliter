@@ -97,7 +97,9 @@ export function ExpenseList({ trip, onEdit, onView, onDelete, lastUpdatedId, onU
       result = result.filter(e => e.date >= startDate);
     }
     if (endDate) {
-      result = result.filter(e => e.date <= endDate);
+      // Append 'T23:59:59.999Z' to endDate to include the entire day
+      const endOfDay = `${endDate}T23:59:59.999Z`;
+      result = result.filter(e => e.date <= endOfDay);
     }
 
     // Sort
@@ -254,7 +256,7 @@ export function ExpenseList({ trip, onEdit, onView, onDelete, lastUpdatedId, onU
         {canUndo && (
           <button
             onClick={undo}
-            className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-all active:scale-95"
             title="Undo last action"
           >
             <RotateCcw className="w-4 h-4" />
@@ -263,7 +265,7 @@ export function ExpenseList({ trip, onEdit, onView, onDelete, lastUpdatedId, onU
         )}
         <button
           onClick={() => setShowFilters(!showFilters)}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all active:scale-95 ${
             showFilters || activeFilterCount > 0
               ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
               : 'bg-white text-gray-600 dark:bg-gray-800 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
@@ -462,6 +464,14 @@ export function ExpenseList({ trip, onEdit, onView, onDelete, lastUpdatedId, onU
                       
                       <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10px] text-gray-400 dark:text-gray-500">
                         <span className="text-blue-500 dark:text-blue-400 font-medium">{exp.paidBy}</span>
+                        {exp.splitAmong && exp.splitAmong.length > 0 && (
+                          <>
+                            <span className="text-gray-300 dark:text-gray-600">→</span>
+                            <span className="text-gray-500 dark:text-gray-400 truncate max-w-[80px]" title={exp.splitAmong.join(', ')}>
+                              {exp.splitAmong.join(', ')}
+                            </span>
+                          </>
+                        )}
                         <span>•</span>
                         <span className="truncate max-w-[120px]">
                           {t(`cat_${typeof exp.category === 'string' ? exp.category : exp.category?.name}`, typeof exp.category === 'string' ? exp.category : exp.category?.name || 'Other').replace(/^[^\s]+\s/, '')}

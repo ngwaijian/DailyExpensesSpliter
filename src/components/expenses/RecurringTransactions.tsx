@@ -214,7 +214,7 @@ export function RecurringTransactions({ trip, onUpdateTrip }: RecurringTransacti
                     value={amount}
                     onChange={e => {
                       const val = e.target.value;
-                      if (val === '' || /^[0-9+\-*/().\s,.]*$/.test(val)) {
+                      if (val === '' || /^\d*\.?\d*$/.test(val)) {
                         setAmount(val);
                       }
                     }}

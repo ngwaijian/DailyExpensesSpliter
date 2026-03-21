@@ -113,7 +113,7 @@ export function CategoryManager({ trip, onUpdateTrip }: CategoryManagerProps) {
         />
         <button 
           onClick={handleAdd}
-          className="p-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
+          className="p-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all active:scale-95"
         >
           <Plus className="w-5 h-5" />
         </button>

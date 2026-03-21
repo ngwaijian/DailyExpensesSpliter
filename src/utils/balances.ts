@@ -20,7 +20,10 @@ export function calculateBalances(trip: Trip): Record<string, number> {
         balances[e.splitAmong[0]] -= myr;
       }
     } else if (e.type === 'sponsorship') {
-      // Sponsor gives money to the group
+      // Legacy sponsorship type: paidBy paid and sponsored. No balance change needed.
+      // It's a gift to the group.
+    } else if (e.type === 'income') {
+      // paidBy received the money, they owe it to the group
       if (balances[e.paidBy] !== undefined) balances[e.paidBy] -= myr;
       
       if (e.splitAmong.length > 0) {
@@ -40,7 +43,7 @@ export function calculateBalances(trip: Trip): Record<string, number> {
       } else if (e.splitDetails) {
         Object.entries(e.splitDetails).forEach(([person, amount]) => {
           if (balances[person] !== undefined) {
-            balances[person] -= amount * rate;
+            balances[person] -= Number(amount) * rate;
           }
         });
       } else if (e.splitAmong.length > 0) {

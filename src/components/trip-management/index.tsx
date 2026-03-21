@@ -207,8 +207,8 @@ export function PeopleWallet({ trip, onAddPerson, onEditPerson, onRemovePerson, 
 
   return (
     <div className="space-y-4">
-      {/* People Section - Hidden for personal finance tracker */}
-      <div className="hidden bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-colors duration-200">
+      {/* People Section */}
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-colors duration-200">
         <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-4 flex items-center gap-2">
           <Users className="w-4 h-4" />
           {t('trip_people')}
@@ -320,7 +320,7 @@ export function PeopleWallet({ trip, onAddPerson, onEditPerson, onRemovePerson, 
               </div>
             </div>
           </div>
-          <button type="submit" className="w-full bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 py-3 rounded-xl text-xs font-bold uppercase tracking-wider hover:opacity-90 transition-all active:scale-[0.98] shadow-sm flex items-center justify-center gap-2">
+          <button type="submit" className="w-full bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 py-3 rounded-xl text-xs font-bold uppercase tracking-wider hover:opacity-90 transition-all active:scale-95 shadow-sm flex items-center justify-center gap-2">
             <Plus size={14} />
             {t('trip_log_exchange')}
           </button>

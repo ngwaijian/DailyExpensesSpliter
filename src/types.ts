@@ -91,6 +91,7 @@ export interface Trip {
   id: string;
   name: string;
   lastUpdated: string;
+  lastSynced?: string; // Timestamp of the last successful sync with the cloud
   users: string[]; // names
   expenses: Expense[];
   exchanges: Exchange[];

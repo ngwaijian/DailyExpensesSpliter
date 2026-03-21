@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Trip, Budget, CATEGORIES } from '../../types';
 import { Wallet, Plus, Edit2, Trash2, AlertCircle, PieChart, TrendingUp } from 'lucide-react';
-import { formatCurrency } from '../../utils/currency';
+import { formatCurrency, getAverageRates } from '../../utils/currency';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { cn } from '../../lib/utils';
 
@@ -30,7 +30,12 @@ export function BudgetManager({ trip, onUpdateTrip }: BudgetManagerProps) {
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
 
+    // Calculate average rates for conversion
+    const rates = getAverageRates(trip);
+
     return trip.expenses.reduce((acc, exp) => {
+      if (exp.type === 'income' || exp.type === 'settlement') return acc;
+
       // Filter by category
       const budgetCats = Array.isArray(budget.categories) ? budget.categories : [];
       if (!budgetCats.includes('All') && !budgetCats.includes(typeof exp.category === 'string' ? exp.category : exp.category?.name || 'Other')) return acc;
@@ -41,9 +46,14 @@ export function BudgetManager({ trip, onUpdateTrip }: BudgetManagerProps) {
         if (expDate.getMonth() !== currentMonth || expDate.getFullYear() !== currentYear) return acc;
       }
 
-      // Convert to budget currency (simplified for now, assuming same currency or using stored rate)
-      // In a real app, we'd use the exchange rates
-      return acc + exp.amountOriginal; 
+      // Convert expense to MYR first, then to budget currency
+      const rateToMYR = rates[exp.currency] || exp.rate || 1;
+      const amountInMYR = exp.amountOriginal * rateToMYR;
+      
+      const budgetRateToMYR = rates[budget.currency] || 1;
+      const amountInBudgetCurrency = amountInMYR / budgetRateToMYR;
+
+      return acc + amountInBudgetCurrency; 
     }, 0);
   };
 
@@ -139,7 +149,7 @@ export function BudgetManager({ trip, onUpdateTrip }: BudgetManagerProps) {
                       value={amount}
                       onChange={e => {
                         const val = e.target.value;
-                        if (val === '' || /^[0-9+\-*/().\s,.]*$/.test(val)) {
+                        if (val === '' || /^\d*\.?\d*$/.test(val)) {
                           setAmount(val);
                         }
                       }}
@@ -222,13 +232,13 @@ export function BudgetManager({ trip, onUpdateTrip }: BudgetManagerProps) {
               <button
                 type="button"
                 onClick={resetForm}
-                className="flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 rounded-xl text-xs font-bold uppercase tracking-widest transition-all"
+                className="flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 rounded-xl text-xs font-bold uppercase tracking-widest transition-all active:scale-95"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="flex-[2] py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold uppercase tracking-widest shadow-lg shadow-indigo-200 dark:shadow-none transition-all"
+                className="flex-[2] py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold uppercase tracking-widest shadow-lg shadow-indigo-200 dark:shadow-none transition-all active:scale-95"
               >
                 {editingId ? 'Update Budget' : 'Save Budget'}
               </button>
@@ -258,9 +268,9 @@ export function BudgetManager({ trip, onUpdateTrip }: BudgetManagerProps) {
                     </span>
                   </div>
                   <div className="text-xs font-bold text-gray-400 dark:text-gray-500 flex items-center gap-2">
-                    <span className={cn(isOver ? "text-rose-500" : "text-indigo-500")}>{formatCurrency(spent)}</span>
+                    <span className={cn(isOver ? "text-rose-500" : "text-indigo-500")}>{formatCurrency(spent, budget.currency)}</span>
                     <span className="opacity-50">/</span>
-                    <span>{formatCurrency(budget.amount)}</span>
+                    <span>{formatCurrency(budget.amount, budget.currency)}</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
@@ -297,7 +307,7 @@ export function BudgetManager({ trip, onUpdateTrip }: BudgetManagerProps) {
                   </span>
                 </div>
                 <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">
-                  {remaining > 0 ? `${formatCurrency(remaining)} left` : '0 left'}
+                  {remaining > 0 ? `${formatCurrency(remaining, budget.currency)} left` : '0 left'}
                 </span>
               </div>
             </div>

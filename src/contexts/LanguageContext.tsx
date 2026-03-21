@@ -10,7 +10,7 @@ const translations: Record<Language, Translations> = {
   en: {
     // Navigation
     nav_dashboard: "Dashboard",
-    nav_expenses: "Expenses",
+    nav_expenses: "Entries",
     nav_balances: "Balances",
     nav_settings: "Settings",
     nav_planning: "Planning",
@@ -23,7 +23,7 @@ const translations: Record<Language, Translations> = {
     header_new_trip: "New Account",
     
     // Expense Form
-    form_type_expense: "Expense",
+    form_type_expense: "Entry",
     form_type_settlement: "Settlement",
     form_type_sponsorship: "Sponsorship",
     form_desc: "Description",
@@ -39,9 +39,9 @@ const translations: Record<Language, Translations> = {
     form_location: "Location (Optional)",
     form_location_placeholder: "Search location...",
     form_cancel: "Cancel",
-    form_save: "Save Expense",
-    form_add: "Add Expense",
-    form_edit: "Edit Expense",
+    form_save: "Save Entry",
+    form_add: "Add Entry",
+    form_edit: "Edit Entry",
     form_split_equally: "Split Equally",
     form_split_unequally: "Split Unequally",
     form_sponsored_by: "Sponsored By",
@@ -56,8 +56,8 @@ const translations: Record<Language, Translations> = {
     form_percentages: "Percentages",
     form_shares: "Shares",
     form_mark_sponsored: "Mark as Sponsored",
-    form_settled_desc: "Settled expenses are recorded but don't affect balances.",
-    form_sponsored_desc: "Sponsored expenses count towards the group total, but the sponsor takes on the full cost.",
+    form_settled_desc: "Settled entries are recorded but don't affect balances.",
+    form_sponsored_desc: "Sponsored entries count towards the group total, but the sponsor takes on the full cost.",
     form_assign_shares: "Assign shares (Max: {maxShares}). Set to 0 to exclude.",
     form_remaining_shares: "Remaining: {remainingShares}",
     form_split_remaining: "Split Remaining",
@@ -86,14 +86,14 @@ const translations: Record<Language, Translations> = {
     "cat_📝 General / Other": "General / Other",
     
     // Dashboard
-    dash_total: "Total Expenses",
+    dash_total: "Total Entries",
     dash_your_balance: "Your Balance",
-    dash_recent: "Recent Expenses",
+    dash_recent: "Recent Entries",
     dash_view_all: "View All",
     dash_summary: "Financial Summary",
     dash_export: "Export Data",
-    dash_export_pdf: "Export as PDF",
-    dash_generating_pdf: "Generating PDF...",
+    dash_export_pdf: "Export as Image",
+    dash_generating_pdf: "Generating Image...",
     dash_export_csv: "Export as CSV",
     dash_total_spent: "Total Spent",
     dash_per_person: "Per Person",
@@ -105,7 +105,7 @@ const translations: Record<Language, Translations> = {
     dash_paid: "Paid:",
     dash_exported: "Exported",
     dash_people: "People",
-    dash_expenses_count: "Expenses Count",
+    dash_expenses_count: "Entries Count",
     dash_start_date: "Start Date",
     dash_end_date: "End Date",
     dash_person_breakdown: "Person Breakdown",
@@ -114,7 +114,7 @@ const translations: Record<Language, Translations> = {
     dash_category_breakdown: "Category Breakdown",
     dash_amount: "Amount",
     dash_percentage: "Percentage",
-    dash_detailed_expenses: "Detailed Expenses",
+    dash_detailed_entries: "Detailed Entries",
     dash_original: "Original",
     dash_myr: "MYR",
     
@@ -128,8 +128,8 @@ const translations: Record<Language, Translations> = {
     bal_settlements: "Settlements",
     bal_all_settled: "All settled up! 🎉",
     
-    // Expense List
-    list_no_expenses: "No expenses yet. Add one above!",
+    // Entry List
+    list_no_expenses: "No entries yet. Add one above!",
     list_filters: "Filters & Sort",
     list_search: "Search",
     list_search_placeholder: "Search description, person, location...",
@@ -145,7 +145,7 @@ const translations: Record<Language, Translations> = {
     list_amount_desc: "Amount (Highest First)",
     list_amount_asc: "Amount (Lowest First)",
     list_reset_filters: "Reset Filters",
-    list_no_match: "No expenses match your filters.",
+    list_no_match: "No entries match your filters.",
     list_total: "Total:",
     list_sponsored_by: " by ",
     list_paid_to: "paid to",
@@ -153,10 +153,10 @@ const translations: Record<Language, Translations> = {
     list_sponsored: "sponsored",
     list_no_one: "No one",
     
-    // Expense Details Modal
+    // Entry Details Modal
     detail_settlement: "Settlement Details",
     detail_sponsorship: "Sponsorship Details",
-    detail_expense: "Expense Details",
+    detail_expense: "Entry Details",
     detail_date: "Date",
     detail_category: "Category",
     detail_paid_by: "Paid By",
@@ -168,9 +168,9 @@ const translations: Record<Language, Translations> = {
     detail_open_maps: "Open in Maps",
     detail_edit: "Edit",
     detail_delete: "Delete",
-    detail_confirm_delete: "Are you sure you want to delete this expense?",
+    detail_confirm_delete: "Are you sure you want to delete this entry?",
     
-    // Trip People & Wallet
+    // Account People & Wallet
     trip_people: "People",
     trip_name_placeholder: "Name",
     trip_no_people: "No people added yet.",
@@ -189,7 +189,7 @@ const translations: Record<Language, Translations> = {
     app_new_trip_prompt: "New Account Name:",
     app_delete_trip_confirm: "Delete current account?",
     app_rename_trip_prompt: "Rename Account:",
-    app_delete_expense_confirm: "Delete this expense?",
+    app_delete_expense_confirm: "Delete this entry?",
     app_person_exists: "A person with this name already exists.",
     app_remove_person_confirm: "Remove ",
     app_sync_data: "Sync Data",

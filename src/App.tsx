@@ -16,6 +16,7 @@ import { LoanManager } from './components/dashboard/LoanManager';
 import { ExpenseDetailsModal } from './components/expenses/ExpenseDetailsModal';
 import { ShieldCheck, LayoutGrid, List, Users, RefreshCw, Plus, Globe, Target, RotateCcw, Settings, Sun, Moon, Monitor, Wallet } from 'lucide-react';
 import { cn } from './lib/utils';
+import { motion } from 'framer-motion';
 
 function App() {
   const { 
@@ -44,23 +45,6 @@ function App() {
   const [shortcutDesc, setShortcutDesc] = useState<string | null>(null);
   const [shortcutCurrency, setShortcutCurrency] = useState<string | null>(null);
   const [shortcutGoalId, setShortcutGoalId] = useState<string | null>(null);
-
-  // Auto-Fetch on Wake
-  React.useEffect(() => {
-    const handleWake = () => {
-      if (document.visibilityState === 'visible') {
-        fetchFromCloud();
-      }
-    };
-
-    window.addEventListener('visibilitychange', handleWake);
-    window.addEventListener('focus', handleWake);
-
-    return () => {
-      window.removeEventListener('visibilitychange', handleWake);
-      window.removeEventListener('focus', handleWake);
-    };
-  }, [fetchFromCloud]);
 
   React.useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -430,7 +414,7 @@ function App() {
             {canUndo && (
               <button
                 onClick={undo}
-                className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors"
+                className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-all active:scale-95"
                 title="Undo last action"
               >
                 <RotateCcw className="w-5 h-5 sm:w-6 h-6" />
@@ -439,7 +423,7 @@ function App() {
 
             <button 
               onClick={() => setIsSettingsOpen(true)}
-              className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl relative transition-colors"
+              className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl relative transition-all active:scale-95"
               title="Admin Settings"
             >
               <ShieldCheck className="w-5 h-5 sm:w-6 h-6" />
@@ -551,59 +535,42 @@ function App() {
 
       {/* Mobile Bottom Nav */}
       <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 lg:hidden z-40 pb-[env(safe-area-inset-bottom)] transition-colors duration-200">
-        <div className="flex justify-around items-center px-2">
-          <button 
-            onClick={() => setActiveTab('dashboard')}
-            className={cn(
-              "p-3 flex flex-col items-center gap-1 text-xs font-medium transition-colors w-16", 
-              activeTab === 'dashboard' 
-                ? "text-blue-600 dark:text-blue-400" 
-                : "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
-            )}
-          >
-            <LayoutGrid className="w-6 h-6" />
-            {t('nav_dashboard')}
-          </button>
-          <button 
-            onClick={() => setActiveTab('expenses')}
-            className={cn(
-              "p-3 flex flex-col items-center gap-1 text-xs font-medium transition-colors w-16", 
-              activeTab === 'expenses' 
-                ? "text-blue-600 dark:text-blue-400" 
-                : "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
-            )}
-          >
-            <List className="w-6 h-6" />
-            {t('nav_expenses')}
-          </button>
-          
-          {/* Spacer for FAB */}
-          <div className="w-16 h-14" />
-
-          <button 
-            onClick={() => setActiveTab('planning')}
-            className={cn(
-              "p-3 flex flex-col items-center gap-1 text-xs font-medium transition-colors w-16", 
-              activeTab === 'planning' 
-                ? "text-blue-600 dark:text-blue-400" 
-                : "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
-            )}
-          >
-            <Target className="w-6 h-6" />
-            {t('nav_planning') || 'Planning'}
-          </button>
-          <button 
-            onClick={() => setActiveTab('people')}
-            className={cn(
-              "p-3 flex flex-col items-center gap-1 text-xs font-medium transition-colors w-16", 
-              activeTab === 'people' 
-                ? "text-blue-600 dark:text-blue-400" 
-                : "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
-            )}
-          >
-            <Wallet className="w-6 h-6" />
-            {t('trip_wallet')}
-          </button>
+        <div className="flex justify-around items-center px-2 relative">
+          {[
+            { id: 'dashboard', icon: LayoutGrid, label: t('nav_dashboard') },
+            { id: 'expenses', icon: List, label: t('nav_expenses') },
+            { id: 'spacer', icon: null, label: '' },
+            { id: 'planning', icon: Target, label: t('nav_planning') || 'Planning' },
+            { id: 'people', icon: Wallet, label: t('trip_wallet') }
+          ].map((tab) => {
+            if (tab.id === 'spacer') {
+              return <div key="spacer" className="w-16 h-14" />;
+            }
+            const Icon = tab.icon!;
+            const isActive = activeTab === tab.id;
+            return (
+              <button 
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={cn(
+                  "p-3 flex flex-col items-center gap-1 text-xs font-medium transition-colors w-16 relative", 
+                  isActive 
+                    ? "text-blue-600 dark:text-blue-400" 
+                    : "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+                )}
+              >
+                {isActive && (
+                  <motion.div
+                    layoutId="bottom-nav-indicator"
+                    className="absolute inset-0 bg-blue-50 dark:bg-blue-900/20 rounded-xl -z-10"
+                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                  />
+                )}
+                <Icon className="w-6 h-6" />
+                {tab.label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -635,7 +602,7 @@ function App() {
       <button
         onClick={scrollToForm}
         className={cn(
-          "fixed z-50 bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 hover:shadow-xl transition-all duration-300 flex items-center justify-center border-4 border-white dark:border-gray-800",
+          "fixed z-50 bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 hover:shadow-xl transition-all duration-300 active:scale-95 flex items-center justify-center border-4 border-white dark:border-gray-800",
           "bottom-8 left-1/2 -translate-x-1/2 lg:bottom-8 lg:left-auto lg:right-8 lg:translate-x-0 lg:border-none",
           "translate-y-0 opacity-100"
         )}

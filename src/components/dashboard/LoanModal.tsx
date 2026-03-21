@@ -172,7 +172,7 @@ export const LoanModal: React.FC<LoanModalProps> = ({ isOpen, onClose, onSave, i
                 value={totalAmount} 
                 onChange={e => {
                   const val = e.target.value;
-                  if (val === '' || /^[0-9+\-*/().\s,.]*$/.test(val)) {
+                  if (val === '' || /^\d*\.?\d*$/.test(val)) {
                     setTotalAmount(val);
                   }
                 }} 
@@ -192,7 +192,7 @@ export const LoanModal: React.FC<LoanModalProps> = ({ isOpen, onClose, onSave, i
                 value={remainingAmount} 
                 onChange={e => {
                   const val = e.target.value;
-                  if (val === '' || /^[0-9+\-*/().\s,.]*$/.test(val)) {
+                  if (val === '' || /^\d*\.?\d*$/.test(val)) {
                     setRemainingAmount(val);
                   }
                 }} 

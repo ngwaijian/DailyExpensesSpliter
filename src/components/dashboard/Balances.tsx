@@ -15,7 +15,7 @@ export function Balances({ trip }: BalancesProps) {
   const transactions = getSimplifiedDebts(balances);
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-colors duration-200">
+    <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-sm p-6 transition-colors duration-200">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest flex items-center gap-2">
           <CheckCircle2 className="w-4 h-4" />
@@ -31,7 +31,7 @@ export function Balances({ trip }: BalancesProps) {
       <ul className="space-y-3">
         {transactions.length > 0 ? (
           transactions.map((t_trans, idx) => (
-            <li key={idx} className="flex items-center justify-between p-4 bg-gray-50/50 dark:bg-gray-900/20 rounded-2xl border border-gray-100 dark:border-gray-700/50 transition-all hover:border-indigo-100 dark:hover:border-indigo-900/50">
+            <li key={idx} className="flex items-center justify-between p-4 bg-gray-50/50 dark:bg-gray-900/20 rounded-3xl border border-gray-100 dark:border-gray-700/50 transition-all hover:border-indigo-100 dark:hover:border-indigo-900/50">
               <div className="flex items-center gap-4 min-w-0 flex-1">
                 <div className="flex flex-col min-w-0">
                   <span className="text-[10px] uppercase font-bold text-gray-400 dark:text-gray-500 mb-1">From</span>
@@ -52,7 +52,7 @@ export function Balances({ trip }: BalancesProps) {
             </li>
           ))
         ) : (
-          <li className="text-center py-12 bg-gray-50/30 dark:bg-gray-700/10 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700">
+          <li className="text-center py-12 bg-gray-50/30 dark:bg-gray-700/10 rounded-3xl border border-dashed border-gray-200 dark:border-gray-700">
             <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-2 opacity-20" />
             <p className="text-gray-400 dark:text-gray-500 text-sm font-medium italic">{t('bal_all_settled')}</p>
           </li>

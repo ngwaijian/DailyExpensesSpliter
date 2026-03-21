@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Trip, Goal } from '../../types';
 import { Target, Plus, Edit2, Trash2, CheckCircle2 } from 'lucide-react';
-import { formatCurrency } from '../../utils/currency';
+import { formatCurrency, getAverageRates } from '../../utils/currency';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { cn } from '../../lib/utils';
 
@@ -20,11 +20,22 @@ interface GoalItemProps {
 }
 
 function GoalItem({ goal, trip, onUpdateTrip, onEdit, onDelete, t }: GoalItemProps) {
-  const linkedExpensesTotal = trip.expenses?.filter(e => e.goalId === goal.id).reduce((sum, e) => sum + e.amountOriginal, 0) || 0;
+  const rates = getAverageRates(trip);
+  
+  const linkedExpensesTotal = trip.expenses?.filter(e => e.goalId === goal.id && e.type === 'expense').reduce((sum, e) => {
+    const rateToMYR = rates[e.currency] || e.rate || 1;
+    const amountInMYR = e.amountOriginal * rateToMYR;
+    const goalRateToMYR = rates[goal.currency] || 1;
+    return sum + (amountInMYR / goalRateToMYR);
+  }, 0) || 0;
   const totalCurrentAmount = goal.currentAmount + linkedExpensesTotal;
   const [localAmount, setLocalAmount] = useState(goal.currentAmount.toString());
   const progress = Math.min(100, Math.max(0, (totalCurrentAmount / goal.targetAmount) * 100));
   const isCompleted = progress >= 100;
+
+  React.useEffect(() => {
+    setLocalAmount(goal.currentAmount.toString());
+  }, [goal.currentAmount]);
 
   const handleBlur = () => {
     const val = parseFloat(localAmount) || 0;
@@ -44,12 +55,12 @@ function GoalItem({ goal, trip, onUpdateTrip, onEdit, onDelete, t }: GoalItemPro
           </h4>
           <div className="text-sm text-gray-500 dark:text-gray-400 mt-1 flex flex-col gap-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-blue-600 dark:text-blue-400 font-medium">{formatCurrency(totalCurrentAmount)}</span>
-              <span>of {formatCurrency(goal.targetAmount)}</span>
+              <span className="text-blue-600 dark:text-blue-400 font-medium">{formatCurrency(totalCurrentAmount, goal.currency)}</span>
+              <span>of {formatCurrency(goal.targetAmount, goal.currency)}</span>
             </div>
             {linkedExpensesTotal > 0 && (
               <div className="text-xs text-gray-400 dark:text-gray-500">
-                ({formatCurrency(goal.currentAmount)} manual + {formatCurrency(linkedExpensesTotal)} from expenses)
+                ({formatCurrency(goal.currentAmount, goal.currency)} manual + {formatCurrency(linkedExpensesTotal, goal.currency)} from expenses)
               </div>
             )}
           </div>
@@ -81,7 +92,12 @@ function GoalItem({ goal, trip, onUpdateTrip, onEdit, onDelete, t }: GoalItemPro
             inputMode="decimal"
             pattern="[0-9]*\.?[0-9]*"
             value={localAmount}
-            onChange={(e) => setLocalAmount(e.target.value)}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                setLocalAmount(val);
+              }
+            }}
             onBlur={handleBlur}
             onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
             className="w-16 p-1 bg-transparent border-b border-gray-300 dark:border-gray-600 hover:border-blue-300 focus:border-blue-500 focus:bg-white dark:focus:bg-gray-800 outline-none transition-all font-medium text-gray-700 dark:text-gray-300 text-xs"
@@ -192,7 +208,12 @@ export function Goals({ trip, onUpdateTrip }: GoalsProps) {
                   inputMode="decimal"
                   pattern="[0-9]*\.?[0-9]*"
                   value={targetAmount}
-                  onChange={e => setTargetAmount(e.target.value)}
+                  onChange={e => {
+                    const val = e.target.value;
+                    if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                      setTargetAmount(val);
+                    }
+                  }}
                   className="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white"
                   required
                 />
@@ -204,7 +225,12 @@ export function Goals({ trip, onUpdateTrip }: GoalsProps) {
                   inputMode="decimal"
                   pattern="[0-9]*\.?[0-9]*"
                   value={currentAmount}
-                  onChange={e => setCurrentAmount(e.target.value)}
+                  onChange={e => {
+                    const val = e.target.value;
+                    if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                      setCurrentAmount(val);
+                    }
+                  }}
                   className="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white"
                 />
               </div>

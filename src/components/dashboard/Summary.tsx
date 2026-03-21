@@ -4,7 +4,6 @@ import { getAverageRates, formatCurrency } from '../../utils/currency';
 import { TrendingUp, Download, FileText, Table, Users, PieChart as PieChartIcon, List, Calendar, Target, Wallet } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
-import jsPDF from 'jspdf';
 import { toJpeg } from 'html-to-image';
 
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -14,6 +13,17 @@ interface SummaryProps {
   trip: Trip;
   onUpdateTrip?: (trip: Trip) => void;
 }
+
+const CATEGORY_HEX_COLORS: { [key: string]: string } = {
+  "🍽️ Meals & Dining": "#f97316",
+  "🏨 Accommodation": "#0ea5e9",
+  "🚕 Transport & Fuel": "#3b82f6",
+  "✈️ Flights": "#3b82f6",
+  "🎢 Activities & Tours": "#ef4444",
+  "🛍️ Shopping": "#eab308",
+  "🍻 Drinks & Nightlife": "#a855f7",
+  "📝 General / Other": "#d1d5db",
+};
 
 const COLORS = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#6366F1', '#14B8A6'];
 
@@ -42,8 +52,14 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
   
   let totalMYR = 0;
   let totalIncomeMYR = 0;
+  let thisMonthTotalMYR = 0;
   const categoryTotals: Record<string, number> = {};
+  const thisMonthCategoryTotals: Record<string, number> = {};
   const personStats: Record<string, { paid: number; share: number }> = {};
+
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
 
   // Initialize stats for current users
   trip.users.forEach(u => {
@@ -102,9 +118,18 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
     } else {
       totalMYR += myr;
       
+      const expDate = new Date(e.date);
+      const isThisMonth = expDate.getMonth() === currentMonth && expDate.getFullYear() === currentYear;
+      if (isThisMonth) {
+        thisMonthTotalMYR += myr;
+      }
+      
       // Category Totals
       const cat = (typeof e.category === 'string' ? e.category : e.category?.name) || 'Other';
       categoryTotals[cat] = (categoryTotals[cat] || 0) + myr;
+      if (isThisMonth) {
+        thisMonthCategoryTotals[cat] = (thisMonthCategoryTotals[cat] || 0) + myr;
+      }
 
       if (e.isSettled) {
         // For settled expenses, we assume everyone already paid their own share.
@@ -119,11 +144,12 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
           }
         } else if (e.splitDetails) {
           Object.entries(e.splitDetails).forEach(([u, amt]) => {
+            const numAmt = Number(amt);
             if (personStats[u]) {
-              personStats[u].paid += amt * rate;
-              personStats[u].share += amt * rate;
+              personStats[u].paid += numAmt * rate;
+              personStats[u].share += numAmt * rate;
             } else if (!trip.users.includes(u)) {
-              personStats[u] = { paid: amt * rate, share: amt * rate };
+              personStats[u] = { paid: numAmt * rate, share: numAmt * rate };
             }
           });
         } else if (e.splitAmong.length > 0) {
@@ -159,10 +185,11 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
         }
       } else if (e.splitDetails) {
         Object.entries(e.splitDetails).forEach(([u, amt]) => {
+          const numAmt = Number(amt);
           if (personStats[u]) {
-            personStats[u].share += amt * rate;
+            personStats[u].share += numAmt * rate;
           } else if (!trip.users.includes(u)) {
-            personStats[u] = { paid: 0, share: amt * rate };
+            personStats[u] = { paid: 0, share: numAmt * rate };
           }
         });
       } else if (e.splitAmong.length > 0) {
@@ -182,7 +209,9 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
   if (selectedPerson !== 'All') {
     totalMYR = 0;
     totalIncomeMYR = 0;
+    thisMonthTotalMYR = 0;
     Object.keys(categoryTotals).forEach(cat => categoryTotals[cat] = 0);
+    Object.keys(thisMonthCategoryTotals).forEach(cat => thisMonthCategoryTotals[cat] = 0);
 
     trip.expenses.forEach(e => {
       if (e.type === 'settlement') return;
@@ -205,7 +234,7 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
         if (sponsor === selectedPerson) {
           personShare = e.amountOriginal * rate;
         } else if (e.splitDetails && e.splitDetails[selectedPerson]) {
-          personShare = e.splitDetails[selectedPerson] * rate;
+          personShare = Number(e.splitDetails[selectedPerson]) * rate;
         } else if (e.splitAmong.includes(selectedPerson)) {
           personShare = (e.amountOriginal * rate) / e.splitAmong.length;
         }
@@ -217,6 +246,13 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
         } else {
           totalMYR += Math.abs(personShare);
           categoryTotals[cat] = (categoryTotals[cat] || 0) + Math.abs(personShare);
+          
+          const expDate = new Date(e.date);
+          const isThisMonth = expDate.getMonth() === currentMonth && expDate.getFullYear() === currentYear;
+          if (isThisMonth) {
+            thisMonthTotalMYR += Math.abs(personShare);
+            thisMonthCategoryTotals[cat] = (thisMonthCategoryTotals[cat] || 0) + Math.abs(personShare);
+          }
         }
       }
     });
@@ -224,11 +260,11 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
 
   const avgPerPerson = trip.users.length > 0 ? totalMYR / trip.users.length : 0;
   const sortedCats = Object.entries(categoryTotals).sort((a, b) => b[1] - a[1]);
+  const sortedThisMonthCats = Object.entries(thisMonthCategoryTotals).sort((a, b) => b[1] - a[1]);
   const sortedPeople = Object.entries(personStats).sort((a, b) => b[1].share - a[1].share);
 
   // Prepare daily chart data
   const last7Days: Record<string, number> = {};
-  const now = new Date();
   for (let i = 6; i >= 0; i--) {
     const d = new Date();
     d.setDate(now.getDate() - i);
@@ -272,7 +308,7 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
             if (sponsor === selectedPerson) {
               personShare = val;
             } else if (e.splitDetails && e.splitDetails[selectedPerson]) {
-              personShare = e.splitDetails[selectedPerson] * rate;
+              personShare = Number(e.splitDetails[selectedPerson]) * rate;
             } else if (e.splitAmong.includes(selectedPerson)) {
               personShare = val / e.splitAmong.length;
             }
@@ -291,7 +327,7 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
   }));
 
   // Prepare chart data
-  const chartData = sortedCats.map(([name, value]) => ({ name, value }));
+  const chartData = sortedThisMonthCats.map(([name, value]) => ({ name, value }));
 
   const handleSaveBudget = () => {
     if (!onUpdateTrip) return;
@@ -335,7 +371,7 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
     setShowExportMenu(false);
   };
 
-  const exportPDF = async () => {
+  const exportImage = async () => {
     if (isExporting) return;
     
     const element = document.getElementById('pdf-export-container');
@@ -403,20 +439,14 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
         img.onload = resolve;
       });
       
-      const pdfWidth = Math.max(1, Math.round(img.width / 2));
-      const pdfHeight = Math.max(1, Math.round(img.height / 2));
-      
-      const pdf = new jsPDF({
-        orientation: pdfWidth > pdfHeight ? 'l' : 'p',
-        unit: 'px',
-        format: [pdfWidth, pdfHeight]
-      });
-      
-      pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`${trip.name.replace(/\s+/g, '_')}_summary.pdf`);
+      // Download the image directly instead of using jsPDF
+      const link = document.createElement('a');
+      link.download = `${trip.name.replace(/\s+/g, '_')}_summary.jpeg`;
+      link.href = imgData;
+      link.click();
     } catch (error) {
-      console.error("Error generating PDF:", error);
-      alert(`Failed to generate PDF: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error("Error generating Image:", error);
+      alert(`Failed to generate Image: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       if (rootElement) {
         rootElement.style.display = origRootDisplay;
@@ -448,7 +478,7 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-colors duration-200">
+    <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-800 p-6 transition-colors duration-200">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest flex items-center gap-2">
           <TrendingUp className="w-4 h-4" />
@@ -458,7 +488,7 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
         <div className="relative" ref={exportMenuRef}>
           <button
             onClick={() => setShowExportMenu(!showExportMenu)}
-            className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl transition-all"
+            className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl transition-all active:scale-95"
             title={t('dash_export')}
           >
             <Download className="w-5 h-5" />
@@ -467,7 +497,7 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
           {showExportMenu && (
             <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden z-20 animate-in fade-in slide-in-from-top-2">
               <button
-                onClick={exportPDF}
+                onClick={exportImage}
                 disabled={isExporting}
                 className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -486,8 +516,8 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        <div className="bg-white dark:bg-gray-800/50 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm transition-all hover:shadow-md">
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-1 gap-4 mb-8">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-sm transition-all hover:shadow-md">
           <div className="flex items-center justify-between mb-4">
             <div className="p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl">
               <Wallet className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
@@ -504,7 +534,7 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800/50 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm transition-all hover:shadow-md">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-sm transition-all hover:shadow-md">
           <div className="flex items-center justify-between mb-4">
             <div className="p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl">
               <TrendingUp className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
@@ -518,7 +548,7 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800/50 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm transition-all hover:shadow-md">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-sm transition-all hover:shadow-md">
           <div className="flex items-center justify-between mb-4">
             <div className="p-2 bg-gray-50 dark:bg-gray-700 rounded-xl">
               <Calendar className="w-5 h-5 text-gray-600 dark:text-gray-400" />
@@ -564,11 +594,11 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
       </div>
 
       {/* Budget Section */}
-      <div className="mb-6 bg-gray-50 dark:bg-gray-900/40 p-4 rounded-2xl border border-gray-100 dark:border-gray-700">
+      <div className="mb-6 bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-sm transition-all hover:shadow-md">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <Target className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-            <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Budget Status</span>
+            <Target className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+            <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Budget Status</span>
           </div>
           {!trip.budgets?.length && !trip.monthlyBudget && (
             <button 
@@ -588,7 +618,8 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
               const currentMonth = now.getMonth();
               const currentYear = now.getFullYear();
               
-              const spent = trip.expenses.reduce((acc, exp) => {
+              const spentInMYR = trip.expenses.reduce((acc, exp) => {
+                if (exp.type === 'income' || exp.type === 'settlement') return acc;
                 const budgetCats = Array.isArray(budget.categories) ? budget.categories : [];
                 if (!budgetCats.includes('All') && !budgetCats.includes(exp.category.name)) return acc;
                 if (budget.period === 'monthly') {
@@ -598,6 +629,9 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
                 const rate = rates[exp.currency] || exp.rate || 1;
                 return acc + (exp.amountOriginal * rate);
               }, 0);
+
+              const budgetRateToMYR = rates[budget.currency] || 1;
+              const spent = spentInMYR / budgetRateToMYR;
 
               const percentage = Math.min(100, (spent / budget.amount) * 100);
               const isOver = spent > budget.amount;
@@ -613,7 +647,7 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
                       )} ({budget.period})
                     </span>
                     <span className={cn("font-bold", isOver ? "text-red-500" : "text-gray-500")}>
-                      {formatCurrency(spent)} / {formatCurrency(budget.amount)}
+                      {formatCurrency(spent, budget.currency)} / {formatCurrency(budget.amount, budget.currency)}
                     </span>
                   </div>
                   <div className="h-1.5 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
@@ -640,14 +674,14 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
               <div 
                 className={cn(
                   "h-full transition-all duration-500",
-                  (totalMYR / trip.monthlyBudget) > 0.9 ? "bg-red-500" : (totalMYR / trip.monthlyBudget) > 0.7 ? "bg-amber-500" : "bg-emerald-500"
+                  (thisMonthTotalMYR / trip.monthlyBudget) > 0.9 ? "bg-red-500" : (thisMonthTotalMYR / trip.monthlyBudget) > 0.7 ? "bg-amber-500" : "bg-emerald-500"
                 )}
-                style={{ width: `${Math.min(100, (totalMYR / trip.monthlyBudget) * 100)}%` }}
+                style={{ width: `${Math.min(100, (thisMonthTotalMYR / trip.monthlyBudget) * 100)}%` }}
               />
             </div>
             <div className="flex justify-between text-[10px] text-gray-500">
-              <span>{((totalMYR / trip.monthlyBudget) * 100).toFixed(1)}% used</span>
-              <span className="font-medium text-gray-700 dark:text-gray-300">{formatCurrency(Math.max(0, trip.monthlyBudget - totalMYR))} remaining</span>
+              <span>{((thisMonthTotalMYR / trip.monthlyBudget) * 100).toFixed(1)}% used</span>
+              <span className="font-medium text-gray-700 dark:text-gray-300">{formatCurrency(Math.max(0, trip.monthlyBudget - thisMonthTotalMYR))} remaining</span>
             </div>
           </div>
         ) : (
@@ -656,9 +690,12 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
       </div>
 
       {/* Category Breakdown Chart */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm transition-all duration-200">
-          <h4 className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-6">Category Distribution</h4>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-6 mb-8">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-sm transition-all hover:shadow-md">
+          <div className="flex items-center justify-between mb-6">
+            <h4 className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">This Month's Expenses</h4>
+            <div className="text-xs font-bold text-gray-900 dark:text-white">{formatCurrency(thisMonthTotalMYR)}</div>
+          </div>
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -666,8 +703,8 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
                   data={chartData}
                   cx="50%"
                   cy="50%"
-                  innerRadius={65}
-                  outerRadius={85}
+                  innerRadius={70}
+                  outerRadius={90}
                   paddingAngle={5}
                   dataKey="value"
                   stroke="none"
@@ -675,7 +712,7 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
                   animationDuration={1000}
                 >
                   {chartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    <Cell key={`cell-${index}`} fill={CATEGORY_HEX_COLORS[entry.name] || COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
                 <Tooltip 
@@ -697,7 +734,7 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm transition-all duration-200">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-sm transition-all hover:shadow-md">
           <div className="flex items-center justify-between mb-6">
             <h4 className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Last 7 Days Spending</h4>
             <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
@@ -707,7 +744,7 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
           </div>
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={dailyData}>
+              <BarChart data={dailyData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
                 <XAxis 
                   dataKey="date" 
                   axisLine={false} 
@@ -715,6 +752,7 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
                   tick={{ fontSize: 10, fill: isDarkMode ? '#9ca3af' : '#6b7280', fontWeight: 600 }} 
                   dy={10}
                 />
+                <YAxis hide />
                 <Tooltip 
                   cursor={{ fill: isDarkMode ? '#374151' : 'rgba(59, 130, 246, 0.05)', radius: 8 }}
                   contentStyle={{ 
@@ -799,7 +837,7 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
                 </div>
               ))}
               {sortedCats.length === 0 && (
-                <div className="text-center py-12 bg-gray-50/50 dark:bg-gray-900/20 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700">
+                <div className="text-center py-12 bg-gray-50/50 dark:bg-gray-900/20 rounded-3xl border border-dashed border-gray-200 dark:border-gray-700">
                   <PieChartIcon className="w-8 h-8 text-gray-300 mx-auto mb-2" />
                   <p className="text-gray-400 dark:text-gray-500 text-sm font-medium italic">{t('dash_no_data')}</p>
                 </div>
@@ -808,7 +846,7 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
           ) : (
             <>
               {sortedPeople.map(([name, stats]) => (
-                <div key={name} className="flex items-center justify-between p-4 bg-gray-50/50 dark:bg-gray-900/20 rounded-2xl border border-gray-100 dark:border-gray-700/50 hover:border-indigo-100 dark:hover:border-indigo-900/50 transition-all">
+                <div key={name} className="flex items-center justify-between p-4 bg-gray-50/50 dark:bg-gray-900/20 rounded-3xl border border-gray-100 dark:border-gray-700/50 hover:border-indigo-100 dark:hover:border-indigo-900/50 transition-all">
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="w-10 h-10 rounded-2xl bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 flex items-center justify-center text-sm font-black shrink-0">
                       {name.charAt(0).toUpperCase()}
@@ -827,7 +865,7 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
                 </div>
               ))}
               {sortedPeople.length === 0 && (
-                <div className="text-center py-12 bg-gray-50/50 dark:bg-gray-900/20 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700">
+                <div className="text-center py-12 bg-gray-50/50 dark:bg-gray-900/20 rounded-3xl border border-dashed border-gray-200 dark:border-gray-700">
                   <Users className="w-8 h-8 text-gray-300 mx-auto mb-2" />
                   <p className="text-gray-400 dark:text-gray-500 text-sm font-medium italic">{t('dash_no_people')}</p>
                 </div>
@@ -837,7 +875,7 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
         </div>
       </div>
 
-      {/* Hidden PDF Export Template */}
+      {/* Hidden Image Export Template */}
       <div id="pdf-export-container" style={{ display: 'none', backgroundColor: '#ffffff', color: '#000000' }} className="w-[1000px] p-8 font-sans relative">
         <style dangerouslySetInnerHTML={{ __html: `
           #pdf-export-container, #pdf-export-container * {

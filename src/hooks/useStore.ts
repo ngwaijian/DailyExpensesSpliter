@@ -283,7 +283,7 @@ export function useStore() {
   };
 
   // Cloud Sync Logic (Per Trip)
-  const fetchFromCloud = useCallback(async (overrideGistId?: string | any) => {
+  const fetchFromCloud = useCallback(async (overrideGistId?: string | any, switchTrip: boolean = true) => {
     const targetGistId = typeof overrideGistId === 'string' ? overrideGistId : currentTrip?.gistId;
     if (!targetGistId) return;
     
@@ -326,19 +326,41 @@ export function useStore() {
         setAppData(prev => {
           const index = prev.trips.findIndex(t => t.id === parsedTrip.id);
           if (index >= 0) {
+            const currentTripData = prev.trips[index];
             // Only update if the incoming trip is newer
-            const currentLastUpdated = prev.trips[index].lastUpdated || '0';
+            const currentLastUpdated = currentTripData.lastUpdated || '0';
             const incomingLastUpdated = parsedTrip.lastUpdated || '0';
             if (incomingLastUpdated > currentLastUpdated || typeof overrideGistId === 'string') {
-              return { ...prev, trips: prev.trips.map(t => t.id === parsedTrip.id ? parsedTrip : t) };
+              const mergeArrays = <T extends { id: string }>(localArr: T[] = [], cloudArr: T[] = []) => {
+                const map = new Map<string, T>();
+                cloudArr.forEach(item => map.set(item.id, item)); // cloud first
+                localArr.forEach(item => map.set(item.id, item)); // local overwrites
+                return Array.from(map.values());
+              };
+
+              const mergedTrip = {
+                ...parsedTrip,
+                lastUpdated: incomingLastUpdated > currentLastUpdated ? incomingLastUpdated : currentLastUpdated,
+                lastSynced: incomingLastUpdated,
+                users: Array.from(new Set([...(currentTripData.users || []), ...(parsedTrip.users || [])])),
+                expenses: mergeArrays(currentTripData.expenses, parsedTrip.expenses),
+                exchanges: mergeArrays(currentTripData.exchanges, parsedTrip.exchanges),
+                goals: mergeArrays(currentTripData.goals, parsedTrip.goals),
+                recurringTransactions: mergeArrays(currentTripData.recurringTransactions, parsedTrip.recurringTransactions),
+                loans: mergeArrays(currentTripData.loans, parsedTrip.loans),
+                budgets: mergeArrays(currentTripData.budgets, parsedTrip.budgets),
+              };
+              return { ...prev, trips: prev.trips.map(t => t.id === parsedTrip.id ? mergedTrip : t) };
             }
             return prev;
           } else {
-            return { ...prev, trips: [...prev.trips, parsedTrip] };
+            return { ...prev, trips: [...prev.trips, { ...parsedTrip, lastSynced: parsedTrip.lastUpdated }] };
           }
         });
-        if (typeof overrideGistId === 'string') setCurrentTripId(parsedTrip.id);
-        setUnsyncedTripIds(prev => prev.filter(id => id !== parsedTrip.id));
+        if (typeof overrideGistId === 'string' && switchTrip) setCurrentTripId(parsedTrip.id);
+        if (!localNeedsSync) {
+          setUnsyncedTripIds(prev => prev.filter(id => id !== parsedTrip.id));
+        }
       } else {
         // Fallback for legacy global data format
         const content = data.files['data.json']?.content;
@@ -383,38 +405,13 @@ export function useStore() {
         if (cloudTripContent) {
           const cloudTrip = JSON.parse(cloudTripContent);
           const cloudLastUpdated = cloudTrip.lastUpdated || '0';
-          const localLastUpdated = targetTrip.lastUpdated || '0';
+          const lastSynced = targetTrip.lastSynced || '0';
           
-          if (cloudLastUpdated > localLastUpdated) {
-            console.warn("Cloud data is newer than local data. Merging before push.");
-            
-            // Merge strategy: combine arrays by ID, keep local changes if conflict
-            const mergeArrays = <T extends { id: string }>(arr1: T[] = [], arr2: T[] = []) => {
-              const map = new Map<string, T>();
-              arr2.forEach(item => map.set(item.id, item)); // cloud first
-              arr1.forEach(item => map.set(item.id, item)); // local overwrites
-              return Array.from(map.values());
-            };
-
-            const mergedTrip = {
-              ...(localLastUpdated > cloudLastUpdated ? targetTrip : cloudTrip),
-              lastUpdated: new Date().toISOString(), // Update timestamp to now
-              expenses: mergeArrays(targetTrip.expenses, cloudTrip.expenses),
-              exchanges: mergeArrays(targetTrip.exchanges, cloudTrip.exchanges),
-              goals: mergeArrays(targetTrip.goals, cloudTrip.goals),
-              recurringTransactions: mergeArrays(targetTrip.recurringTransactions, cloudTrip.recurringTransactions),
-              loans: mergeArrays(targetTrip.loans, cloudTrip.loans),
-              budgets: mergeArrays(targetTrip.budgets, cloudTrip.budgets),
-              gistId: targetTrip.gistId
-            };
-            
-            // Update local state with merged data
-            setAppData(prev => ({
-              ...prev,
-              trips: prev.trips.map(t => t.id === mergedTrip.id ? mergedTrip : t)
-            }));
-            
-            targetTrip = mergedTrip; // Use merged trip for pushing
+          if (cloudLastUpdated > lastSynced) {
+            console.warn("Cloud data has been updated since last sync. Aborting push, fetching to merge.");
+            setIsSyncing(false);
+            await fetchFromCloud(targetTrip.gistId, false);
+            return;
           }
         }
       } else if (checkRes.status === 401) {
@@ -442,6 +439,12 @@ export function useStore() {
         throw new Error(`Failed to push to gist: ${res.status} ${JSON.stringify(errorData)}`);
       }
       
+      // Update lastSynced locally
+      setAppData(prev => ({
+        ...prev,
+        trips: prev.trips.map(t => t.id === targetId ? { ...t, lastSynced: targetTrip!.lastUpdated } : t)
+      }));
+      
       setUnsyncedTripIds(prev => prev.filter(id => id !== targetId));
     } catch (error: any) {
       console.error("Sync error:", error);
@@ -449,10 +452,11 @@ export function useStore() {
     } finally {
       setIsSyncing(false);
     }
-  }, [githubToken, currentTripId, appData.trips]);
+  }, [githubToken, currentTripId, appData.trips, fetchFromCloud]);
 
   const fetchAllTripsFromCloud = useCallback(async () => {
-    if (!githubToken) return;
+    const token = githubToken?.trim();
+    if (!token) return;
     if (!navigator.onLine) {
       setSyncError("Offline: Cannot pull data.");
       return;
@@ -460,27 +464,47 @@ export function useStore() {
     setIsSyncing(true);
     setSyncError(null);
     try {
-      const res = await fetch(`https://api.github.com/gists`, {
+      const res = await fetch(`https://api.github.com/gists?per_page=100`, {
         headers: {
-          'Authorization': `Bearer ${githubToken}`
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/vnd.github.v3+json'
         }
       });
-      if (!res.ok) throw new Error("Failed to fetch gists");
+      if (res.status === 401) throw new Error("401: Invalid GitHub token.");
+      if (res.status === 403) throw new Error("403: GitHub token lacks permission or rate limited.");
+      if (!res.ok) {
+        let errorText = "";
+        try {
+          errorText = await res.text();
+        } catch (e) {}
+        throw new Error(`Failed to fetch gists: ${res.status} ${res.statusText} - ${errorText}`);
+      }
       const gists = await res.json();
       
+      if (!Array.isArray(gists)) {
+        console.error("Expected array of gists, got:", gists);
+        throw new Error("Invalid response format from GitHub API");
+      }
+      
       const newTrips: Trip[] = [];
-      for (const gist of gists) {
-        if (gist.files['trip.json']) {
-          const gistRes = await fetch(gist.url, {
-            headers: { 'Authorization': `Bearer ${githubToken}` }
-          });
-          if (gistRes.ok) {
-            const gistData = await gistRes.json();
-            const tripContent = gistData.files['trip.json']?.content;
-            if (tripContent) {
-              const parsedTrip = JSON.parse(tripContent);
-              parsedTrip.gistId = gist.id;
-              newTrips.push(parsedTrip);
+      if (Array.isArray(gists)) {
+        for (const gist of gists) {
+          if (gist.files['trip.json']) {
+            try {
+              const gistRes = await fetch(gist.url, {
+                headers: { 'Authorization': `Bearer ${token}` }
+              });
+              if (gistRes.ok) {
+                const gistData = await gistRes.json();
+                const tripContent = gistData.files['trip.json']?.content;
+                if (tripContent) {
+                  const parsedTrip = JSON.parse(tripContent);
+                  parsedTrip.gistId = gist.id;
+                  newTrips.push(parsedTrip);
+                }
+              }
+            } catch (err) {
+              console.warn(`Failed to fetch gist ${gist.id}:`, err);
             }
           }
         }
@@ -496,10 +520,29 @@ export function useStore() {
               const currentLastUpdated = updatedTrips[index].lastUpdated || '0';
               const incomingLastUpdated = newTrip.lastUpdated || '0';
               if (incomingLastUpdated > currentLastUpdated) {
-                updatedTrips[index] = newTrip;
+                const currentTripData = updatedTrips[index];
+                const mergeArrays = <T extends { id: string }>(localArr: T[] = [], cloudArr: T[] = []) => {
+                  const map = new Map<string, T>();
+                  cloudArr.forEach(item => map.set(item.id, item)); // cloud first
+                  localArr.forEach(item => map.set(item.id, item)); // local overwrites
+                  return Array.from(map.values());
+                };
+
+                updatedTrips[index] = {
+                  ...newTrip,
+                  lastUpdated: incomingLastUpdated > currentLastUpdated ? incomingLastUpdated : currentLastUpdated,
+                  lastSynced: incomingLastUpdated,
+                  users: Array.from(new Set([...(currentTripData.users || []), ...(newTrip.users || [])])),
+                  expenses: mergeArrays(currentTripData.expenses, newTrip.expenses),
+                  exchanges: mergeArrays(currentTripData.exchanges, newTrip.exchanges),
+                  goals: mergeArrays(currentTripData.goals, newTrip.goals),
+                  recurringTransactions: mergeArrays(currentTripData.recurringTransactions, newTrip.recurringTransactions),
+                  loans: mergeArrays(currentTripData.loans, newTrip.loans),
+                  budgets: mergeArrays(currentTripData.budgets, newTrip.budgets),
+                };
               }
             } else {
-              updatedTrips.push(newTrip);
+              updatedTrips.push({ ...newTrip, lastSynced: newTrip.lastUpdated });
             }
           });
           
@@ -546,7 +589,7 @@ export function useStore() {
       if (!res.ok) throw new Error("Failed to create gist");
       const data = await res.json();
       if (data.id) {
-        updateTrip({ ...currentTrip, gistId: data.id });
+        updateTrip({ ...currentTrip, gistId: data.id, lastSynced: currentTrip.lastUpdated });
       }
     } catch (error) {
       console.error("Create gist error:", error);
@@ -623,6 +666,23 @@ export function useStore() {
     }, 10000); // Increased to 10 seconds to reduce race conditions
 
     return () => clearInterval(interval);
+  }, [currentTrip?.gistId, currentTripId, isOnline, isSyncing, fetchFromCloud]);
+
+  // Auto-Fetch on Wake
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && currentTrip?.gistId && isOnline && !isSyncing) {
+        console.log("App regained focus: Pulling data from cloud...");
+        fetchFromCloud();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleVisibilityChange);
+    };
   }, [currentTrip?.gistId, isOnline, isSyncing, fetchFromCloud]);
 
   const getTripCategories = useCallback((trip: Trip) => {

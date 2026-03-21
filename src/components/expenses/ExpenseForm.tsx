@@ -212,7 +212,18 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
       }
     }
 
-    if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
+    let finalAmount = amount.toString();
+    try {
+      // Evaluate if it's an expression
+      if (/^[0-9+\-*/().\s,.]+$/.test(finalAmount)) {
+        // eslint-disable-next-line no-eval
+        finalAmount = eval(finalAmount.replace(/[^0-9+\-*/.]/g, '')).toString();
+      }
+    } catch (e) {
+      // Ignore eval errors
+    }
+
+    if (!finalAmount || isNaN(parseFloat(finalAmount)) || parseFloat(finalAmount) <= 0) {
       newErrors.amount = true;
     }
     if (!date) {
@@ -236,7 +247,7 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
 
     if (type === 'expense' && (splitMode === 'unequal' || splitMode === 'shares')) {
       const totalSplit = Object.values(splitDetails).reduce<number>((a, b) => a + (parseFloat(b.toString()) || 0), 0);
-      const totalAmount = parseFloat(amount);
+      const totalAmount = parseFloat(finalAmount);
       
       if (Math.abs(totalSplit - totalAmount) > 0.1) {
         alert(`The sum of split amounts (${totalSplit.toFixed(2)}) must equal the total amount (${totalAmount.toFixed(2)}). Difference: ${(totalAmount - totalSplit).toFixed(2)}`);
@@ -255,7 +266,7 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
     onSubmit({
       desc: finalDesc,
       memo: memo.trim() || undefined,
-      amountOriginal: parseFloat(amount),
+      amountOriginal: parseFloat(finalAmount),
       currency: currency.toUpperCase(),
       category,
       subCategory: subCategory || undefined,
@@ -940,8 +951,8 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
           )}
         </div>
 
-        {/* Payer & Split - Hidden for personal finance tracker */}
-        <div className="hidden grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+        {/* Payer & Split */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
           <div>
             <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
               {type === 'sponsorship' ? t('form_sponsored_by') : type === 'settlement' ? t('form_paid_by') : t('form_paid_by')}
@@ -1246,7 +1257,7 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
             <button 
               type="button" 
               onClick={onCancel}
-              className="px-5 py-3 rounded-xl font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              className="px-5 py-3 rounded-xl font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all active:scale-95"
             >
               {t('form_cancel')}
             </button>
@@ -1254,14 +1265,14 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
             <button 
               type="button" 
               onClick={handleReset}
-              className="px-5 py-3 text-sm rounded-xl font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              className="px-5 py-3 text-sm rounded-xl font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all active:scale-95"
             >
               {t('form_reset')}
             </button>
           )}
           <button 
             type="submit"
-            className="flex-1 py-3 rounded-xl font-semibold text-white bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-200 dark:shadow-none transition-all active:scale-[0.98]"
+            className="flex-1 py-3 rounded-xl font-semibold text-white bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-200 dark:shadow-none transition-all active:scale-95"
           >
             {initialData ? t('form_update_entry') : t('form_save_entry')}
           </button>

@@ -197,7 +197,7 @@ export function SettingsModal({
             <button 
               onClick={fetchAllTripsFromCloud}
               disabled={isSyncing || !githubToken}
-              className="flex-1 flex items-center justify-center gap-2 bg-purple-100 dark:bg-purple-900/30 hover:bg-purple-200 dark:hover:bg-purple-800/50 text-purple-700 dark:text-purple-400 py-2.5 rounded-xl font-medium transition-colors disabled:opacity-50"
+              className="flex-1 flex items-center justify-center gap-2 bg-purple-100 dark:bg-purple-900/30 hover:bg-purple-200 dark:hover:bg-purple-800/50 text-purple-700 dark:text-purple-400 py-2.5 rounded-xl font-medium transition-all active:scale-95 disabled:opacity-50"
             >
               {isSyncing ? <RefreshCw className="animate-spin w-4 h-4" /> : <Cloud className="w-4 h-4" />}
               Fetch All My Groups
@@ -208,7 +208,7 @@ export function SettingsModal({
             <button 
               onClick={onSync}
               disabled={isSyncing || !githubToken || !currentTrip.gistId}
-              className="flex-1 flex items-center justify-center gap-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 py-2.5 rounded-xl font-medium transition-colors disabled:opacity-50"
+              className="flex-1 flex items-center justify-center gap-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 py-2.5 rounded-xl font-medium transition-all active:scale-95 disabled:opacity-50"
             >
               {isSyncing ? <RefreshCw className="animate-spin w-4 h-4" /> : <Cloud className="w-4 h-4" />}
               {t('set_pull_data') || "Pull"}
@@ -216,7 +216,7 @@ export function SettingsModal({
             <button 
               onClick={onPush}
               disabled={isSyncing || !githubToken || !currentTrip.gistId}
-              className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl font-medium transition-colors disabled:opacity-50"
+              className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl font-medium transition-all active:scale-95 disabled:opacity-50"
             >
               {isSyncing ? <RefreshCw className="animate-spin w-4 h-4" /> : <Save className="w-4 h-4" />}
               {t('set_push_data') || "Push"}
