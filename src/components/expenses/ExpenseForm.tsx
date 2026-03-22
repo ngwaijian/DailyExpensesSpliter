@@ -29,6 +29,8 @@ interface ExpenseFormProps {
   onCancel: () => void;
   initialData?: any;
   onUpdateTrip: (trip: Trip) => void;
+  isMobileModal?: boolean;
+  onCloseMobile?: () => void;
 }
 
 // Component to handle map clicks and updates
@@ -66,7 +68,7 @@ const formatDateTime = (d?: string) => {
   return new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 };
 
-export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTrip }: ExpenseFormProps) {
+export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTrip, isMobileModal, onCloseMobile }: ExpenseFormProps) {
   const { t } = useLanguage();
   const { resolvedTheme } = useTheme();
   const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false);
@@ -502,10 +504,39 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
   };
 
   return (
-    <div 
-      className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-3 sm:p-6 mb-4 sm:mb-6 transition-colors duration-200"
-    >
-      <div className="flex justify-between items-center mb-3 sm:mb-4">
+    <>
+      {/* Mobile Backdrop */}
+      <AnimatePresence>
+        {isMobileModal && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[50] bg-black/60 backdrop-blur-sm lg:hidden"
+            onClick={onCloseMobile}
+          />
+        )}
+      </AnimatePresence>
+
+      <div 
+        className={cn(
+          "transition-colors duration-200",
+          // Desktop styles
+          "lg:bg-white lg:dark:bg-gray-800 lg:rounded-2xl lg:shadow-sm lg:border lg:border-gray-100 lg:dark:border-gray-700 lg:p-6 lg:mb-6 lg:relative lg:block lg:z-auto lg:translate-y-0 lg:max-h-none",
+          // Mobile styles
+          isMobileModal 
+            ? "fixed inset-x-0 bottom-0 z-[60] bg-white dark:bg-gray-900 rounded-t-3xl shadow-2xl p-5 pb-[env(safe-area-inset-bottom)] max-h-[90vh] overflow-y-auto" 
+            : "hidden lg:block"
+        )}
+      >
+        {/* Drag handle for mobile */}
+        {isMobileModal && (
+          <div className="lg:hidden flex justify-center mb-4 sticky top-0 bg-white dark:bg-gray-900 pt-2 pb-1 z-10">
+            <div className="w-12 h-1.5 bg-gray-300 dark:bg-gray-700 rounded-full" />
+          </div>
+        )}
+
+        <div className="flex justify-between items-center mb-3 sm:mb-4">
         <div className="flex items-center gap-2">
           {!initialData && (
             <img 
@@ -571,8 +602,149 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-2 md:grid-cols-12 gap-3 md:gap-4">
+          {/* Amount - Hero Element on Mobile, Normal on Desktop */}
+          <div className="col-span-2 md:col-span-12 lg:col-span-7 lg:order-2">
+            <label className="hidden lg:block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{t('form_amount')}</label>
+            <div className="flex flex-col lg:flex-row lg:rounded-xl lg:bg-gray-50 lg:dark:bg-gray-700 lg:border lg:border-gray-200 lg:dark:border-gray-600 focus-within:ring-2 focus-within:ring-blue-500 overflow-hidden transition-colors">
+              <div className="relative border-b lg:border-b-0 lg:border-r border-gray-200 dark:border-gray-600 bg-gray-100 dark:bg-gray-800 flex justify-center lg:justify-start">
+                <select 
+                  value={currency}
+                  onChange={e => setCurrency(e.target.value)}
+                  className="h-full pl-3 pr-8 py-2.5 bg-transparent outline-none uppercase appearance-none font-medium text-gray-700 dark:text-gray-300 text-sm text-center lg:text-left"
+                >
+                  {Array.from(new Set(['MYR', ...trip.exchanges.map(e => e.currency)])).map(c => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                </div>
+              </div>
+              
+              <div className="relative flex-1 flex items-center bg-white dark:bg-gray-800 py-4 lg:py-0">
+                <div className="absolute left-3 pointer-events-none hidden lg:block">
+                  <DollarSign className="w-4 h-4 text-gray-400" />
+                </div>
+                <input 
+                  id="amount-input"
+                  type="text" 
+                  inputMode="decimal"
+                  value={amount}
+                  onChange={e => {
+                    if (errors.amount) setErrors(prev => ({ ...prev, amount: false }));
+                    const val = e.target.value;
+                    
+                    // Allow numbers, decimal point, and math operators
+                    if (val === '' || /^[0-9+\-*/().\s,.]*$/.test(val)) {
+                      setAmount(val);
+                    }
+                  }}
+                  onBlur={() => {
+                    // Only auto-calc on blur if calculator is NOT open
+                    if (!showCalculator && amount) {
+                      try {
+                        // Try to evaluate if it's an expression or has math operators
+                        const hasOperators = /[+\-*/()]/.test(amount.toString());
+                        if (hasOperators) {
+                          const sanitized = amount.toString().replace(/[^0-9+\-*/().\s.]/g, '');
+                          if (!sanitized) return;
+                          // eslint-disable-next-line no-new-func
+                          const result = new Function('return ' + sanitized)();
+                          if (isFinite(result)) {
+                            setAmount(parseFloat(result).toFixed(2));
+                          }
+                        } else {
+                          // Simple number, just format to 2 decimal places
+                          const parsed = parseFloat(amount.toString().replace(/,/g, ''));
+                          if (!isNaN(parsed)) {
+                            setAmount(parsed.toFixed(2));
+                          }
+                        }
+                      } catch (e) {}
+                    }
+                  }}
+                  className={cn(
+                    "w-full p-3 lg:pl-10 pr-10 bg-transparent border-none outline-none font-mono font-semibold text-gray-900 dark:text-white placeholder-gray-300 dark:placeholder-gray-600 text-center lg:text-left text-4xl lg:text-lg",
+                    errors.amount ? "text-red-500" : ""
+                  )}
+                  placeholder="0.00"
+                />
+                <div className="absolute right-2 flex items-center gap-1">
+                  <button 
+                    type="button"
+                    onClick={() => setShowCalculator(!showCalculator)}
+                    className={cn(
+                      "p-1.5 rounded-lg transition-colors",
+                      showCalculator 
+                        ? "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400" 
+                        : "text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600"
+                    )}
+                  >
+                    <Calculator size={18} />
+                  </button>
+                </div>
+              </div>
+            </div>
+            {errors.amount && <p className="text-red-500 text-xs mt-1 text-center lg:text-left">Please enter a valid amount</p>}
+
+            {/* Calculator Keypad - Moved up to prevent layout shifting when currency info appears */}
+            {showCalculator && (
+              <div className="mt-2 p-2 bg-gray-100 dark:bg-gray-700/50 rounded-xl grid grid-cols-4 gap-2 animate-in slide-in-from-top-2 duration-200">
+                {['1','2','3','/','4','5','6','*','7','8','9','-','.','0','DEL','+'].map(key => (
+                  <button 
+                    key={key} 
+                    type="button"
+                    onClick={() => handleCalcInput(key)}
+                    className={cn(
+                      "h-10 rounded-lg font-semibold text-lg transition-colors active:scale-95 flex items-center justify-center",
+                      key === 'DEL' ? "bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400" :
+                      ['/','*','-','+'].includes(key) ? "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400" :
+                      "bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm"
+                    )}
+                  >
+                    {key === 'DEL' ? <X size={18} /> : key}
+                  </button>
+                ))}
+                <div className="col-span-4 grid grid-cols-4 gap-2">
+                  <button 
+                    type="button"
+                    onClick={() => handleCalcInput('C')}
+                    className="h-10 bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 rounded-lg font-bold shadow-sm active:scale-95 transition-all"
+                  >
+                    C
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => handleCalcInput('=')}
+                    className="col-span-3 h-10 bg-blue-600 text-white rounded-lg font-bold shadow-sm active:scale-95 transition-all"
+                  >
+                    =
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {currentMyrEquivalent !== null && (
+              <div className="mt-2 text-xs font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1.5 animate-in fade-in py-1 px-2 bg-blue-50/50 dark:bg-blue-900/20 rounded-lg w-fit mx-auto lg:mx-0">
+                <span className="text-gray-400 dark:text-gray-500 font-normal">≈</span> 
+                <span>{formatCurrency(currentMyrEquivalent)}</span>
+              </div>
+            )}
+
+            {suggestedAmount !== null && (
+              <button
+                type="button"
+                onClick={() => setAmount(suggestedAmount.toFixed(2))}
+                className="mt-2 text-xs font-medium bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 px-3 py-1.5 rounded-lg border border-blue-100 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors flex items-center gap-1.5 animate-in slide-in-from-top-1 mx-auto lg:mx-0"
+              >
+                <Calculator size={12} />
+                {t('form_suggested_settlement')} <span className="font-bold">{currency} {suggestedAmount.toFixed(2)}</span>
+              </button>
+            )}
+          </div>
+
           {/* Description - Full width on mobile, larger on desktop */}
-          <div className="col-span-2 md:col-span-7">
+          <div className="col-span-2 md:col-span-7 lg:order-1">
             <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{t('form_desc')}</label>
             <input 
               id="desc-input"
@@ -597,7 +769,7 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
           </div>
 
           {/* Date and Time - Side-by-side on mobile */}
-          <div className="col-span-2 md:col-span-5 min-w-0">
+          <div className="col-span-2 md:col-span-5 min-w-0 lg:order-3">
             <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2">{t('form_date')}</label>
             <div className="flex gap-3">
               <div className="relative flex-1 min-w-0">
@@ -627,7 +799,7 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
 
           {/* Category - Full width on mobile */}
           {type === 'expense' && (
-            <div className="col-span-2 md:col-span-12">
+            <div className="col-span-2 md:col-span-12 lg:order-4">
               <div className="flex items-center justify-between mb-3">
                 <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">{t('form_category')}</label>
                 <button
@@ -696,7 +868,7 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
 
           {/* Link to Goal */}
           {type === 'expense' && trip.goals && trip.goals.length > 0 && (
-            <div className="col-span-2 md:col-span-12">
+            <div className="col-span-2 md:col-span-12 lg:order-5">
               <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Link to Goal (Optional)</label>
               <div className="relative">
                 <select
@@ -716,148 +888,8 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
             </div>
           )}
 
-          {/* Amount - Full width on mobile */}
-          <div className="col-span-2 md:col-span-7">
-            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{t('form_amount')}</label>
-            <div className="flex rounded-xl bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 focus-within:ring-2 focus-within:ring-blue-500 overflow-hidden transition-colors">
-              <div className="relative border-r border-gray-200 dark:border-gray-600 bg-gray-100 dark:bg-gray-800">
-                <select 
-                  value={currency}
-                  onChange={e => setCurrency(e.target.value)}
-                  className="h-full pl-3 pr-8 py-2.5 bg-transparent outline-none uppercase appearance-none font-medium text-gray-700 dark:text-gray-300 text-sm"
-                >
-                  {Array.from(new Set(['MYR', ...trip.exchanges.map(e => e.currency)])).map(c => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
-                <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                </div>
-              </div>
-              
-              <div className="relative flex-1 flex items-center bg-white dark:bg-gray-800">
-                <div className="absolute left-3 pointer-events-none">
-                  <DollarSign className="w-4 h-4 text-gray-400" />
-                </div>
-                <input 
-                  id="amount-input"
-                  type="text" 
-                  inputMode="decimal"
-                  value={amount}
-                  onChange={e => {
-                    if (errors.amount) setErrors(prev => ({ ...prev, amount: false }));
-                    const val = e.target.value;
-                    
-                    // Allow numbers, decimal point, and math operators
-                    if (val === '' || /^[0-9+\-*/().\s,.]*$/.test(val)) {
-                      setAmount(val);
-                    }
-                  }}
-                  onBlur={() => {
-                    // Only auto-calc on blur if calculator is NOT open
-                    if (!showCalculator && amount) {
-                      try {
-                        // Try to evaluate if it's an expression or has math operators
-                        const hasOperators = /[+\-*/()]/.test(amount.toString());
-                        if (hasOperators) {
-                          const sanitized = amount.toString().replace(/[^0-9+\-*/().\s.]/g, '');
-                          if (!sanitized) return;
-                          // eslint-disable-next-line no-new-func
-                          const result = new Function('return ' + sanitized)();
-                          if (isFinite(result)) {
-                            setAmount(parseFloat(result).toFixed(2));
-                          }
-                        } else {
-                          // Simple number, just format to 2 decimal places
-                          const parsed = parseFloat(amount.toString().replace(/,/g, ''));
-                          if (!isNaN(parsed)) {
-                            setAmount(parsed.toFixed(2));
-                          }
-                        }
-                      } catch (e) {}
-                    }
-                  }}
-                  className={cn(
-                    "w-full p-3 pl-10 pr-10 bg-transparent border-none outline-none font-mono text-lg font-semibold text-gray-900 dark:text-white placeholder-gray-300 dark:placeholder-gray-600",
-                    errors.amount ? "text-red-500" : ""
-                  )}
-                  placeholder="0.00"
-                />
-                <div className="absolute right-2 flex items-center gap-1">
-                  <button 
-                    type="button"
-                    onClick={() => setShowCalculator(!showCalculator)}
-                    className={cn(
-                      "p-1.5 rounded-lg transition-colors",
-                      showCalculator 
-                        ? "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400" 
-                        : "text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600"
-                    )}
-                  >
-                    <Calculator size={18} />
-                  </button>
-                </div>
-              </div>
-            </div>
-            
-            {/* Calculator Keypad - Moved up to prevent layout shifting when currency info appears */}
-            {showCalculator && (
-              <div className="mt-2 p-2 bg-gray-100 dark:bg-gray-700/50 rounded-xl grid grid-cols-4 gap-2 animate-in slide-in-from-top-2 duration-200">
-                {['1','2','3','/','4','5','6','*','7','8','9','-','.','0','DEL','+'].map(key => (
-                  <button 
-                    key={key} 
-                    type="button"
-                    onClick={() => handleCalcInput(key)}
-                    className={cn(
-                      "h-10 rounded-lg font-semibold text-lg transition-colors active:scale-95 flex items-center justify-center",
-                      key === 'DEL' ? "bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400" :
-                      ['/','*','-','+'].includes(key) ? "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400" :
-                      "bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm"
-                    )}
-                  >
-                    {key === 'DEL' ? <X size={18} /> : key}
-                  </button>
-                ))}
-                <div className="col-span-4 grid grid-cols-4 gap-2">
-                  <button 
-                    type="button"
-                    onClick={() => handleCalcInput('C')}
-                    className="h-10 bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 rounded-lg font-bold shadow-sm active:scale-95 transition-all"
-                  >
-                    C
-                  </button>
-                  <button 
-                    type="button"
-                    onClick={() => handleCalcInput('=')}
-                    className="col-span-3 h-10 bg-blue-600 text-white rounded-lg font-bold shadow-sm active:scale-95 transition-all"
-                  >
-                    =
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {currentMyrEquivalent !== null && (
-              <div className="mt-2 text-xs font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1.5 animate-in fade-in py-1 px-2 bg-blue-50/50 dark:bg-blue-900/20 rounded-lg w-fit">
-                <span className="text-gray-400 dark:text-gray-500 font-normal">≈</span> 
-                <span>{formatCurrency(currentMyrEquivalent)}</span>
-              </div>
-            )}
-
-            {suggestedAmount !== null && (
-              <button
-                type="button"
-                onClick={() => setAmount(suggestedAmount.toFixed(2))}
-                className="mt-2 text-xs font-medium bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 px-3 py-1.5 rounded-lg border border-blue-100 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors flex items-center gap-1.5 animate-in slide-in-from-top-1"
-              >
-                <Calculator size={12} />
-                {t('form_suggested_settlement')} <span className="font-bold">{currency} {suggestedAmount.toFixed(2)}</span>
-              </button>
-            )}
-          </div>
-
           {/* Memo - Full width */}
-          <div className="col-span-2 md:col-span-12">
+          <div className="col-span-2 md:col-span-12 lg:order-8">
             <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{t('form_memo')}</label>
             <input 
               type="text" 
@@ -1298,5 +1330,6 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
         </div>
       )}
     </div>
+    </>
   );
 }

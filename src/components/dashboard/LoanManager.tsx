@@ -38,7 +38,7 @@ export const LoanManager: React.FC<{
           <p className="text-gray-400 dark:text-gray-500 text-sm font-medium italic">No active loans or installments.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-4">
           {loans.map(loan => {
             const progress = loan.totalAmount > 0 ? ((loan.totalAmount - loan.remainingAmount) / loan.totalAmount) * 100 : 0;
             const isOverdue = loan.dueDate && new Date(loan.dueDate) < new Date() && loan.status === 'active';

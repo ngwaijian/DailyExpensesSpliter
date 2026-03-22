@@ -40,6 +40,7 @@ function App() {
   // Mobile Tab State
   const [activeTab, setActiveTab] = useState<'expenses' | 'dashboard' | 'people' | 'planning'>('expenses');
   const [showFab, setShowFab] = useState(false);
+  const [isMobileFormOpen, setIsMobileFormOpen] = useState(false);
   const [shortcutAmount, setShortcutAmount] = useState<number | null>(null);
   const [shortcutCategory, setShortcutCategory] = useState<string | null>(null);
   const [shortcutDesc, setShortcutDesc] = useState<string | null>(null);
@@ -219,6 +220,7 @@ function App() {
   const scrollToForm = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
     setActiveTab('expenses');
+    setIsMobileFormOpen(true);
     setTimeout(() => {
       document.getElementById('desc-input')?.focus();
     }, 300);
@@ -227,6 +229,7 @@ function App() {
   // Handlers
   const handleEditExpenseId = (id: string) => {
     setEditingExpenseId(id);
+    setIsMobileFormOpen(true);
     // Scroll to form
     setTimeout(() => {
       formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -260,6 +263,7 @@ function App() {
     }
     updateTrip({ ...currentTrip, expenses: newExpenses });
     setEditingExpenseId(null);
+    setIsMobileFormOpen(false);
     setShortcutAmount(null); // Clear shortcut amount after use
     setShortcutCategory(null);
     setShortcutDesc(null);
@@ -439,8 +443,11 @@ function App() {
       <main className="w-full max-w-7xl mx-auto px-2 sm:px-4 py-4 sm:py-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
           
-          {/* Desktop: Left Sidebar (People & Wallet) */}
-          <div className="hidden lg:block lg:col-span-3">
+          {/* Desktop: Left Sidebar (Planning & People) */}
+          <div className="hidden lg:block lg:col-span-3 space-y-6">
+            <BudgetManager trip={currentTrip} onUpdateTrip={updateTrip} />
+            <Goals trip={currentTrip} onUpdateTrip={updateTrip} />
+            <RecurringTransactions trip={currentTrip} onUpdateTrip={updateTrip} />
             <PeopleWallet 
               trip={currentTrip} 
               onAddPerson={handleAddPerson}
@@ -468,6 +475,7 @@ function App() {
                   setShortcutDesc(null);
                   setShortcutCurrency(null);
                   setShortcutGoalId(null);
+                  setIsMobileFormOpen(false);
                 }}
                 initialData={editingExpenseId 
                   ? currentTrip.expenses.find(e => e.id === editingExpenseId) 
@@ -478,6 +486,8 @@ function App() {
                       currency: shortcutCurrency ?? undefined,
                       goalId: shortcutGoalId ?? undefined
                     } : undefined)}
+                isMobileModal={isMobileFormOpen}
+                onCloseMobile={() => setIsMobileFormOpen(false)}
               />
             </div>
             <ExpenseList 
@@ -492,13 +502,10 @@ function App() {
             />
           </div>
 
-          {/* Desktop: Right Sidebar (Stats & Planning) */}
+          {/* Desktop: Right Sidebar (Stats & Balances) */}
           <div className="hidden lg:block lg:col-span-3 space-y-6">
             <Summary trip={currentTrip} onUpdateTrip={updateTrip} />
             <Balances trip={currentTrip} />
-            <BudgetManager trip={currentTrip} onUpdateTrip={updateTrip} />
-            <Goals trip={currentTrip} onUpdateTrip={updateTrip} />
-            <RecurringTransactions trip={currentTrip} onUpdateTrip={updateTrip} />
             <LoanManager trip={currentTrip} onAdd={handleAddLoan} onEdit={handleEditLoan} onDelete={handleDeleteLoan} />
           </div>
 
@@ -507,6 +514,7 @@ function App() {
             <div className="space-y-6">
               <Summary trip={currentTrip} onUpdateTrip={updateTrip} />
               <Balances trip={currentTrip} />
+              <LoanManager trip={currentTrip} onAdd={handleAddLoan} onEdit={handleEditLoan} onDelete={handleDeleteLoan} />
             </div>
           </div>
 
@@ -515,7 +523,6 @@ function App() {
               <BudgetManager trip={currentTrip} onUpdateTrip={updateTrip} />
               <Goals trip={currentTrip} onUpdateTrip={updateTrip} />
               <RecurringTransactions trip={currentTrip} onUpdateTrip={updateTrip} />
-              <LoanManager trip={currentTrip} onAdd={handleAddLoan} onEdit={handleEditLoan} onDelete={handleDeleteLoan} />
             </div>
           </div>
 

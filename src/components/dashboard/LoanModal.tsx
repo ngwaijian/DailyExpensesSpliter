@@ -83,9 +83,9 @@ export const LoanModal: React.FC<LoanModalProps> = ({ isOpen, onClose, onSave, i
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
-      <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-900 p-6 sm:p-8 rounded-[2rem] shadow-2xl w-full max-w-2xl space-y-6 max-h-[90vh] overflow-y-auto border border-white/20">
-        <div className="flex justify-between items-center sticky top-0 bg-white dark:bg-gray-900 z-10 pb-4 border-b border-gray-100 dark:border-gray-800">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4 sm:p-6">
+      <div className="bg-white dark:bg-gray-900 rounded-[2rem] shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col border border-white/20 overflow-hidden">
+        <div className="flex justify-between items-center p-6 sm:p-8 pb-4 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 z-10">
           <div>
             <h2 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">{initialData ? 'Edit Loan' : 'Add New Loan'}</h2>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 font-medium">Track your installments and debts</p>
@@ -98,6 +98,8 @@ export const LoanModal: React.FC<LoanModalProps> = ({ isOpen, onClose, onSave, i
             <X className="w-5 h-5" />
           </button>
         </div>
+
+        <form onSubmit={handleSubmit} className="p-6 sm:p-8 pt-4 overflow-y-auto space-y-6">
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-1.5">
@@ -282,7 +284,8 @@ export const LoanModal: React.FC<LoanModalProps> = ({ isOpen, onClose, onSave, i
         <button type="submit" className="w-full py-5 bg-blue-600 text-white rounded-[1.5rem] font-black text-lg hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 active:scale-[0.98]">
           {initialData ? 'Update Loan' : 'Create Loan'}
         </button>
-      </form>
+        </form>
+      </div>
     </div>
   );
 };
