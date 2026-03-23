@@ -18,6 +18,8 @@ import { ShieldCheck, LayoutGrid, List, Users, RefreshCw, Plus, Globe, Target, R
 import { cn } from './lib/utils';
 import { motion } from 'framer-motion';
 
+import { useUrlShortcuts } from './hooks/useUrlShortcuts';
+
 function App() {
   const { 
     appData, currentTrip, currentTripId, setCurrentTripId, 
@@ -41,173 +43,16 @@ function App() {
   const [activeTab, setActiveTab] = useState<'expenses' | 'dashboard' | 'people' | 'planning'>('expenses');
   const [showFab, setShowFab] = useState(false);
   const [isMobileFormOpen, setIsMobileFormOpen] = useState(false);
-  const [shortcutAmount, setShortcutAmount] = useState<number | null>(null);
-  const [shortcutCategory, setShortcutCategory] = useState<string | null>(null);
-  const [shortcutDesc, setShortcutDesc] = useState<string | null>(null);
-  const [shortcutCurrency, setShortcutCurrency] = useState<string | null>(null);
-  const [shortcutGoalId, setShortcutGoalId] = useState<string | null>(null);
 
-  React.useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    
-    // Helper to get parameter case-insensitively
-    const getParam = (names: string[]) => {
-      for (const name of names) {
-        const val = params.get(name) || params.get(name.toLowerCase()) || params.get(name.charAt(0).toUpperCase() + name.slice(1));
-        if (val) return val;
-      }
-      return null;
-    };
-
-    const amount = getParam(['amount', 'amt']);
-    const category = getParam(['category', 'cat', 'type']);
-    const desc = getParam(['desc', 'description', 'note']);
-    const currency = getParam(['currency', 'curr']);
-    const goalId = getParam(['goalId', 'goal']);
-    const autoSave = getParam(['autoSave']) === 'true';
-    
-    if (!currentTrip) return;
-
-    let shouldClear = false;
-
-    if (autoSave && amount) {
-      const parsedAmount = parseFloat(amount);
-      if (!isNaN(parsedAmount)) {
-        const paidBy = currentTrip.users.length > 0 ? currentTrip.users[0] : 'Me';
-        const splitAmong = currentTrip.users.length > 0 ? currentTrip.users : ['Me'];
-        
-        // Fix: If shortcut passes multiple categories (comma separated), take only the first one
-        const rawCategory = category ? category.split(',')[0].trim() : '';
-        
-        // Fuzzy match the category against the official list
-        const tripCategories = (currentTrip.categories || CATEGORIES).map(c => typeof c === 'string' ? { name: c, subCategories: [] } : c);
-        let cleanCategory: Category = tripCategories[0]; // Default to first category
-        if (rawCategory) {
-          const normalizedRaw = rawCategory.toLowerCase();
-          
-          // Try exact match first
-          let match = tripCategories.find(c => {
-            const translated = t(`cat_${c.name}`, c.name).toLowerCase();
-            return c.name.toLowerCase() === normalizedRaw || translated === normalizedRaw;
-          });
-          
-          // Then try fuzzy match
-          if (!match) {
-            match = tripCategories.find(c => {
-              const lowerC = c.name.toLowerCase();
-              const translated = t(`cat_${c.name}`, c.name).toLowerCase();
-              const nameOnly = lowerC.replace(/^[^\s]+\s/, '').trim();
-              const translatedNameOnly = translated.replace(/^[^\s]+\s/, '').trim();
-              
-              return lowerC.includes(normalizedRaw) || 
-                     translated.includes(normalizedRaw) ||
-                     normalizedRaw.includes(nameOnly) ||
-                     normalizedRaw.includes(translatedNameOnly) ||
-                     (nameOnly.length > 2 && nameOnly.includes(normalizedRaw)) ||
-                     (translatedNameOnly.length > 2 && translatedNameOnly.includes(normalizedRaw));
-            });
-          }
-          if (match) cleanCategory = match;
-        }
-
-        const newExpense = {
-          id: Date.now().toString(),
-          desc: desc || cleanCategory.name || 'Quick Add',
-          amountOriginal: parsedAmount,
-          currency: currency || 'MYR',
-          category: cleanCategory,
-          date: new Date().toISOString(),
-          paidBy,
-          splitAmong,
-          type: 'expense' as const,
-          goalId: goalId || undefined,
-        };
-        
-        updateTrip({
-          ...currentTrip,
-          expenses: [newExpense, ...currentTrip.expenses]
-        });
-        
-        window.history.replaceState({}, '', window.location.pathname);
-        setTimeout(() => {
-          alert('Expense saved! You can close this Safari tab.');
-        }, 100);
-        return;
-      }
-    }
-
-    if (amount) {
-      const parsed = parseFloat(amount);
-      if (!isNaN(parsed)) {
-        setShortcutAmount(parsed);
-        shouldClear = true;
-      }
-    }
-    
-    if (category) {
-      // Apply fuzzy matching for manual entry too
-      const rawCategory = category.split(',')[0].trim();
-      const tripCategories = currentTrip.categories || CATEGORIES;
-      const normalizedRaw = rawCategory.toLowerCase();
-      
-      console.log('Debug Shortcut Category Matching:', { rawCategory, normalizedRaw, tripCategories });
-
-      // Try exact match first
-      let match = tripCategories.find(c => {
-        const translated = t(`cat_${c.name}`, c.name).toLowerCase();
-        return c.name.toLowerCase() === normalizedRaw || translated === normalizedRaw;
-      });
-      
-      // Then try fuzzy match
-      if (!match) {
-        match = tripCategories.find(c => {
-          const lowerC = c.name.toLowerCase();
-          const translated = t(`cat_${c.name}`, c.name).toLowerCase();
-          const nameOnly = lowerC.replace(/^[^\s]+\s/, '').trim();
-          const translatedNameOnly = translated.replace(/^[^\s]+\s/, '').trim();
-          
-          const isMatch = lowerC.includes(normalizedRaw) || 
-                 translated.includes(normalizedRaw) ||
-                 normalizedRaw.includes(nameOnly) ||
-                 normalizedRaw.includes(translatedNameOnly) ||
-                 (nameOnly.length > 2 && nameOnly.includes(normalizedRaw)) ||
-                 (translatedNameOnly.length > 2 && translatedNameOnly.includes(normalizedRaw));
-          
-          if (isMatch) console.log('Fuzzy match found:', c.name);
-          return isMatch;
-        });
-      }
-      
-      if (match) {
-        setShortcutCategory(match.name);
-        console.log('Shortcut Category Matched:', match.name);
-      } else {
-        console.log('No match found for category:', rawCategory);
-        // Do NOT set shortcutCategory if no match found, to allow fallback to default
-      }
-      shouldClear = true;
-    }
-
-    if (goalId) {
-      setShortcutGoalId(goalId);
-      shouldClear = true;
-    }
-
-    if (desc) {
-      setShortcutDesc(desc);
-      shouldClear = true;
-    }
-
-    if (currency) {
-      setShortcutCurrency(currency);
-      shouldClear = true;
-    }
-
-    if (shouldClear) {
-      setActiveTab('expenses');
-      window.history.replaceState({}, '', window.location.pathname);
-    }
-  }, [currentTrip?.id, currentTrip?.users, currentTrip?.expenses, updateTrip, t]);
+  const {
+    shortcutAmount,
+    shortcutCategory,
+    shortcutDesc,
+    shortcutCurrency,
+    shortcutGoalId,
+    shortcutSplitAmong,
+    clearShortcuts
+  } = useUrlShortcuts({ currentTrip, updateTrip, t });
 
   if (!currentTrip) {
     return (
@@ -264,11 +109,7 @@ function App() {
     updateTrip({ ...currentTrip, expenses: newExpenses });
     setEditingExpenseId(null);
     setIsMobileFormOpen(false);
-    setShortcutAmount(null); // Clear shortcut amount after use
-    setShortcutCategory(null);
-    setShortcutDesc(null);
-    setShortcutCurrency(null);
-    setShortcutGoalId(null);
+    clearShortcuts();
     setLastUpdatedId(updatedId);
     
     // Clear the lastUpdatedId after a short delay so it doesn't keep jumping back
@@ -463,28 +304,25 @@ function App() {
             "lg:col-span-6",
             activeTab === 'expenses' ? 'block' : 'hidden lg:block'
           )}>
-            <div key={editingExpenseId || `${shortcutAmount}-${shortcutCategory}-${shortcutDesc}-${shortcutCurrency}-${shortcutGoalId}`} ref={formRef}>
+            <div key={editingExpenseId || `${shortcutAmount}-${shortcutCategory}-${shortcutDesc}-${shortcutCurrency}-${shortcutGoalId}-${shortcutSplitAmong?.join(',')}`} ref={formRef}>
               <ExpenseForm 
                 trip={currentTrip} 
                 onSubmit={handleAddExpense}
                 onUpdateTrip={updateTrip}
                 onCancel={() => {
                   setEditingExpenseId(null);
-                  setShortcutAmount(null);
-                  setShortcutCategory(null);
-                  setShortcutDesc(null);
-                  setShortcutCurrency(null);
-                  setShortcutGoalId(null);
+                  clearShortcuts();
                   setIsMobileFormOpen(false);
                 }}
                 initialData={editingExpenseId 
                   ? currentTrip.expenses.find(e => e.id === editingExpenseId) 
-                  : (shortcutAmount !== null || shortcutCategory || shortcutGoalId || shortcutDesc || shortcutCurrency ? { 
+                  : (shortcutAmount !== null || shortcutCategory || shortcutGoalId || shortcutDesc || shortcutCurrency || shortcutSplitAmong ? { 
                       amountOriginal: shortcutAmount ?? undefined,
                       category: shortcutCategory ?? undefined,
                       desc: shortcutDesc ?? undefined,
                       currency: shortcutCurrency ?? undefined,
-                      goalId: shortcutGoalId ?? undefined
+                      goalId: shortcutGoalId ?? undefined,
+                      splitAmong: shortcutSplitAmong ?? undefined
                     } : undefined)}
                 isMobileModal={isMobileFormOpen}
                 onCloseMobile={() => setIsMobileFormOpen(false)}
