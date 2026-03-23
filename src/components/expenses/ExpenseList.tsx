@@ -387,7 +387,7 @@ export function ExpenseList({ trip, onEdit, onView, onDelete, lastUpdatedId, onU
         </div>
       ) : (
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-          <AnimatePresence initial={false}>
+          <AnimatePresence>
             {filteredAndSortedExpenses.map((exp, index) => {
               const rate = rates[exp.currency] || exp.rate || 1;
               const myrAmount = exp.amountOriginal * rate;
@@ -414,7 +414,7 @@ export function ExpenseList({ trip, onEdit, onView, onDelete, lastUpdatedId, onU
                   layout
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
                   transition={{ duration: 0.2 }}
                 >
                   {showDateHeader && (
