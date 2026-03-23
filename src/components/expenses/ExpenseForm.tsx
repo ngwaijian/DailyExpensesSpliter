@@ -436,7 +436,8 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
 
     setIsSearchingLocation(true);
     try {
-      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(locationName)}`);
+      const { customFetch } = await import('../../utils/api');
+      const response = await customFetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(locationName)}`);
       const data = await response.json();
 
       if (data && data.length > 0) {

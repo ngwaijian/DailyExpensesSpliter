@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { AppData, Trip } from '../types';
+import { customFetch } from '../utils/api';
 
 const SYNC_KEY = 'sw_unsynced_trips';
 
@@ -69,7 +70,7 @@ export function useCloudSync({
       const token = githubToken?.trim();
       if (token) headers['Authorization'] = `Bearer ${token}`;
       
-      const res = await fetch(`https://api.github.com/gists/${targetGistId}?t=${Date.now()}`, { headers });
+      const res = await customFetch(`https://api.github.com/gists/${targetGistId}?t=${Date.now()}`, { headers });
       if (res.status === 401) throw new Error("401: Invalid GitHub token.");
       if (res.status === 403) throw new Error("403: GitHub token lacks permission or rate limited.");
       if (res.status === 404) throw new Error("404: Cloud storage (Gist) not found.");
@@ -156,7 +157,7 @@ export function useCloudSync({
     setSyncError(null);
     try {
       // --- NEW: Timestamp Verification & Conflict Resolution ---
-      const checkRes = await fetch(`https://api.github.com/gists/${targetTrip.gistId}?t=${Date.now()}`, {
+      const checkRes = await customFetch(`https://api.github.com/gists/${targetTrip.gistId}?t=${Date.now()}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (checkRes.ok) {
@@ -182,7 +183,7 @@ export function useCloudSync({
       // ---------------------------------------------------------
 
       const payload = { files: { 'trip.json': { content: JSON.stringify(targetTrip, null, 2) } } };
-      const res = await fetch(`https://api.github.com/gists/${targetTrip.gistId}`, {
+      const res = await customFetch(`https://api.github.com/gists/${targetTrip.gistId}`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -224,7 +225,7 @@ export function useCloudSync({
     setIsSyncing(true);
     setSyncError(null);
     try {
-      const res = await fetch(`https://api.github.com/gists?per_page=100`, {
+      const res = await customFetch(`https://api.github.com/gists?per_page=100`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Accept': 'application/vnd.github.v3+json'
@@ -251,7 +252,7 @@ export function useCloudSync({
         for (const gist of gists) {
           if (gist.files['trip.json']) {
             try {
-              const gistRes = await fetch(gist.url, {
+              const gistRes = await customFetch(gist.url, {
                 headers: { 'Authorization': `Bearer ${token}` }
               });
               if (gistRes.ok) {
@@ -338,7 +339,7 @@ export function useCloudSync({
           'trip.json': { content: JSON.stringify(currentTrip, null, 2) }
         }
       };
-      const res = await fetch(`https://api.github.com/gists`, {
+      const res = await customFetch(`https://api.github.com/gists`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${githubToken}`,
