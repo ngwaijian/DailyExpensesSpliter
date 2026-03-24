@@ -59,7 +59,7 @@ export function ExpenseDetailsModal({ expense, isOpen, onClose, onEdit, onDelete
           {/* Main Amount */}
           <div className="text-center">
             <div className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
-              {expense.currency} {formatCurrency(expense.amountOriginal)}
+              {formatCurrency(expense.amountOriginal, expense.currency)}
             </div>
             <div className="text-sm text-gray-500 dark:text-gray-400 font-medium">
               {expense.desc}
@@ -137,11 +137,11 @@ export function ExpenseDetailsModal({ expense, isOpen, onClose, onEdit, onDelete
                   expense.splitAmong.map(person => {
                     let amountStr = '';
                     if (expense.splitDetails && expense.splitDetails[person]) {
-                      amountStr = `${expense.currency} ${formatCurrency(expense.splitDetails[person])}`;
+                      amountStr = formatCurrency(expense.splitDetails[person], expense.currency);
                     } else {
                       // Equal split
                       const amount = expense.amountOriginal / expense.splitAmong.length;
-                      amountStr = `${expense.currency} ${formatCurrency(amount)}`;
+                      amountStr = formatCurrency(amount, expense.currency);
                     }
 
                     return (

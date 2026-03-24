@@ -56,6 +56,7 @@ export interface RecurringTransaction {
   subCategory?: string;
   paidBy: string;
   splitAmong: string[];
+  splitDetails?: { [userName: string]: number };
   frequency: 'daily' | 'weekly' | 'monthly' | 'yearly';
   nextDate: string;
   endDate?: string;
@@ -80,10 +81,14 @@ export interface Loan {
   interestRate: number;
   termMonths: number;
   currency: string;
+  category: Category;
+  subCategory?: string;
   startDate: string;
   dueDate: string;
   nextInstallmentDate: string; // Added
   paidBy: string; // The person who took the loan
+  splitAmong: string[];
+  splitDetails?: { [userName: string]: number };
   status: 'active' | 'paid_off';
 }
 

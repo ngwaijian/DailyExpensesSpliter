@@ -147,8 +147,10 @@ export function useStore() {
             amountOriginal: tx.amountOriginal,
             currency: tx.currency,
             category: tx.category,
+            subCategory: tx.subCategory,
             paidBy: tx.paidBy,
             splitAmong: tx.splitAmong,
+            splitDetails: tx.splitDetails,
             date: currentNextDate,
           };
           newExpenses.push(newExpense);

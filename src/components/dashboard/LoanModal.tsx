@@ -73,10 +73,14 @@ export const LoanModal: React.FC<LoanModalProps> = ({ isOpen, onClose, onSave, i
       interestRate: parseFloat(interestRate) || 0,
       termMonths: parseInt(termMonths) || 0,
       currency,
+      category: initialData?.category || { name: '🏠 Rent & Bills' },
+      subCategory: initialData?.subCategory,
       startDate,
       dueDate,
       nextInstallmentDate,
       paidBy,
+      splitAmong: initialData?.splitAmong || [paidBy],
+      splitDetails: initialData?.splitDetails,
       status
     });
     onClose();

@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Trip, Expense, CATEGORIES } from '../../types';
+import { Trip, Expense, CATEGORIES, Category } from '../../types';
 import { CATEGORY_COLORS, CATEGORY_STRIP_COLORS } from '../../constants';
 import { getAverageRates, formatCurrency } from '../../utils/currency';
 import { Edit2, Trash2, Calendar, User, MapPin, Gift, Handshake, Filter, ArrowUpDown, X, Search, Tag, RotateCcw, Settings, Clock } from 'lucide-react';
@@ -151,16 +151,18 @@ export function ExpenseList({ trip, onEdit, onView, onDelete, lastUpdatedId, onU
     });
   }, [trip.loans]);
 
-  const handleMarkAsPaid = (item: { id: string, desc: string, amountOriginal: number, currency: string, paidBy: string, type: 'loan' | 'recurring', nextDate: string }) => {
+  const handleMarkAsPaid = (item: { id: string, desc: string, amountOriginal: number, currency: string, paidBy: string, type: 'loan' | 'recurring', nextDate: string, splitAmong?: string[], splitDetails?: { [userName: string]: number }, category?: Category, subCategory?: string }) => {
     const newExpense: Expense = {
       id: Date.now().toString(),
       desc: item.desc,
       amountOriginal: item.amountOriginal,
       currency: item.currency,
-      category: { name: '🏠 Rent & Bills' }, // Default category
+      category: item.category || { name: '🏠 Rent & Bills' }, // Default category
+      subCategory: item.subCategory,
       date: new Date().toISOString().split('T')[0],
       paidBy: item.paidBy,
-      splitAmong: [item.paidBy],
+      splitAmong: item.splitAmong || [item.paidBy],
+      splitDetails: item.splitDetails,
       type: 'expense'
     };
 
@@ -219,15 +221,25 @@ export function ExpenseList({ trip, onEdit, onView, onDelete, lastUpdatedId, onU
               <div key={rt.id} className="flex justify-between items-center bg-white/60 dark:bg-gray-800/60 p-3 rounded-xl">
                 <div>
                   <div className="font-medium text-gray-900 dark:text-white">{rt.desc}</div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                    Due: {new Date(rt.nextDate).toLocaleDateString()} • {rt.frequency}
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 flex items-center gap-1 flex-wrap">
+                    <span>Due: {new Date(rt.nextDate).toLocaleDateString()} • {rt.frequency}</span>
+                    <span className="mx-1 text-gray-300 dark:text-gray-600">|</span>
+                    <span className="text-blue-500 dark:text-blue-400 font-medium">{rt.paidBy}</span>
+                    {rt.splitAmong && rt.splitAmong.length > 0 && (
+                      <>
+                        <span className="text-gray-300 dark:text-gray-600">→</span>
+                        <span className="truncate max-w-[80px]" title={rt.splitAmong.join(', ')}>
+                          {rt.splitAmong.join(', ')}
+                        </span>
+                      </>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="font-semibold text-amber-700 dark:text-amber-400">
                     {formatCurrency(rt.amountOriginal, rt.currency)}
                   </div>
-                  <button onClick={() => handleMarkAsPaid({ id: rt.id, desc: rt.desc, amountOriginal: rt.amountOriginal, currency: rt.currency, paidBy: rt.paidBy, type: 'recurring', nextDate: rt.nextDate })} className="px-3 py-1 bg-amber-500 text-white rounded-lg text-xs font-medium hover:bg-amber-600">Pay</button>
+                  <button onClick={() => handleMarkAsPaid({ id: rt.id, desc: rt.desc, amountOriginal: rt.amountOriginal, currency: rt.currency, paidBy: rt.paidBy, type: 'recurring', nextDate: rt.nextDate, splitAmong: rt.splitAmong, splitDetails: rt.splitDetails, category: rt.category, subCategory: rt.subCategory })} className="px-3 py-1 bg-amber-500 text-white rounded-lg text-xs font-medium hover:bg-amber-600">Pay</button>
                 </div>
               </div>
             ))}
@@ -235,15 +247,25 @@ export function ExpenseList({ trip, onEdit, onView, onDelete, lastUpdatedId, onU
               <div key={l.id} className="flex justify-between items-center bg-white/60 dark:bg-gray-800/60 p-3 rounded-xl">
                 <div>
                   <div className="font-medium text-gray-900 dark:text-white">{l.name}</div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                    Due: {new Date(l.nextInstallmentDate).toLocaleDateString()} • Installment
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 flex items-center gap-1 flex-wrap">
+                    <span>Due: {new Date(l.nextInstallmentDate).toLocaleDateString()} • Installment</span>
+                    <span className="mx-1 text-gray-300 dark:text-gray-600">|</span>
+                    <span className="text-blue-500 dark:text-blue-400 font-medium">{l.paidBy}</span>
+                    {l.splitAmong && l.splitAmong.length > 0 && (
+                      <>
+                        <span className="text-gray-300 dark:text-gray-600">→</span>
+                        <span className="truncate max-w-[80px]" title={l.splitAmong.join(', ')}>
+                          {l.splitAmong.join(', ')}
+                        </span>
+                      </>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="font-semibold text-amber-700 dark:text-amber-400">
                     {formatCurrency(l.installmentAmount, l.currency)}
                   </div>
-                  <button onClick={() => handleMarkAsPaid({ id: l.id, desc: l.name, amountOriginal: l.installmentAmount, currency: l.currency, paidBy: l.paidBy, type: 'loan', nextDate: l.nextInstallmentDate })} className="px-3 py-1 bg-amber-500 text-white rounded-lg text-xs font-medium hover:bg-amber-600">Pay</button>
+                  <button onClick={() => handleMarkAsPaid({ id: l.id, desc: l.name, amountOriginal: l.installmentAmount, currency: l.currency, paidBy: l.paidBy, type: 'loan', nextDate: l.nextInstallmentDate, splitAmong: l.splitAmong, splitDetails: l.splitDetails, category: l.category, subCategory: l.subCategory })} className="px-3 py-1 bg-amber-500 text-white rounded-lg text-xs font-medium hover:bg-amber-600">Pay</button>
                 </div>
               </div>
             ))}

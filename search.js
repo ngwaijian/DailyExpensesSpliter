@@ -9,14 +9,16 @@ function search(dir) {
       search(fullPath);
     } else if (fullPath.endsWith('.js')) {
       const content = fs.readFileSync(fullPath, 'utf8');
-      if (content.match(/[^a-zA-Z0-9_.]fetch\s*=/)) {
-        console.log('Found in', fullPath);
-        console.log(content.match(/[^a-zA-Z0-9_.]fetch\s*=/g));
+      if (content.match(/window\.fetch\s*=/)) {
+        console.log('Found window.fetch in', fullPath);
+      }
+      if (content.match(/globalThis\.fetch\s*=/)) {
+        console.log('Found globalThis.fetch in', fullPath);
       }
     }
   }
 }
 
-search('dist');
+// search('dist');
 search('node_modules');
 search('src');
