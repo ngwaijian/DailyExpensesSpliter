@@ -35,13 +35,40 @@ export function useUrlShortcuts({ currentTrip, updateTrip, t }: UseUrlShortcutsP
     const currency = getParam(['currency', 'curr']);
     const goalId = getParam(['goalId', 'goal']);
     const autoSave = getParam(['autoSave']) === 'true';
-    const splitAmongParam = getParam(['splitAmong', 'split']);
-    const paidByParam = getParam(['paidBy', 'payer', 'who']);
+    const splitAmongParam = getParam(['splitAmong', 'split', 'split_among', 'users']);
+    const paidByParam = getParam(['paidBy', 'payer', 'paid_by', 'paidby']);
     const subCategory = getParam(['subCategory', 'subcat']);
     
     if (!currentTrip) return;
 
     let shouldClear = false;
+
+    // --- Parse paidBy ---
+    let parsedPaidBy = paidByParam;
+    if (paidByParam) {
+      const paidByLower = paidByParam.toLowerCase();
+      const matchedUser = currentTrip.users.find(u => u.toLowerCase() === paidByLower);
+      if (matchedUser) {
+        parsedPaidBy = matchedUser;
+      }
+    }
+
+    // --- Parse splitAmong ---
+    let parsedSplitAmong: string[] | null = null;
+    if (splitAmongParam) {
+      if (splitAmongParam.includes(',')) {
+        parsedSplitAmong = splitAmongParam.split(',').map(u => u.trim()).filter(Boolean);
+      } else {
+        // Filter currentTrip.users to see which existing user names are included in the raw string
+        const rawLower = splitAmongParam.toLowerCase();
+        const matchedUsers = currentTrip.users.filter(u => rawLower.includes(u.toLowerCase()));
+        if (matchedUsers.length > 0) {
+          parsedSplitAmong = matchedUsers;
+        } else {
+          parsedSplitAmong = splitAmongParam.split(' ').map(u => u.trim()).filter(Boolean);
+        }
+      }
+    }
 
     // --- Category Matching ---
     const tripCategories = (currentTrip.categories || CATEGORIES).map(c => typeof c === 'string' ? { name: c, subCategories: [] } : c);
@@ -98,14 +125,11 @@ export function useUrlShortcuts({ currentTrip, updateTrip, t }: UseUrlShortcutsP
     if (autoSave && amount) {
       const parsedAmount = parseFloat(amount);
       if (!isNaN(parsedAmount)) {
-        const paidBy = paidByParam || (currentTrip.users.length > 0 ? currentTrip.users[0] : 'Me');
+        const paidBy = parsedPaidBy || (currentTrip.users.length > 0 ? currentTrip.users[0] : 'Me');
         
         let splitAmong = currentTrip.users.length > 0 ? currentTrip.users : ['Me'];
-        if (splitAmongParam) {
-          const splitUsers = splitAmongParam.split(',').map(u => u.trim()).filter(Boolean);
-          if (splitUsers.length > 0) {
-            splitAmong = splitUsers;
-          }
+        if (parsedSplitAmong && parsedSplitAmong.length > 0) {
+          splitAmong = parsedSplitAmong;
         }
 
         // Handle timezone offset formatting
@@ -179,16 +203,13 @@ export function useUrlShortcuts({ currentTrip, updateTrip, t }: UseUrlShortcutsP
       shouldClear = true;
     }
 
-    if (splitAmongParam) {
-      const splitUsers = splitAmongParam.split(',').map(u => u.trim()).filter(Boolean);
-      if (splitUsers.length > 0) {
-        setShortcutSplitAmong(splitUsers);
-        shouldClear = true;
-      }
+    if (parsedSplitAmong && parsedSplitAmong.length > 0) {
+      setShortcutSplitAmong(parsedSplitAmong);
+      shouldClear = true;
     }
 
-    if (paidByParam) {
-      setShortcutPaidBy(paidByParam);
+    if (parsedPaidBy) {
+      setShortcutPaidBy(parsedPaidBy);
       shouldClear = true;
     }
 
