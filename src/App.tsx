@@ -51,6 +51,8 @@ function App() {
     shortcutCurrency,
     shortcutGoalId,
     shortcutSplitAmong,
+    shortcutPaidBy,
+    shortcutSubCategory,
     clearShortcuts
   } = useUrlShortcuts({ currentTrip, updateTrip, t });
 
@@ -326,7 +328,7 @@ function App() {
             "lg:col-span-6",
             activeTab === 'expenses' ? 'block' : 'hidden lg:block'
           )}>
-            <div key={editingExpenseId || `${shortcutAmount}-${shortcutCategory}-${shortcutDesc}-${shortcutCurrency}-${shortcutGoalId}-${shortcutSplitAmong?.join(',')}`} ref={formRef}>
+            <div key={editingExpenseId || `${shortcutAmount}-${shortcutCategory}-${shortcutDesc}-${shortcutCurrency}-${shortcutGoalId}-${shortcutSplitAmong?.join(',')}-${shortcutPaidBy}-${shortcutSubCategory}`} ref={formRef}>
               <ExpenseForm 
                 trip={currentTrip} 
                 onSubmit={handleAddExpense}
@@ -338,13 +340,15 @@ function App() {
                 }}
                 initialData={editingExpenseId 
                   ? currentTrip.expenses.find(e => e.id === editingExpenseId) 
-                  : (shortcutAmount !== null || shortcutCategory || shortcutGoalId || shortcutDesc || shortcutCurrency || shortcutSplitAmong ? { 
+                  : (shortcutAmount !== null || shortcutCategory || shortcutGoalId || shortcutDesc || shortcutCurrency || shortcutSplitAmong || shortcutPaidBy || shortcutSubCategory ? { 
                       amountOriginal: shortcutAmount ?? undefined,
                       category: shortcutCategory ?? undefined,
                       desc: shortcutDesc ?? undefined,
                       currency: shortcutCurrency ?? undefined,
                       goalId: shortcutGoalId ?? undefined,
-                      splitAmong: shortcutSplitAmong ?? undefined
+                      splitAmong: shortcutSplitAmong ?? undefined,
+                      paidBy: shortcutPaidBy ?? undefined,
+                      subCategory: shortcutSubCategory ?? undefined
                     } : undefined)}
                 isMobileModal={isMobileFormOpen}
                 onCloseMobile={() => setIsMobileFormOpen(false)}

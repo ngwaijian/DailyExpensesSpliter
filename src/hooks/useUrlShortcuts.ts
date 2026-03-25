@@ -14,6 +14,8 @@ export function useUrlShortcuts({ currentTrip, updateTrip, t }: UseUrlShortcutsP
   const [shortcutCurrency, setShortcutCurrency] = useState<string | null>(null);
   const [shortcutGoalId, setShortcutGoalId] = useState<string | null>(null);
   const [shortcutSplitAmong, setShortcutSplitAmong] = useState<string[] | null>(null);
+  const [shortcutPaidBy, setShortcutPaidBy] = useState<string | null>(null);
+  const [shortcutSubCategory, setShortcutSubCategory] = useState<string | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -34,6 +36,8 @@ export function useUrlShortcuts({ currentTrip, updateTrip, t }: UseUrlShortcutsP
     const goalId = getParam(['goalId', 'goal']);
     const autoSave = getParam(['autoSave']) === 'true';
     const splitAmongParam = getParam(['splitAmong', 'split']);
+    const paidByParam = getParam(['paidBy', 'payer', 'who']);
+    const subCategory = getParam(['subCategory', 'subcat']);
     
     if (!currentTrip) return;
 
@@ -42,7 +46,7 @@ export function useUrlShortcuts({ currentTrip, updateTrip, t }: UseUrlShortcutsP
     if (autoSave && amount) {
       const parsedAmount = parseFloat(amount);
       if (!isNaN(parsedAmount)) {
-        const paidBy = currentTrip.users.length > 0 ? currentTrip.users[0] : 'Me';
+        const paidBy = paidByParam || (currentTrip.users.length > 0 ? currentTrip.users[0] : 'Me');
         
         let splitAmong = currentTrip.users.length > 0 ? currentTrip.users : ['Me'];
         if (splitAmongParam) {
@@ -109,6 +113,7 @@ export function useUrlShortcuts({ currentTrip, updateTrip, t }: UseUrlShortcutsP
           amountOriginal: parsedAmount,
           currency: currency || 'MYR',
           category: cleanCategory,
+          subCategory: subCategory || undefined,
           date: isoString,
           paidBy,
           splitAmong,
@@ -197,6 +202,16 @@ export function useUrlShortcuts({ currentTrip, updateTrip, t }: UseUrlShortcutsP
       }
     }
 
+    if (paidByParam) {
+      setShortcutPaidBy(paidByParam);
+      shouldClear = true;
+    }
+
+    if (subCategory) {
+      setShortcutSubCategory(subCategory);
+      shouldClear = true;
+    }
+
     if (shouldClear) {
       window.history.replaceState({}, '', window.location.pathname);
     }
@@ -209,6 +224,8 @@ export function useUrlShortcuts({ currentTrip, updateTrip, t }: UseUrlShortcutsP
     setShortcutCurrency(null);
     setShortcutGoalId(null);
     setShortcutSplitAmong(null);
+    setShortcutPaidBy(null);
+    setShortcutSubCategory(null);
   };
 
   return {
@@ -218,6 +235,8 @@ export function useUrlShortcuts({ currentTrip, updateTrip, t }: UseUrlShortcutsP
     shortcutCurrency,
     shortcutGoalId,
     shortcutSplitAmong,
+    shortcutPaidBy,
+    shortcutSubCategory,
     clearShortcuts
   };
 }
