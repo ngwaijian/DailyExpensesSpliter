@@ -43,6 +43,58 @@ export function useUrlShortcuts({ currentTrip, updateTrip, t }: UseUrlShortcutsP
 
     let shouldClear = false;
 
+    // --- Category Matching ---
+    const tripCategories = (currentTrip.categories || CATEGORIES).map(c => typeof c === 'string' ? { name: c, subCategories: [] } : c);
+    let cleanCategory: Category = tripCategories[0]; // Default to first category
+    let matchedCategory = false;
+
+    if (category) {
+      const rawCategory = category.split(',')[0].trim();
+      const normalizedRaw = rawCategory.toLowerCase();
+      
+      // Try exact match first
+      let match = tripCategories.find(c => {
+        const translated = t(`cat_${c.name}`, c.name).toLowerCase();
+        return c.name.toLowerCase() === normalizedRaw || translated === normalizedRaw;
+      });
+      
+      // Then try fuzzy match
+      if (!match) {
+        match = tripCategories.find(c => {
+          const lowerC = c.name.toLowerCase();
+          const translated = t(`cat_${c.name}`, c.name).toLowerCase();
+          const nameOnly = lowerC.replace(/^[^\s]+\s/, '').trim();
+          const translatedNameOnly = translated.replace(/^[^\s]+\s/, '').trim();
+          
+          return lowerC.includes(normalizedRaw) || 
+                 translated.includes(normalizedRaw) ||
+                 normalizedRaw.includes(nameOnly) ||
+                 normalizedRaw.includes(translatedNameOnly) ||
+                 (nameOnly.length > 2 && nameOnly.includes(normalizedRaw)) ||
+                 (translatedNameOnly.length > 2 && translatedNameOnly.includes(normalizedRaw));
+        });
+      }
+      if (match) {
+        cleanCategory = match;
+        matchedCategory = true;
+      }
+      shouldClear = true;
+    }
+
+    // --- SubCategory Guessing ---
+    let finalSubCategory = subCategory;
+    if (desc && !finalSubCategory) {
+      const subCategories = cleanCategory.subCategories || [];
+      const descLower = desc.toLowerCase();
+      for (const sub of subCategories) {
+        const subLower = sub.toLowerCase();
+        if (descLower.includes(subLower) || subLower.includes(descLower)) {
+          finalSubCategory = sub;
+          break;
+        }
+      }
+    }
+
     if (autoSave && amount) {
       const parsedAmount = parseFloat(amount);
       if (!isNaN(parsedAmount)) {
@@ -54,40 +106,6 @@ export function useUrlShortcuts({ currentTrip, updateTrip, t }: UseUrlShortcutsP
           if (splitUsers.length > 0) {
             splitAmong = splitUsers;
           }
-        }
-        
-        // Fix: If shortcut passes multiple categories (comma separated), take only the first one
-        const rawCategory = category ? category.split(',')[0].trim() : '';
-        
-        // Fuzzy match the category against the official list
-        const tripCategories = (currentTrip.categories || CATEGORIES).map(c => typeof c === 'string' ? { name: c, subCategories: [] } : c);
-        let cleanCategory: Category = tripCategories[0]; // Default to first category
-        if (rawCategory) {
-          const normalizedRaw = rawCategory.toLowerCase();
-          
-          // Try exact match first
-          let match = tripCategories.find(c => {
-            const translated = t(`cat_${c.name}`, c.name).toLowerCase();
-            return c.name.toLowerCase() === normalizedRaw || translated === normalizedRaw;
-          });
-          
-          // Then try fuzzy match
-          if (!match) {
-            match = tripCategories.find(c => {
-              const lowerC = c.name.toLowerCase();
-              const translated = t(`cat_${c.name}`, c.name).toLowerCase();
-              const nameOnly = lowerC.replace(/^[^\s]+\s/, '').trim();
-              const translatedNameOnly = translated.replace(/^[^\s]+\s/, '').trim();
-              
-              return lowerC.includes(normalizedRaw) || 
-                     translated.includes(normalizedRaw) ||
-                     normalizedRaw.includes(nameOnly) ||
-                     normalizedRaw.includes(translatedNameOnly) ||
-                     (nameOnly.length > 2 && nameOnly.includes(normalizedRaw)) ||
-                     (translatedNameOnly.length > 2 && translatedNameOnly.includes(normalizedRaw));
-            });
-          }
-          if (match) cleanCategory = match;
         }
 
         // Handle timezone offset formatting
@@ -113,7 +131,7 @@ export function useUrlShortcuts({ currentTrip, updateTrip, t }: UseUrlShortcutsP
           amountOriginal: parsedAmount,
           currency: currency || 'MYR',
           category: cleanCategory,
-          subCategory: subCategory || undefined,
+          subCategory: finalSubCategory || undefined,
           date: isoString,
           paidBy,
           splitAmong,
@@ -142,41 +160,8 @@ export function useUrlShortcuts({ currentTrip, updateTrip, t }: UseUrlShortcutsP
       }
     }
     
-    if (category) {
-      // Apply fuzzy matching for manual entry too
-      const rawCategory = category.split(',')[0].trim();
-      const tripCategories = currentTrip.categories || CATEGORIES;
-      const normalizedRaw = rawCategory.toLowerCase();
-      
-      // Try exact match first
-      let match = tripCategories.find(c => {
-        const translated = t(`cat_${c.name}`, c.name).toLowerCase();
-        return c.name.toLowerCase() === normalizedRaw || translated === normalizedRaw;
-      });
-      
-      // Then try fuzzy match
-      if (!match) {
-        match = tripCategories.find(c => {
-          const lowerC = c.name.toLowerCase();
-          const translated = t(`cat_${c.name}`, c.name).toLowerCase();
-          const nameOnly = lowerC.replace(/^[^\s]+\s/, '').trim();
-          const translatedNameOnly = translated.replace(/^[^\s]+\s/, '').trim();
-          
-          const isMatch = lowerC.includes(normalizedRaw) || 
-                 translated.includes(normalizedRaw) ||
-                 normalizedRaw.includes(nameOnly) ||
-                 normalizedRaw.includes(translatedNameOnly) ||
-                 (nameOnly.length > 2 && nameOnly.includes(normalizedRaw)) ||
-                 (translatedNameOnly.length > 2 && translatedNameOnly.includes(normalizedRaw));
-          
-          return isMatch;
-        });
-      }
-      
-      if (match) {
-        setShortcutCategory(match.name);
-      }
-      shouldClear = true;
+    if (matchedCategory) {
+      setShortcutCategory(cleanCategory.name);
     }
 
     if (goalId) {
@@ -207,8 +192,8 @@ export function useUrlShortcuts({ currentTrip, updateTrip, t }: UseUrlShortcutsP
       shouldClear = true;
     }
 
-    if (subCategory) {
-      setShortcutSubCategory(subCategory);
+    if (finalSubCategory) {
+      setShortcutSubCategory(finalSubCategory);
       shouldClear = true;
     }
 
