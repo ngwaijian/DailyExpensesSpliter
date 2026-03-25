@@ -9,11 +9,43 @@ export const LoanManager: React.FC<{
   trip: Trip, 
   onAdd: (loan: Loan) => void,
   onEdit: (loan: Loan) => void,
-  onDelete: (id: string) => void
-}> = ({ trip, onAdd, onEdit, onDelete }) => {
+  onDelete: (id: string) => void,
+  onAddExpense: (expense: any) => void
+}> = ({ trip, onAdd, onEdit, onDelete, onAddExpense }) => {
   const loans = trip.loans || [];
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingLoan, setEditingLoan] = useState<Loan | undefined>(undefined);
+
+  const handlePay = (loan: Loan) => {
+    if (loan.status === 'paid_off') return;
+
+    const expense = {
+      desc: `Payment for ${loan.name}`,
+      amountOriginal: loan.installmentAmount,
+      currency: loan.currency,
+      category: loan.category?.name || '🏦 Bank / Finance',
+      subCategory: loan.subCategory,
+      date: new Date().toISOString(),
+      paidBy: loan.paidBy,
+      splitAmong: loan.splitAmong || [loan.paidBy],
+      splitDetails: loan.splitDetails,
+      type: 'expense'
+    };
+    onAddExpense(expense);
+    
+    // Also update the loan remaining amount and next installment date
+    const newRemaining = Math.max(0, loan.remainingAmount - loan.installmentAmount);
+    // Calculate next installment date (add 1 month)
+    const nextDate = new Date(loan.nextInstallmentDate);
+    nextDate.setMonth(nextDate.getMonth() + 1);
+    
+    onEdit({
+      ...loan,
+      remainingAmount: newRemaining,
+      nextInstallmentDate: nextDate.toISOString().split('T')[0],
+      status: newRemaining <= 0 ? 'paid_off' : 'active'
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -117,6 +149,15 @@ export const LoanManager: React.FC<{
                       </div>
                     </div>
                   </div>
+                  
+                  {loan.status !== 'paid_off' && (
+                    <button
+                      onClick={() => handlePay(loan)}
+                      className="w-full mt-4 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-xs font-bold uppercase tracking-widest rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors active:scale-95"
+                    >
+                      Log Payment
+                    </button>
+                  )}
                 </div>
               </div>
             );

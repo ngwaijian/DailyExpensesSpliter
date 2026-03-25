@@ -119,6 +119,28 @@ function App() {
     }, 2000);
   };
 
+  const handleLogPayment = (data: any) => {
+    const newExpenses = [...currentTrip.expenses];
+    const tripCategories = (currentTrip.categories || CATEGORIES).map(c => typeof c === 'string' ? { name: c, subCategories: [] } : c);
+    const categoryObj = tripCategories.find(c => c.name === data.category) || { name: data.category, subCategories: [] };
+    
+    const expenseData = { 
+      ...data, 
+      category: categoryObj,
+      subCategory: data.subCategory || undefined 
+    };
+    
+    const updatedId = Date.now().toString();
+    newExpenses.push({ id: updatedId, ...expenseData });
+    
+    updateTrip({ ...currentTrip, expenses: newExpenses });
+    setLastUpdatedId(updatedId);
+    
+    setTimeout(() => {
+      setLastUpdatedId(null);
+    }, 2000);
+  };
+
   const handleDeleteExpense = (id: string) => {
     if (!confirm(t('app_delete_expense_confirm'))) return;
     updateTrip({ 
@@ -344,7 +366,7 @@ function App() {
           <div className="hidden lg:block lg:col-span-3 space-y-6">
             <Summary trip={currentTrip} onUpdateTrip={updateTrip} />
             <Balances trip={currentTrip} />
-            <LoanManager trip={currentTrip} onAdd={handleAddLoan} onEdit={handleEditLoan} onDelete={handleDeleteLoan} />
+            <LoanManager trip={currentTrip} onAdd={handleAddLoan} onEdit={handleEditLoan} onDelete={handleDeleteLoan} onAddExpense={handleLogPayment} />
           </div>
 
           {/* Mobile Only Views */}
@@ -352,7 +374,7 @@ function App() {
             <div className="space-y-6">
               <Summary trip={currentTrip} onUpdateTrip={updateTrip} />
               <Balances trip={currentTrip} />
-              <LoanManager trip={currentTrip} onAdd={handleAddLoan} onEdit={handleEditLoan} onDelete={handleDeleteLoan} />
+              <LoanManager trip={currentTrip} onAdd={handleAddLoan} onEdit={handleEditLoan} onDelete={handleDeleteLoan} onAddExpense={handleLogPayment} />
             </div>
           </div>
 
