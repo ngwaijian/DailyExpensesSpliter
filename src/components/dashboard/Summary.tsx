@@ -291,8 +291,8 @@ export function Summary({ ledger, onUpdateLedger }: SummaryProps) {
       if (!personInvolved) return;
     }
 
-    const expDateStr = e.date.split('T')[0];
-    if (last7Days[expDateStr] !== undefined) {
+    const expenseDateStr = e.date.split('T')[0];
+    if (last7Days[expenseDateStr] !== undefined) {
       const rate = rates[e.currency] || e.rate || 1;
       // For the spending chart, we only count expenses
       if (e.type !== 'income') {
@@ -314,9 +314,9 @@ export function Summary({ ledger, onUpdateLedger }: SummaryProps) {
               personShare = val / e.splitAmong.length;
             }
           }
-          last7Days[expDateStr] += Math.abs(personShare);
+          last7Days[expenseDateStr] += Math.abs(personShare);
         } else {
-          last7Days[expDateStr] += val;
+          last7Days[expenseDateStr] += val;
         }
       }
     }
