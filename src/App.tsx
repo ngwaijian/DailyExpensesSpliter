@@ -239,7 +239,7 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans pb-20 md:pb-0 transition-colors duration-200">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans pb-32 md:pb-0 transition-colors duration-200">
       {/* Header */}
       <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30 transition-colors duration-200">
         <div className="w-full max-w-[98%] mx-auto px-2 sm:px-4 py-2 sm:py-3 flex justify-between items-center">
@@ -405,7 +405,7 @@ function App() {
       </main>
 
       {/* Mobile Bottom Nav */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 lg:hidden z-40 pb-[env(safe-area-inset-bottom)] transition-colors duration-200">
+      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 lg:hidden z-40 pb-[max(env(safe-area-inset-bottom),1.5rem)] pt-2 transition-colors duration-200">
         <div className="flex justify-around items-center px-2 relative">
           {[
             { id: 'dashboard', icon: LayoutGrid, label: t('nav_dashboard') },
@@ -474,7 +474,7 @@ function App() {
         onClick={scrollToForm}
         className={cn(
           "fixed z-50 bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 hover:shadow-xl transition-all duration-300 active:scale-95 flex items-center justify-center border-4 border-white dark:border-gray-800",
-          "bottom-8 left-1/2 -translate-x-1/2 lg:bottom-8 lg:left-auto lg:right-8 lg:translate-x-0 lg:border-none",
+          "bottom-[calc(max(env(safe-area-inset-bottom),1.5rem)+1.5rem)] left-1/2 -translate-x-1/2 lg:bottom-8 lg:left-auto lg:right-8 lg:translate-x-0 lg:border-none",
           "translate-y-0 opacity-100"
         )}
         title={t('app_add_new_entry')}
