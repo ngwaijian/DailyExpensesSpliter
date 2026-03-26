@@ -58,34 +58,57 @@ export function calculateBalances(trip: Trip): Record<string, number> {
   return balances;
 }
 
-export function getSimplifiedDebts(balances: Record<string, number>) {
+export function getSimplifiedDebts(balances: Record<string, number>, trip?: Trip) {
   const debtors: { name: string; amount: number }[] = [];
   const creditors: { name: string; amount: number }[] = [];
 
   Object.entries(balances).forEach(([name, amt]) => {
     const rounded = Math.round(amt * 100) / 100;
-    if (rounded < -0.01) debtors.push({ name, amount: Math.abs(rounded) });
-    else if (rounded > 0.01) creditors.push({ name, amount: rounded });
+    if (rounded <= -0.01) debtors.push({ name, amount: Math.abs(rounded) });
+    else if (rounded >= 0.01) creditors.push({ name, amount: rounded });
   });
 
-  const transactions: { from: string; to: string; amount: number }[] = [];
+  let originalBalances: Record<string, number> | null = null;
+  if (trip) {
+    const tripWithoutSettlements = {
+      ...trip,
+      expenses: trip.expenses.filter(e => e.type !== 'settlement')
+    };
+    originalBalances = calculateBalances(tripWithoutSettlements);
+  }
+
+  const transactions: { from: string; to: string; amount: number; isRefund?: boolean }[] = [];
   const debtorsCopy = debtors.map(d => ({ ...d }));
   const creditorsCopy = creditors.map(c => ({ ...c }));
   
   let i = 0, j = 0;
   while (i < debtorsCopy.length && j < creditorsCopy.length) {
     const settle = Math.min(debtorsCopy[i].amount, creditorsCopy[j].amount);
+    
+    const from = debtorsCopy[i].name;
+    const to = creditorsCopy[j].name;
+    
+    let isRefund = false;
+    if (originalBalances) {
+      const origFrom = originalBalances[from] || 0;
+      const origTo = originalBalances[to] || 0;
+      if (origFrom > -0.01 || origTo < 0.01) {
+        isRefund = true;
+      }
+    }
+
     transactions.push({
-      from: debtorsCopy[i].name,
-      to: creditorsCopy[j].name,
-      amount: settle
+      from,
+      to,
+      amount: Math.round(settle * 100) / 100,
+      isRefund
     });
     
     debtorsCopy[i].amount -= settle;
     creditorsCopy[j].amount -= settle;
 
-    if (debtorsCopy[i].amount < 0.01) i++;
-    if (creditorsCopy[j].amount < 0.01) j++;
+    if (debtorsCopy[i].amount < 0.005) i++;
+    if (creditorsCopy[j].amount < 0.005) j++;
   }
 
   return transactions;

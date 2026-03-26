@@ -12,7 +12,7 @@ interface BalancesProps {
 export function Balances({ trip }: BalancesProps) {
   const { t } = useLanguage();
   const balances = calculateBalances(trip);
-  const transactions = getSimplifiedDebts(balances);
+  const transactions = getSimplifiedDebts(balances, trip);
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-sm p-6 transition-colors duration-200">
@@ -45,9 +45,16 @@ export function Balances({ trip }: BalancesProps) {
                   <span className="font-bold text-indigo-600 dark:text-indigo-400 truncate text-sm">{t_trans.to}</span>
                 </div>
               </div>
-              <div className="text-right ml-4 shrink-0">
+              <div className="text-right ml-4 shrink-0 flex flex-col items-end">
                 <span className="text-[10px] uppercase font-bold text-gray-400 dark:text-gray-500 block mb-1">Amount</span>
-                <span className="font-black text-gray-900 dark:text-white text-base">{formatCurrency(t_trans.amount)}</span>
+                <div className="flex items-center gap-2">
+                  {t_trans.isRefund && (
+                    <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400 text-[10px] font-bold uppercase tracking-wider">
+                      Refund Due
+                    </span>
+                  )}
+                  <span className="font-black text-gray-900 dark:text-white text-base">{formatCurrency(t_trans.amount)}</span>
+                </div>
               </div>
             </li>
           ))

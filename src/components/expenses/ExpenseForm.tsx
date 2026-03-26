@@ -10,18 +10,8 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { useTheme } from '../../hooks/useTheme';
 import { useStore } from '../../hooks/useStore';
 import { CategoryManager } from '../settings/CategoryManager';
-import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
-
-// Fix for default marker icon in Leaflet with React
-// @ts-ignore
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-});
+import { CalculatorKeypad } from './CalculatorKeypad';
+import { LocationPicker } from './LocationPicker';
 
 interface ExpenseFormProps {
   trip: Trip;
@@ -31,33 +21,6 @@ interface ExpenseFormProps {
   onUpdateTrip: (trip: Trip) => void;
   isMobileModal?: boolean;
   onCloseMobile?: () => void;
-}
-
-// Component to handle map clicks and updates
-function LocationMarker({ position, setPosition }: { position: { lat: number, lng: number } | null, setPosition: (pos: { lat: number, lng: number }) => void }) {
-  const map = useMap();
-  
-  useEffect(() => {
-    if (position) {
-      map.flyTo(position, map.getZoom());
-    }
-  }, [position, map]);
-
-  useMapEvents({
-    click(e) {
-      setPosition(e.latlng);
-    },
-  });
-
-  return position === null ? null : (
-    <Marker position={position} draggable={true} eventHandlers={{
-      dragend: (e) => {
-        const marker = e.target;
-        const position = marker.getLatLng();
-        setPosition(position);
-      },
-    }} />
-  );
 }
 
 const formatDateTime = (d?: string) => {
@@ -172,9 +135,6 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
   const [locationCoords, setLocationCoords] = useState<{lat: number, lng: number} | undefined>(
     initialData?.location?.lat ? {lat: initialData.location.lat, lng: initialData.location.lng} : undefined
   );
-  const [isLoadingLocation, setIsLoadingLocation] = useState(false);
-  const [isSearchingLocation, setIsSearchingLocation] = useState(false);
-  const [showMap, setShowMap] = useState(!!initialData?.location?.lat);
   const [isSponsored, setIsSponsored] = useState(initialData?.isSponsored || false);
   const [isSettled, setIsSettled] = useState(initialData?.isSettled || false);
   const [sponsoredBy, setSponsoredBy] = useState(initialData?.sponsoredBy || '');
@@ -307,7 +267,6 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
       setSplitAmong(initialData.splitAmong || (initialData.paidBy ? [initialData.paidBy] : (defaultPaidBy ? [defaultPaidBy] : [])));
       setLocationName(initialData.location?.name || '');
       setLocationCoords(initialData.location?.lat ? {lat: initialData.location.lat, lng: initialData.location.lng} : undefined);
-      setShowMap(!!initialData.location?.lat);
       setIsSponsored(initialData.isSponsored || false);
       setIsSettled(initialData.isSettled || false);
       setSponsoredBy(initialData.sponsoredBy || '');
@@ -328,7 +287,6 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
       setSplitAmong(defaultPaidBy ? [defaultPaidBy] : []);
       setLocationName('');
       setLocationCoords(undefined);
-      setShowMap(false);
       setIsSponsored(false);
       setIsSettled(false);
       setSponsoredBy('');
@@ -349,113 +307,6 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
 
   const selectAll = () => setSplitAmong(trip.users);
   const selectNone = () => setSplitAmong([]);
-
-  const updateAmountWithDigit = (digit: number) => {
-    const currentNumeric = parseInt(amount.toString().replace('.', '')) || 0;
-    const newNumeric = (currentNumeric * 10 + digit) / 100;
-    setAmount(newNumeric.toFixed(2));
-  };
-
-  const updateAmountWithDelete = () => {
-    const currentNumeric = parseInt(amount.toString().replace('.', '')) || 0;
-    const newNumeric = Math.floor(currentNumeric / 10) / 100;
-    setAmount(newNumeric.toFixed(2));
-  };
-
-  const handleCalcInput = (key: string) => {
-    if (key === 'C') {
-      setAmount('');
-    } else if (key === 'DEL') {
-      // If it's a simple number, use the cash register delete
-      // Otherwise, just remove the last character
-      const hasOperators = /[+\-*/()]/.test(amount.toString());
-      if (!hasOperators && amount.toString().length > 0 && !isNaN(parseFloat(amount.toString()))) {
-        updateAmountWithDelete();
-      } else {
-        setAmount(prev => prev.toString().slice(0, -1));
-      }
-    } else if (key === '=') {
-      try {
-        const sanitized = amount.toString().replace(/[^0-9+\-*/().\s]/g, '');
-        if (!sanitized) return;
-        // eslint-disable-next-line no-new-func
-        const result = new Function('return ' + sanitized)();
-        if (isFinite(result)) {
-          setAmount(parseFloat(result).toFixed(2));
-          setShowCalculator(false);
-        }
-      } catch (e) {
-        // ignore
-      }
-    } else if (/[0-9]/.test(key)) {
-      // If it's a simple number (or empty), use cash register style
-      // If it already has operators, just append
-      const hasOperators = /[+\-*/()]/.test(amount.toString());
-      if (!hasOperators) {
-        updateAmountWithDigit(parseInt(key));
-      } else {
-        setAmount(prev => prev + key);
-      }
-    } else {
-      setAmount(prev => prev + key);
-    }
-  };
-
-  const handleGetLocation = () => {
-    if (!navigator.geolocation) {
-      alert('Geolocation is not supported by your browser');
-      return;
-    }
-    
-    setIsLoadingLocation(true);
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setLocationCoords({
-          lat: position.coords.latitude,
-          lng: position.coords.longitude
-        });
-        if (!locationName) {
-          setLocationName(t('form_pinned_location'));
-        }
-        setIsLoadingLocation(false);
-        setShowMap(true);
-      },
-      (error) => {
-        console.error(error);
-        alert('Unable to retrieve your location');
-        setIsLoadingLocation(false);
-      }
-    );
-  };
-
-  const handleSearchLocation = async () => {
-    if (!locationName.trim()) {
-      alert('Please enter a location name to search');
-      return;
-    }
-
-    setIsSearchingLocation(true);
-    try {
-      const { customFetch } = await import('../../utils/api');
-      const response = await customFetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(locationName)}`);
-      const data = await response.json();
-
-      if (data && data.length > 0) {
-        setLocationCoords({
-          lat: parseFloat(data[0].lat),
-          lng: parseFloat(data[0].lon)
-        });
-        setShowMap(true);
-      } else {
-        alert('Location not found. Please try a different search term.');
-      }
-    } catch (error) {
-      console.error('Error searching location:', error);
-      alert('Error searching for location. Please try again.');
-    } finally {
-      setIsSearchingLocation(false);
-    }
-  };
 
   const handleSplitRemaining = () => {
     const totalAmount = parseFloat(amount);
@@ -690,39 +541,11 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
 
             {/* Calculator Keypad - Moved up to prevent layout shifting when currency info appears */}
             {showCalculator && (
-              <div className="mt-2 p-2 bg-gray-100 dark:bg-gray-700/50 rounded-xl grid grid-cols-4 gap-2 animate-in slide-in-from-top-2 duration-200">
-                {['1','2','3','/','4','5','6','*','7','8','9','-','.','0','DEL','+'].map(key => (
-                  <button 
-                    key={key} 
-                    type="button"
-                    onClick={() => handleCalcInput(key)}
-                    className={cn(
-                      "h-10 rounded-lg font-semibold text-lg transition-colors active:scale-95 flex items-center justify-center",
-                      key === 'DEL' ? "bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400" :
-                      ['/','*','-','+'].includes(key) ? "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400" :
-                      "bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm"
-                    )}
-                  >
-                    {key === 'DEL' ? <X size={18} /> : key}
-                  </button>
-                ))}
-                <div className="col-span-4 grid grid-cols-4 gap-2">
-                  <button 
-                    type="button"
-                    onClick={() => handleCalcInput('C')}
-                    className="h-10 bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 rounded-lg font-bold shadow-sm active:scale-95 transition-all"
-                  >
-                    C
-                  </button>
-                  <button 
-                    type="button"
-                    onClick={() => handleCalcInput('=')}
-                    className="col-span-3 h-10 bg-blue-600 text-white rounded-lg font-bold shadow-sm active:scale-95 transition-all"
-                  >
-                    =
-                  </button>
-                </div>
-              </div>
+              <CalculatorKeypad 
+                amount={amount} 
+                setAmount={setAmount} 
+                setShowCalculator={setShowCalculator} 
+              />
             )}
 
             {currentMyrEquivalent !== null && (
@@ -903,84 +726,13 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
 
           {/* Location - Full width */}
           {type !== 'settlement' && (
-            <div className="col-span-2 md:col-span-12">
-              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{t('form_location')}</label>
-              <div className="relative flex gap-2 mb-2">
-                <div className="relative flex-1">
-                  <MapPin className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
-                  <input 
-                    type="text" 
-                    value={locationName}
-                    onChange={e => setLocationName(e.target.value)}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleSearchLocation();
-                      }
-                    }}
-                    placeholder={t('form_location_placeholder')}
-                    className="w-full pl-10 pr-10 p-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-colors"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleSearchLocation}
-                    disabled={isSearchingLocation || !locationName.trim()}
-                    className="absolute right-2 top-2 p-1.5 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors disabled:opacity-50"
-                    title={t('form_search_location')}
-                  >
-                    {isSearchingLocation ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-                  </button>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleGetLocation}
-                  disabled={isLoadingLocation}
-                  className={cn(
-                    "px-3 rounded-xl border transition-colors flex items-center gap-2",
-                    locationCoords 
-                      ? "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400" 
-                      : "bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600"
-                  )}
-                  title={t('form_use_current_location')}
-                >
-                  {isLoadingLocation ? <Loader2 className="w-5 h-5 animate-spin" /> : <MapPin className="w-5 h-5" />}
-                  <span className="hidden sm:inline text-sm font-medium">
-                    {locationCoords ? t('form_pinned') : t('form_pin')}
-                  </span>
-                </button>
-              </div>
-              
-              {/* Map Preview */}
-              {(showMap || locationCoords) && (
-                <div className="w-full h-48 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-600 relative z-0">
-                  <MapContainer 
-                    center={locationCoords || { lat: 3.140853, lng: 101.693207 }} // Default to KL
-                    zoom={15} 
-                    style={{ height: '100%', width: '100%' }}
-                    scrollWheelZoom={false}
-                  >
-                    <TileLayer
-                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    />
-                    <LocationMarker 
-                      position={locationCoords || null} 
-                      setPosition={(pos) => {
-                        setLocationCoords(pos);
-                        if (!locationName) setLocationName(t('form_pinned_location'));
-                      }} 
-                    />
-                  </MapContainer>
-                </div>
-              )}
-              
-              {locationCoords && (
-                <div className="mt-1 text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1">
-                  <MapPin className="w-3 h-3" />
-                  {t('form_coordinates')} {locationCoords.lat.toFixed(4)}, {locationCoords.lng.toFixed(4)}
-                </div>
-              )}
-            </div>
+            <LocationPicker 
+              locationCoords={locationCoords}
+              setLocationCoords={setLocationCoords}
+              locationName={locationName}
+              setLocationName={setLocationName}
+              showMapInitial={!!initialData?.location?.lat}
+            />
           )}
         </div>
 

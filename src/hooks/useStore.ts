@@ -1,11 +1,13 @@
-import { useState, useEffect, useCallback } from 'react';
-import { AppData, Trip, Expense, Exchange, CATEGORIES } from '../types';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { AppData, Trip, CATEGORIES } from '../types';
 import { GITHUB_TOKEN } from '../config';
 import { useCloudSync } from './useCloudSync';
+import { db } from '../lib/db';
 
 const STORAGE_KEY = 'sw_app_data';
 const CURRENT_TRIP_KEY = 'sw_current_trip';
-const SYNC_KEY = 'sw_unsynced_trips'; // Changed to track multiple trips
+const SYNC_KEY = 'sw_unsynced_trips';
 const GITHUB_TOKEN_KEY = 'sw_github_token';
 
 const DEFAULT_DATA: AppData = {
@@ -20,96 +22,92 @@ const DEFAULT_DATA: AppData = {
 };
 
 export function useStore() {
-  const [appData, setAppData] = useState<AppData>(() => {
-    try {
-      const storedData = localStorage.getItem(STORAGE_KEY);
-      if (storedData) {
-        const parsed = JSON.parse(storedData);
-        if (parsed && Array.isArray(parsed.trips) && parsed.trips.length > 0) {
-          // Ensure all trips have lastUpdated
-          parsed.trips = parsed.trips.map((t: Trip) => ({
-            ...t,
-            lastUpdated: t.lastUpdated || new Date().toISOString()
-          }));
-          return parsed;
-        }
-      }
-    } catch (e) {
-      console.error("Failed to load stored data:", e);
-    }
-    return DEFAULT_DATA;
-  });
+  const trips = useLiveQuery(() => db.trips.toArray());
+  const settings = useLiveQuery(() => db.settings.get('settings'));
 
-  const [currentTripId, setCurrentTripId] = useState<string>(() => {
-    try {
-      const storedTripId = localStorage.getItem(CURRENT_TRIP_KEY);
-      const storedData = localStorage.getItem(STORAGE_KEY);
-      if (storedData) {
-        const parsed = JSON.parse(storedData);
-        if (parsed && Array.isArray(parsed.trips) && parsed.trips.length > 0) {
-          if (storedTripId && parsed.trips.some((t: Trip) => t.id === storedTripId)) {
-            return storedTripId;
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  useEffect(() => {
+    const initDb = async () => {
+      try {
+        const count = await db.trips.count();
+        if (count === 0) {
+          // Migration from localStorage
+          const storedData = localStorage.getItem(STORAGE_KEY);
+          if (storedData) {
+            try {
+              const parsed = JSON.parse(storedData);
+              if (parsed && Array.isArray(parsed.trips) && parsed.trips.length > 0) {
+                const tripsToSave = parsed.trips.map((t: Trip) => ({
+                  ...t,
+                  lastUpdated: t.lastUpdated || new Date().toISOString()
+                }));
+                await db.trips.bulkAdd(tripsToSave);
+                
+                const storedTripId = localStorage.getItem(CURRENT_TRIP_KEY) || tripsToSave[0].id;
+                const storedSync = localStorage.getItem(SYNC_KEY);
+                const unsynced = storedSync ? JSON.parse(storedSync) : [];
+                const storedToken = localStorage.getItem(GITHUB_TOKEN_KEY) || GITHUB_TOKEN || '';
+                
+                await db.settings.put({
+                  id: 'settings',
+                  currentTripId: storedTripId,
+                  unsyncedTripIds: unsynced,
+                  githubToken: storedToken
+                });
+                setIsInitialized(true);
+                return;
+              }
+            } catch (e) {
+              console.error("Migration failed", e);
+            }
           }
-          return parsed.trips[0].id;
+          
+          // Default initialization
+          await db.trips.add(DEFAULT_DATA.trips[0]);
+          await db.settings.put({
+            id: 'settings',
+            currentTripId: DEFAULT_DATA.trips[0].id,
+            unsyncedTripIds: [],
+            githubToken: (GITHUB_TOKEN || '').trim()
+          });
         }
+      } catch (e) {
+        console.error("Failed to initialize DB", e);
+      } finally {
+        setIsInitialized(true);
       }
-    } catch (e) {
-      console.error("Failed to load stored data:", e);
-    }
-    return DEFAULT_DATA.trips[0].id;
-  });
+    };
+    initDb();
+  }, []);
 
-  const [unsyncedTripIds, setUnsyncedTripIds] = useState<string[]>(() => {
-    try {
-      const stored = localStorage.getItem(SYNC_KEY);
-      return stored ? JSON.parse(stored) : [];
-    } catch {
-      return [];
-    }
-  });
-  const [githubToken, setGithubToken] = useState(() => {
-    const stored = localStorage.getItem(GITHUB_TOKEN_KEY);
-    return (stored || GITHUB_TOKEN || '').trim();
-  });
   const [history, setHistory] = useState<AppData[]>([]);
+
+  // Derived state
+  const appData: AppData = useMemo(() => ({ trips: trips || DEFAULT_DATA.trips }), [trips]);
+  const currentTripId = settings?.currentTripId || DEFAULT_DATA.trips[0].id;
+  const unsyncedTripIds = settings?.unsyncedTripIds || [];
+  const githubToken = settings?.githubToken || (GITHUB_TOKEN || '').trim();
+
+  // For useCloudSync compatibility, we still write SYNC_KEY to localStorage
+  // because useCloudSync reads it directly in setInterval to avoid stale closures.
+  useEffect(() => {
+    if (isInitialized) {
+      localStorage.setItem(SYNC_KEY, JSON.stringify(unsyncedTripIds));
+    }
+  }, [unsyncedTripIds, isInitialized]);
 
   // Sync across tabs
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === STORAGE_KEY && e.newValue) {
-        try {
-          const parsed = JSON.parse(e.newValue);
-          // MERGE STRATEGY: Instead of blind overwrite, ensure we keep our trips
-          // and update/add based on IDs.
-          setAppData(prev => {
-            const newTrips = [...prev.trips];
-            parsed.trips.forEach((newTrip: Trip) => {
-              const index = newTrips.findIndex(t => t.id === newTrip.id);
-              if (index >= 0) {
-                // Only update if the incoming trip is newer
-                const currentLastUpdated = newTrips[index].lastUpdated || '0';
-                const incomingLastUpdated = newTrip.lastUpdated || '0';
-                if (incomingLastUpdated > currentLastUpdated) {
-                  newTrips[index] = newTrip;
-                }
-              } else {
-                newTrips.push(newTrip); // Add new
-              }
-            });
-            return { ...prev, trips: newTrips };
-          });
-        } catch (e) {
-          console.error("Failed to parse storage data from another tab:", e);
-        }
-      }
-      if (e.key === CURRENT_TRIP_KEY && e.newValue) {
-        setCurrentTripId(e.newValue);
-      }
+      // We don't need to handle STORAGE_KEY or CURRENT_TRIP_KEY anymore as Dexie + useLiveQuery handles cross-tab reactivity for IndexedDB.
+      // However, we still sync SYNC_KEY because useCloudSync relies on it.
       if (e.key === SYNC_KEY && e.newValue) {
         try {
-          setUnsyncedTripIds(JSON.parse(e.newValue));
+          const newUnsynced = JSON.parse(e.newValue);
+          db.settings.update('settings', { unsyncedTripIds: newUnsynced });
         } catch {
-          setUnsyncedTripIds([]);
+          // ignore
         }
       }
     };
@@ -117,28 +115,84 @@ export function useStore() {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
-  // Persist data whenever it changes
-  useEffect(() => {
-    if (appData.trips.length === 0) return;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
-    localStorage.setItem(CURRENT_TRIP_KEY, currentTripId);
-  }, [appData, currentTripId]);
+  const setAppData = useCallback((value: React.SetStateAction<AppData>) => {
+    db.transaction('rw', db.trips, async () => {
+      const currentTrips = await db.trips.toArray();
+      const currentAppData = { trips: currentTrips };
+      const newAppData = typeof value === 'function' ? value(currentAppData) : value;
+      
+      const newTripIds = new Set(newAppData.trips.map(t => t.id));
+      const tripsToDelete = currentTrips.filter(t => !newTripIds.has(t.id)).map(t => t.id);
+      
+      if (tripsToDelete.length > 0) {
+        await db.trips.bulkDelete(tripsToDelete);
+      }
+      await db.trips.bulkPut(newAppData.trips);
+    });
+  }, []);
 
-  // Sync flag
-  useEffect(() => {
-    localStorage.setItem(SYNC_KEY, JSON.stringify(unsyncedTripIds));
-  }, [unsyncedTripIds]);
+  const setCurrentTripId = useCallback((value: React.SetStateAction<string>) => {
+    db.transaction('rw', db.settings, async () => {
+      const currentSettings = await db.settings.get('settings');
+      const currentId = currentSettings?.currentTripId || DEFAULT_DATA.trips[0].id;
+      const newId = typeof value === 'function' ? value(currentId) : value;
+      
+      if (currentSettings) {
+        await db.settings.update('settings', { currentTripId: newId });
+      } else {
+        await db.settings.put({
+          id: 'settings',
+          currentTripId: newId,
+          unsyncedTripIds: [],
+          githubToken: (GITHUB_TOKEN || '').trim()
+        });
+      }
+    });
+  }, []);
 
-  // Settings persistence
-  useEffect(() => {
-    localStorage.setItem(GITHUB_TOKEN_KEY, githubToken);
-  }, [githubToken]);
+  const setUnsyncedTripIds = useCallback((value: React.SetStateAction<string[]>) => {
+    db.transaction('rw', db.settings, async () => {
+      const currentSettings = await db.settings.get('settings');
+      const currentIds = currentSettings?.unsyncedTripIds || [];
+      const newIds = typeof value === 'function' ? value(currentIds) : value;
+      
+      if (currentSettings) {
+        await db.settings.update('settings', { unsyncedTripIds: newIds });
+      } else {
+        await db.settings.put({
+          id: 'settings',
+          currentTripId: DEFAULT_DATA.trips[0].id,
+          unsyncedTripIds: newIds,
+          githubToken: (GITHUB_TOKEN || '').trim()
+        });
+      }
+    });
+  }, []);
 
-  const currentTrip = appData.trips.find(t => t.id === currentTripId) || appData.trips[0];
+  const setGithubToken = useCallback((value: React.SetStateAction<string>) => {
+    db.transaction('rw', db.settings, async () => {
+      const currentSettings = await db.settings.get('settings');
+      const currentToken = currentSettings?.githubToken || '';
+      const newToken = typeof value === 'function' ? value(currentToken) : value;
+      
+      if (currentSettings) {
+        await db.settings.update('settings', { githubToken: newToken });
+      } else {
+        await db.settings.put({
+          id: 'settings',
+          currentTripId: DEFAULT_DATA.trips[0].id,
+          unsyncedTripIds: [],
+          githubToken: newToken
+        });
+      }
+    });
+  }, []);
+
+  const currentTrip = useMemo(() => appData.trips.find(t => t.id === currentTripId) || appData.trips[0], [appData.trips, currentTripId]);
 
   const saveToHistory = useCallback((data: AppData) => {
     setHistory(prev => {
-      const newHistory = [data, ...prev].slice(0, 50); // Keep last 50 states
+      const newHistory = [data, ...prev].slice(0, 50);
       return newHistory;
     });
   }, []);
@@ -149,7 +203,7 @@ export function useStore() {
     setAppData(lastState);
     setHistory(remainingHistory);
     setUnsyncedTripIds(prev => prev.includes(currentTripId) ? prev : [...prev, currentTripId]);
-  }, [history, currentTripId]);
+  }, [history, currentTripId, setAppData, setUnsyncedTripIds]);
 
   const updateTrip = useCallback((updatedTrip: Trip) => {
     const now = new Date().toISOString();
@@ -160,7 +214,7 @@ export function useStore() {
       trips: prev.trips.map(t => t.id === updatedTrip.id ? tripWithTimestamp : t)
     }));
     setUnsyncedTripIds(prev => prev.includes(updatedTrip.id) ? prev : [...prev, updatedTrip.id]);
-  }, [appData, saveToHistory]);
+  }, [appData, saveToHistory, setAppData, setUnsyncedTripIds]);
 
   const addTrip = useCallback((name: string) => {
     saveToHistory(appData);
@@ -178,7 +232,7 @@ export function useStore() {
     setAppData(prev => ({ ...prev, trips: [...prev.trips, newTrip] }));
     setCurrentTripId(newTrip.id);
     setUnsyncedTripIds(prev => [...prev, newTrip.id]);
-  }, [appData, saveToHistory]);
+  }, [appData, saveToHistory, setAppData, setCurrentTripId, setUnsyncedTripIds]);
 
   const deleteTrip = useCallback((id: string) => {
     if (appData.trips.length <= 1) return;
@@ -187,7 +241,7 @@ export function useStore() {
     setAppData(prev => ({ ...prev, trips: newTrips }));
     setCurrentTripId(newTrips[0].id);
     setUnsyncedTripIds(prev => prev.filter(tid => tid !== id));
-  }, [appData, saveToHistory]);
+  }, [appData, saveToHistory, setAppData, setCurrentTripId, setUnsyncedTripIds]);
 
   const renameTrip = useCallback((id: string, name: string) => {
     saveToHistory(appData);
@@ -197,7 +251,7 @@ export function useStore() {
       trips: prev.trips.map(t => t.id === id ? { ...t, name, lastUpdated: now } : t)
     }));
     setUnsyncedTripIds(prev => prev.includes(id) ? prev : [...prev, id]);
-  }, [appData, saveToHistory]);
+  }, [appData, saveToHistory, setAppData, setUnsyncedTripIds]);
 
   const {
     isSyncing,
