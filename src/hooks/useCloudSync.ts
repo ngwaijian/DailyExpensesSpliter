@@ -1,36 +1,36 @@
 import { useState, useEffect, useCallback } from 'react';
-import { AppData, Trip } from '../types';
+import { AppData, Ledger } from '../types';
 import { customFetch } from '../utils/api';
 
-const SYNC_KEY = 'sw_unsynced_trips';
+const SYNC_KEY = 'sw_unsynced_ledgers';
 
 interface UseCloudSyncProps {
   appData: AppData;
   setAppData: React.Dispatch<React.SetStateAction<AppData>>;
-  currentTripId: string;
-  setCurrentTripId: React.Dispatch<React.SetStateAction<string>>;
+  currentLedgerId: string;
+  setCurrentLedgerId: React.Dispatch<React.SetStateAction<string>>;
   githubToken: string;
-  unsyncedTripIds: string[];
-  setUnsyncedTripIds: React.Dispatch<React.SetStateAction<string[]>>;
-  updateTrip: (trip: Trip) => void;
+  unsyncedLedgerIds: string[];
+  setUnsyncedLedgerIds: React.Dispatch<React.SetStateAction<string[]>>;
+  updateLedger: (ledger: Ledger) => void;
 }
 
 export function useCloudSync({
   appData,
   setAppData,
-  currentTripId,
-  setCurrentTripId,
+  currentLedgerId,
+  setCurrentLedgerId,
   githubToken,
-  unsyncedTripIds,
-  setUnsyncedTripIds,
-  updateTrip
+  unsyncedLedgerIds,
+  setUnsyncedLedgerIds,
+  updateLedger
 }: UseCloudSyncProps) {
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
 
-  const currentTrip = appData.trips.find(t => t.id === currentTripId) || appData.trips[0];
-  const needsSync = unsyncedTripIds.includes(currentTripId);
+  const currentLedger = appData.ledgers.find(t => t.id === currentLedgerId) || appData.ledgers[0];
+  const needsSync = unsyncedLedgerIds.includes(currentLedgerId);
 
   // Monitor online status
   useEffect(() => {
@@ -44,18 +44,18 @@ export function useCloudSync({
     };
   }, []);
 
-  const fetchFromCloud = useCallback(async (overrideGistId?: string | any, switchTrip: boolean = true) => {
-    const targetGistId = typeof overrideGistId === 'string' ? overrideGistId : currentTrip?.gistId;
+  const fetchFromCloud = useCallback(async (overrideGistId?: string | any, switchLedger: boolean = true) => {
+    const targetGistId = typeof overrideGistId === 'string' ? overrideGistId : currentLedger?.gistId;
     if (!targetGistId) return;
     
-    // CRITICAL: If we have unsynced local changes for THIS trip, DO NOT pull and overwrite
+    // CRITICAL: If we have unsynced local changes for THIS ledger, DO NOT pull and overwrite
     // unless explicitly requested (e.g. initial load or manual pull)
     const storedUnsynced = localStorage.getItem(SYNC_KEY);
     const unsyncedIds: string[] = storedUnsynced ? JSON.parse(storedUnsynced) : [];
-    const localNeedsSync = unsyncedIds.includes(targetGistId === currentTrip?.gistId ? currentTripId : '');
+    const localNeedsSync = unsyncedIds.includes(targetGistId === currentLedger?.gistId ? currentLedgerId : '');
     
     if (localNeedsSync && typeof overrideGistId !== 'string') {
-      console.log("Skipping cloud pull: Local changes pending sync for this trip.");
+      console.log("Skipping cloud pull: Local changes pending sync for this ledger.");
       return;
     }
 
@@ -78,19 +78,19 @@ export function useCloudSync({
       
       const data = await res.json();
       
-      // Check for new per-trip format first
-      const tripContent = data.files['trip.json']?.content;
-      if (tripContent) {
-        const parsedTrip = JSON.parse(tripContent);
-        parsedTrip.gistId = targetGistId; // Ensure gistId is set
+      // Check for new per-ledger format first
+      const ledgerContent = data.files['ledger.json']?.content;
+      if (ledgerContent) {
+        const parsedLedger = JSON.parse(ledgerContent);
+        parsedLedger.gistId = targetGistId; // Ensure gistId is set
         
         setAppData(prev => {
-          const index = prev.trips.findIndex(t => t.id === parsedTrip.id);
+          const index = prev.ledgers.findIndex(t => t.id === parsedLedger.id);
           if (index >= 0) {
-            const currentTripData = prev.trips[index];
-            // Only update if the incoming trip is newer
-            const currentLastUpdated = currentTripData.lastUpdated || '0';
-            const incomingLastUpdated = parsedTrip.lastUpdated || '0';
+            const currentLedgerData = prev.ledgers[index];
+            // Only update if the incoming ledger is newer
+            const currentLastUpdated = currentLedgerData.lastUpdated || '0';
+            const incomingLastUpdated = parsedLedger.lastUpdated || '0';
             if (incomingLastUpdated > currentLastUpdated || typeof overrideGistId === 'string') {
               const mergeArrays = <T extends { id: string }>(localArr: T[] = [], cloudArr: T[] = []) => {
                 const map = new Map<string, T>();
@@ -99,28 +99,28 @@ export function useCloudSync({
                 return Array.from(map.values());
               };
 
-              const mergedTrip = {
-                ...parsedTrip,
+              const mergedLedger = {
+                ...parsedLedger,
                 lastUpdated: incomingLastUpdated > currentLastUpdated ? incomingLastUpdated : currentLastUpdated,
                 lastSynced: incomingLastUpdated,
-                users: Array.from(new Set([...(currentTripData.users || []), ...(parsedTrip.users || [])])),
-                expenses: mergeArrays(currentTripData.expenses, parsedTrip.expenses),
-                exchanges: mergeArrays(currentTripData.exchanges, parsedTrip.exchanges),
-                goals: mergeArrays(currentTripData.goals, parsedTrip.goals),
-                recurringTransactions: mergeArrays(currentTripData.recurringTransactions, parsedTrip.recurringTransactions),
-                loans: mergeArrays(currentTripData.loans, parsedTrip.loans),
-                budgets: mergeArrays(currentTripData.budgets, parsedTrip.budgets),
+                users: Array.from(new Set([...(currentLedgerData.users || []), ...(parsedLedger.users || [])])),
+                expenses: mergeArrays(currentLedgerData.expenses, parsedLedger.expenses),
+                exchanges: mergeArrays(currentLedgerData.exchanges, parsedLedger.exchanges),
+                goals: mergeArrays(currentLedgerData.goals, parsedLedger.goals),
+                recurringTransactions: mergeArrays(currentLedgerData.recurringTransactions, parsedLedger.recurringTransactions),
+                loans: mergeArrays(currentLedgerData.loans, parsedLedger.loans),
+                budgets: mergeArrays(currentLedgerData.budgets, parsedLedger.budgets),
               };
-              return { ...prev, trips: prev.trips.map(t => t.id === parsedTrip.id ? mergedTrip : t) };
+              return { ...prev, ledgers: prev.ledgers.map(t => t.id === parsedLedger.id ? mergedLedger : t) };
             }
             return prev;
           } else {
-            return { ...prev, trips: [...prev.trips, { ...parsedTrip, lastSynced: parsedTrip.lastUpdated }] };
+            return { ...prev, ledgers: [...prev.ledgers, { ...parsedLedger, lastSynced: parsedLedger.lastUpdated }] };
           }
         });
-        if (typeof overrideGistId === 'string' && switchTrip) setCurrentTripId(parsedTrip.id);
+        if (typeof overrideGistId === 'string' && switchLedger) setCurrentLedgerId(parsedLedger.id);
         if (!localNeedsSync) {
-          setUnsyncedTripIds(prev => prev.filter(id => id !== parsedTrip.id));
+          setUnsyncedLedgerIds(prev => prev.filter(id => id !== parsedLedger.id));
         }
       } else {
         // Fallback for legacy global data format
@@ -129,9 +129,9 @@ export function useCloudSync({
           const parsed = JSON.parse(content);
           if (parsed.appData) {
             setAppData(parsed.appData);
-            setUnsyncedTripIds([]);
-            if (!parsed.appData.trips.find((t: Trip) => t.id === currentTripId)) {
-               if (parsed.appData.trips.length > 0) setCurrentTripId(parsed.appData.trips[0].id);
+            setUnsyncedLedgerIds([]);
+            if (!parsed.appData.ledgers.find((t: Ledger) => t.id === currentLedgerId)) {
+               if (parsed.appData.ledgers.length > 0) setCurrentLedgerId(parsed.appData.ledgers[0].id);
             }
           }
         }
@@ -142,13 +142,13 @@ export function useCloudSync({
     } finally {
       setIsSyncing(false);
     }
-  }, [githubToken, currentTrip?.gistId, currentTripId, setAppData, setCurrentTripId, setUnsyncedTripIds]);
+  }, [githubToken, currentLedger?.gistId, currentLedgerId, setAppData, setCurrentLedgerId, setUnsyncedLedgerIds]);
 
-  const pushToCloud = useCallback(async (tripId?: string) => {
-    const targetId = tripId || currentTripId;
-    let targetTrip = appData.trips.find(t => t.id === targetId);
+  const pushToCloud = useCallback(async (ledgerId?: string) => {
+    const targetId = ledgerId || currentLedgerId;
+    let targetLedger = appData.ledgers.find(t => t.id === targetId);
     const token = githubToken?.trim();
-    if (!token || !targetTrip?.gistId) return;
+    if (!token || !targetLedger?.gistId) return;
     if (!navigator.onLine) {
       setSyncError("Offline: Cannot push data."); 
       return;
@@ -157,21 +157,21 @@ export function useCloudSync({
     setSyncError(null);
     try {
       // --- NEW: Timestamp Verification & Conflict Resolution ---
-      const checkRes = await customFetch(`https://api.github.com/gists/${targetTrip.gistId}?t=${Date.now()}`, {
+      const checkRes = await customFetch(`https://api.github.com/gists/${targetLedger.gistId}?t=${Date.now()}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (checkRes.ok) {
         const checkData = await checkRes.json();
-        const cloudTripContent = checkData.files['trip.json']?.content;
-        if (cloudTripContent) {
-          const cloudTrip = JSON.parse(cloudTripContent);
-          const cloudLastUpdated = cloudTrip.lastUpdated || '0';
-          const lastSynced = targetTrip.lastSynced || '0';
+        const cloudLedgerContent = checkData.files['ledger.json']?.content;
+        if (cloudLedgerContent) {
+          const cloudLedger = JSON.parse(cloudLedgerContent);
+          const cloudLastUpdated = cloudLedger.lastUpdated || '0';
+          const lastSynced = targetLedger.lastSynced || '0';
           
           if (cloudLastUpdated > lastSynced) {
             console.warn("Cloud data has been updated since last sync. Aborting push, fetching to merge.");
             setIsSyncing(false);
-            await fetchFromCloud(targetTrip.gistId, false);
+            await fetchFromCloud(targetLedger.gistId, false);
             return;
           }
         }
@@ -182,8 +182,8 @@ export function useCloudSync({
       }
       // ---------------------------------------------------------
 
-      const payload = { files: { 'trip.json': { content: JSON.stringify(targetTrip, null, 2) } } };
-      const res = await customFetch(`https://api.github.com/gists/${targetTrip.gistId}`, {
+      const payload = { files: { 'ledger.json': { content: JSON.stringify(targetLedger, null, 2) } } };
+      const res = await customFetch(`https://api.github.com/gists/${targetLedger.gistId}`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -203,19 +203,19 @@ export function useCloudSync({
       // Update lastSynced locally
       setAppData(prev => ({
         ...prev,
-        trips: prev.trips.map(t => t.id === targetId ? { ...t, lastSynced: targetTrip!.lastUpdated } : t)
+        ledgers: prev.ledgers.map(t => t.id === targetId ? { ...t, lastSynced: targetLedger!.lastUpdated } : t)
       }));
       
-      setUnsyncedTripIds(prev => prev.filter(id => id !== targetId));
+      setUnsyncedLedgerIds(prev => prev.filter(id => id !== targetId));
     } catch (error: any) {
       console.error("Sync error:", error);
       setSyncError(error.message || "Failed to push data to cloud.");
     } finally {
       setIsSyncing(false);
     }
-  }, [githubToken, currentTripId, appData.trips, fetchFromCloud, setAppData, setUnsyncedTripIds]);
+  }, [githubToken, currentLedgerId, appData.ledgers, fetchFromCloud, setAppData, setUnsyncedLedgerIds]);
 
-  const fetchAllTripsFromCloud = useCallback(async () => {
+  const fetchAllLedgersFromCloud = useCallback(async () => {
     const token = githubToken?.trim();
     if (!token) return;
     if (!navigator.onLine) {
@@ -247,21 +247,21 @@ export function useCloudSync({
         throw new Error("Invalid response format from GitHub API");
       }
       
-      const newTrips: Trip[] = [];
+      const newLedgers: Ledger[] = [];
       if (Array.isArray(gists)) {
         for (const gist of gists) {
-          if (gist.files['trip.json']) {
+          if (gist.files['ledger.json']) {
             try {
               const gistRes = await customFetch(gist.url, {
                 headers: { 'Authorization': `Bearer ${token}` }
               });
               if (gistRes.ok) {
                 const gistData = await gistRes.json();
-                const tripContent = gistData.files['trip.json']?.content;
-                if (tripContent) {
-                  const parsedTrip = JSON.parse(tripContent);
-                  parsedTrip.gistId = gist.id;
-                  newTrips.push(parsedTrip);
+                const ledgerContent = gistData.files['ledger.json']?.content;
+                if (ledgerContent) {
+                  const parsedLedger = JSON.parse(ledgerContent);
+                  parsedLedger.gistId = gist.id;
+                  newLedgers.push(parsedLedger);
                 }
               }
             } catch (err) {
@@ -271,17 +271,17 @@ export function useCloudSync({
         }
       }
 
-      if (newTrips.length > 0) {
+      if (newLedgers.length > 0) {
         setAppData(prev => {
-          const updatedTrips = [...prev.trips];
-          newTrips.forEach(newTrip => {
-            const index = updatedTrips.findIndex(t => t.id === newTrip.id);
+          const updatedLedgers = [...prev.ledgers];
+          newLedgers.forEach(newLedger => {
+            const index = updatedLedgers.findIndex(t => t.id === newLedger.id);
             if (index >= 0) {
-              // Only update if the incoming trip is newer
-              const currentLastUpdated = updatedTrips[index].lastUpdated || '0';
-              const incomingLastUpdated = newTrip.lastUpdated || '0';
+              // Only update if the incoming ledger is newer
+              const currentLastUpdated = updatedLedgers[index].lastUpdated || '0';
+              const incomingLastUpdated = newLedger.lastUpdated || '0';
               if (incomingLastUpdated > currentLastUpdated) {
-                const currentTripData = updatedTrips[index];
+                const currentLedgerData = updatedLedgers[index];
                 const mergeArrays = <T extends { id: string }>(localArr: T[] = [], cloudArr: T[] = []) => {
                   const map = new Map<string, T>();
                   cloudArr.forEach(item => map.set(item.id, item)); // cloud first
@@ -289,54 +289,54 @@ export function useCloudSync({
                   return Array.from(map.values());
                 };
 
-                updatedTrips[index] = {
-                  ...newTrip,
+                updatedLedgers[index] = {
+                  ...newLedger,
                   lastUpdated: incomingLastUpdated > currentLastUpdated ? incomingLastUpdated : currentLastUpdated,
                   lastSynced: incomingLastUpdated,
-                  users: Array.from(new Set([...(currentTripData.users || []), ...(newTrip.users || [])])),
-                  expenses: mergeArrays(currentTripData.expenses, newTrip.expenses),
-                  exchanges: mergeArrays(currentTripData.exchanges, newTrip.exchanges),
-                  goals: mergeArrays(currentTripData.goals, newTrip.goals),
-                  recurringTransactions: mergeArrays(currentTripData.recurringTransactions, newTrip.recurringTransactions),
-                  loans: mergeArrays(currentTripData.loans, newTrip.loans),
-                  budgets: mergeArrays(currentTripData.budgets, newTrip.budgets),
+                  users: Array.from(new Set([...(currentLedgerData.users || []), ...(newLedger.users || [])])),
+                  expenses: mergeArrays(currentLedgerData.expenses, newLedger.expenses),
+                  exchanges: mergeArrays(currentLedgerData.exchanges, newLedger.exchanges),
+                  goals: mergeArrays(currentLedgerData.goals, newLedger.goals),
+                  recurringTransactions: mergeArrays(currentLedgerData.recurringTransactions, newLedger.recurringTransactions),
+                  loans: mergeArrays(currentLedgerData.loans, newLedger.loans),
+                  budgets: mergeArrays(currentLedgerData.budgets, newLedger.budgets),
                 };
               }
             } else {
-              updatedTrips.push({ ...newTrip, lastSynced: newTrip.lastUpdated });
+              updatedLedgers.push({ ...newLedger, lastSynced: newLedger.lastUpdated });
             }
           });
           
-          // If the current trip is empty and we fetched new trips, switch to the first fetched trip
-          const currentTrip = updatedTrips.find(t => t.id === currentTripId);
-          if (currentTrip && !currentTrip.gistId && currentTrip.expenses.length === 0 && currentTrip.users.length === 0) {
-            setCurrentTripId(newTrips[0].id);
-            // Optionally remove the empty default trip
-            return { ...prev, trips: updatedTrips.filter(t => t.id !== currentTrip.id) };
+          // If the current ledger is empty and we fetched new ledgers, switch to the first fetched ledger
+          const currentLedger = updatedLedgers.find(t => t.id === currentLedgerId);
+          if (currentLedger && !currentLedger.gistId && currentLedger.expenses.length === 0 && currentLedger.users.length === 0) {
+            setCurrentLedgerId(newLedgers[0].id);
+            // Optionally remove the empty default ledger
+            return { ...prev, ledgers: updatedLedgers.filter(t => t.id !== currentLedger.id) };
           }
           
-          return { ...prev, trips: updatedTrips };
+          return { ...prev, ledgers: updatedLedgers };
         });
-        // We don't setUnsyncedTripIds([]) here because we might have local changes in other trips
+        // We don't setUnsyncedLedgerIds([]) here because we might have local changes in other ledgers
       }
     } catch (error) {
-      console.error("Fetch all trips error:", error);
-      setSyncError("Failed to pull all trips from cloud.");
+      console.error("Fetch all ledgers error:", error);
+      setSyncError("Failed to pull all ledgers from cloud.");
     } finally {
       setIsSyncing(false);
     }
-  }, [githubToken, currentTripId, setAppData, setCurrentTripId]);
+  }, [githubToken, currentLedgerId, setAppData, setCurrentLedgerId]);
 
-  const createGistForTrip = useCallback(async () => {
-    if (!githubToken || !currentTrip) return;
+  const createGistForLedger = useCallback(async () => {
+    if (!githubToken || !currentLedger) return;
     setIsSyncing(true);
     setSyncError(null);
     try {
       const payload = {
-        description: `DailyExpensesSpliter Group: ${currentTrip.name}`,
+        description: `DailyExpensesSpliter Group: ${currentLedger.name}`,
         public: false,
         files: {
-          'trip.json': { content: JSON.stringify(currentTrip, null, 2) }
+          'ledger.json': { content: JSON.stringify(currentLedger, null, 2) }
         }
       };
       const res = await customFetch(`https://api.github.com/gists`, {
@@ -350,7 +350,7 @@ export function useCloudSync({
       if (!res.ok) throw new Error("Failed to create gist");
       const data = await res.json();
       if (data.id) {
-        updateTrip({ ...currentTrip, gistId: data.id, lastSynced: currentTrip.lastUpdated });
+        updateLedger({ ...currentLedger, gistId: data.id, lastSynced: currentLedger.lastUpdated });
       }
     } catch (error) {
       console.error("Create gist error:", error);
@@ -358,14 +358,14 @@ export function useCloudSync({
     } finally {
       setIsSyncing(false);
     }
-  }, [githubToken, currentTrip, updateTrip]);
+  }, [githubToken, currentLedger, updateLedger]);
 
-  // Handle URL parameters for shared trips
+  // Handle URL parameters for shared ledgers
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const tripGistId = params.get('tripGistId');
-    if (tripGistId) {
-      fetchFromCloud(tripGistId);
+    const ledgerGistId = params.get('ledgerGistId');
+    if (ledgerGistId) {
+      fetchFromCloud(ledgerGistId);
       // Clean up URL
       window.history.replaceState({}, document.title, window.location.pathname);
     }
@@ -374,51 +374,51 @@ export function useCloudSync({
   // Auto-sync on network connection
   useEffect(() => {
     const handleOnline = () => {
-      if (needsSync && currentTrip?.gistId) {
+      if (needsSync && currentLedger?.gistId) {
         pushToCloud();
-      } else if (currentTrip?.gistId) {
+      } else if (currentLedger?.gistId) {
         fetchFromCloud();
       }
     };
     window.addEventListener('online', handleOnline);
     return () => window.removeEventListener('online', handleOnline);
-  }, [needsSync, pushToCloud, fetchFromCloud, currentTrip?.gistId]);
+  }, [needsSync, pushToCloud, fetchFromCloud, currentLedger?.gistId]);
 
   // Initial sync on mount/credential change if online
   useEffect(() => {
     if (navigator.onLine && githubToken && !isSyncing) {
-      if (unsyncedTripIds.length > 0) {
-        // Push all unsynced trips
-        unsyncedTripIds.forEach(id => {
-          const trip = appData.trips.find(t => t.id === id);
-          if (trip?.gistId) pushToCloud(id);
+      if (unsyncedLedgerIds.length > 0) {
+        // Push all unsynced ledgers
+        unsyncedLedgerIds.forEach(id => {
+          const ledger = appData.ledgers.find(t => t.id === id);
+          if (ledger?.gistId) pushToCloud(id);
         });
       } else {
-        // Fetch all trips to ensure we have the latest list of trips
-        fetchAllTripsFromCloud();
+        // Fetch all ledgers to ensure we have the latest list of ledgers
+        fetchAllLedgersFromCloud();
       }
     }
   }, [githubToken]); // Run when credentials change or on mount
 
   // Auto-push on data change (debounced)
   useEffect(() => {
-    if (needsSync && githubToken && currentTrip?.gistId && !isSyncing && isOnline) {
+    if (needsSync && githubToken && currentLedger?.gistId && !isSyncing && isOnline) {
       const timer = setTimeout(() => {
-        pushToCloud(currentTripId);
+        pushToCloud(currentLedgerId);
       }, 2000); // 2 second debounce
       return () => clearTimeout(timer);
     }
-  }, [needsSync, githubToken, currentTripId, currentTrip?.gistId, isSyncing, pushToCloud, isOnline]);
+  }, [needsSync, githubToken, currentLedgerId, currentLedger?.gistId, isSyncing, pushToCloud, isOnline]);
 
   // Background polling (Auto-pull)
   useEffect(() => {
-    if (!currentTrip?.gistId || !isOnline) return;
+    if (!currentLedger?.gistId || !isOnline) return;
 
     const interval = setInterval(() => {
       // Check localStorage directly to be tab-aware
       const storedUnsynced = localStorage.getItem(SYNC_KEY);
       const unsyncedIds: string[] = storedUnsynced ? JSON.parse(storedUnsynced) : [];
-      const currentNeedsSync = unsyncedIds.includes(currentTripId);
+      const currentNeedsSync = unsyncedIds.includes(currentLedgerId);
       
       if (!currentNeedsSync && !isSyncing) {
         console.log("Auto-syncing: Pulling data from cloud...");
@@ -427,12 +427,12 @@ export function useCloudSync({
     }, 10000); // Increased to 10 seconds to reduce race conditions
 
     return () => clearInterval(interval);
-  }, [currentTrip?.gistId, currentTripId, isOnline, isSyncing, fetchFromCloud]);
+  }, [currentLedger?.gistId, currentLedgerId, isOnline, isSyncing, fetchFromCloud]);
 
   // Auto-Fetch on Wake
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && currentTrip?.gistId && isOnline && !isSyncing) {
+      if (document.visibilityState === 'visible' && currentLedger?.gistId && isOnline && !isSyncing) {
         console.log("App regained focus: Pulling data from cloud...");
         fetchFromCloud();
       }
@@ -444,7 +444,7 @@ export function useCloudSync({
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('focus', handleVisibilityChange);
     };
-  }, [currentTrip?.gistId, isOnline, isSyncing, fetchFromCloud]);
+  }, [currentLedger?.gistId, isOnline, isSyncing, fetchFromCloud]);
 
   return {
     isSyncing,
@@ -453,7 +453,7 @@ export function useCloudSync({
     isOnline,
     fetchFromCloud,
     pushToCloud,
-    fetchAllTripsFromCloud,
-    createGistForTrip
+    fetchAllLedgersFromCloud,
+    createGistForLedger
   };
 }

@@ -1,13 +1,13 @@
-import { Trip } from '../types';
+import { Ledger } from '../types';
 import { getAverageRates } from './currency';
 
-export function calculateBalances(trip: Trip): Record<string, number> {
-  const rates = getAverageRates(trip);
+export function calculateBalances(ledger: Ledger): Record<string, number> {
+  const rates = getAverageRates(ledger);
   const balances: Record<string, number> = {};
   
-  trip.users.forEach(u => balances[u] = 0);
+  ledger.users.forEach(u => balances[u] = 0);
 
-  trip.expenses.forEach(e => {
+  ledger.expenses.forEach(e => {
     if (e.isSettled) return; // Skip settled expenses for balances calculations
 
     const rate = rates[e.currency] || e.rate || 1;
@@ -58,7 +58,7 @@ export function calculateBalances(trip: Trip): Record<string, number> {
   return balances;
 }
 
-export function getSimplifiedDebts(balances: Record<string, number>, trip?: Trip) {
+export function getSimplifiedDebts(balances: Record<string, number>, ledger?: Ledger) {
   const debtors: { name: string; amount: number }[] = [];
   const creditors: { name: string; amount: number }[] = [];
 
@@ -69,12 +69,12 @@ export function getSimplifiedDebts(balances: Record<string, number>, trip?: Trip
   });
 
   let originalBalances: Record<string, number> | null = null;
-  if (trip) {
-    const tripWithoutSettlements = {
-      ...trip,
-      expenses: trip.expenses.filter(e => e.type !== 'settlement')
+  if (ledger) {
+    const ledgerWithoutSettlements = {
+      ...ledger,
+      expenses: ledger.expenses.filter(e => e.type !== 'settlement')
     };
-    originalBalances = calculateBalances(tripWithoutSettlements);
+    originalBalances = calculateBalances(ledgerWithoutSettlements);
   }
 
   const transactions: { from: string; to: string; amount: number; isRefund?: boolean }[] = [];

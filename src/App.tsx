@@ -3,7 +3,7 @@ import { useStore } from './hooks/useStore';
 import { CATEGORIES, Loan, Category } from './types';
 import { useTheme } from './hooks/useTheme';
 import { useLanguage } from './contexts/LanguageContext';
-import { TripSelector, PeopleWallet } from './components/trip-management';
+import { LedgerSelector, PeopleWallet } from './components/ledger-management';
 import { SettingsModal } from './components/settings/SettingsModal';
 import { ExpenseForm } from './components/expenses/ExpenseForm';
 import { ExpenseList } from './components/expenses/ExpenseList';
@@ -22,11 +22,11 @@ import { useUrlShortcuts } from './hooks/useUrlShortcuts';
 
 function App() {
   const { 
-    appData, currentTrip, currentTripId, setCurrentTripId, 
-    addTrip, deleteTrip, renameTrip, updateTrip,
+    appData, currentLedger: currentLedger, currentLedgerId: currentLedgerId, setCurrentLedgerId: setCurrentLedgerId, 
+    addLedger: addLedger, deleteLedger: deleteLedger, renameLedger: renameLedger, updateLedger: updateLedger,
     isSyncing, needsSync, syncError, isOnline,
     githubToken, setGithubToken, 
-    fetchFromCloud, pushToCloud, createGistForTrip, fetchAllTripsFromCloud,
+    fetchFromCloud, pushToCloud, createGistForLedger: createGistForLedger, fetchAllLedgersFromCloud: fetchAllLedgersFromCloud,
     undo, canUndo
   } = useStore();
 
@@ -54,9 +54,9 @@ function App() {
     shortcutPaidBy,
     shortcutSubCategory,
     clearShortcuts
-  } = useUrlShortcuts({ currentTrip, updateTrip, t });
+  } = useUrlShortcuts({ currentLedger, updateLedger, t });
 
-  if (!currentTrip) {
+  if (!currentLedger) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -84,9 +84,9 @@ function App() {
   };
 
   const handleAddExpense = (data: any) => {
-    const newExpenses = [...currentTrip.expenses];
-    const tripCategories = (currentTrip.categories || CATEGORIES).map(c => typeof c === 'string' ? { name: c, subCategories: [] } : c);
-    const categoryObj = tripCategories.find(c => c.name === data.category) || { name: data.category, subCategories: [] };
+    const newExpenses = [...currentLedger.expenses];
+    const ledgerCategories = (currentLedger.categories || CATEGORIES).map(c => typeof c === 'string' ? { name: c, subCategories: [] } : c);
+    const categoryObj = ledgerCategories.find(c => c.name === data.category) || { name: data.category, subCategories: [] };
     
     // Ensure subCategory is explicitly handled to allow clearing it
     const expenseData = { 
@@ -108,7 +108,7 @@ function App() {
       updatedId = Date.now().toString();
       newExpenses.push({ id: updatedId, ...expenseData });
     }
-    updateTrip({ ...currentTrip, expenses: newExpenses });
+    updateLedger({ ...currentLedger, expenses: newExpenses });
     setEditingExpenseId(null);
     setIsMobileFormOpen(false);
     clearShortcuts();
@@ -122,9 +122,9 @@ function App() {
   };
 
   const handleLogPayment = (data: any) => {
-    const newExpenses = [...currentTrip.expenses];
-    const tripCategories = (currentTrip.categories || CATEGORIES).map(c => typeof c === 'string' ? { name: c, subCategories: [] } : c);
-    const categoryObj = tripCategories.find(c => c.name === data.category) || { name: data.category, subCategories: [] };
+    const newExpenses = [...currentLedger.expenses];
+    const ledgerCategories = (currentLedger.categories || CATEGORIES).map(c => typeof c === 'string' ? { name: c, subCategories: [] } : c);
+    const categoryObj = ledgerCategories.find(c => c.name === data.category) || { name: data.category, subCategories: [] };
     
     const expenseData = { 
       ...data, 
@@ -135,7 +135,7 @@ function App() {
     const updatedId = Date.now().toString();
     newExpenses.push({ id: updatedId, ...expenseData });
     
-    updateTrip({ ...currentTrip, expenses: newExpenses });
+    updateLedger({ ...currentLedger, expenses: newExpenses });
     setLastUpdatedId(updatedId);
     
     setTimeout(() => {
@@ -145,29 +145,29 @@ function App() {
 
   const handleDeleteExpense = (id: string) => {
     if (!confirm(t('app_delete_expense_confirm'))) return;
-    updateTrip({ 
-      ...currentTrip, 
-      expenses: currentTrip.expenses.filter(e => e.id !== id) 
+    updateLedger({ 
+      ...currentLedger, 
+      expenses: currentLedger.expenses.filter(e => e.id !== id) 
     });
   };
 
   const handleAddPerson = (name: string) => {
-    if (currentTrip.users.includes(name)) return;
-    updateTrip({ ...currentTrip, users: [...currentTrip.users, name] });
+    if (currentLedger.users.includes(name)) return;
+    updateLedger({ ...currentLedger, users: [...currentLedger.users, name] });
   };
 
   const handleEditPerson = (oldName: string, newName: string) => {
     const trimmed = newName.trim();
     if (!trimmed || trimmed === oldName) return;
-    if (currentTrip.users.includes(trimmed)) {
+    if (currentLedger.users.includes(trimmed)) {
       alert(t('app_person_exists'));
       return;
     }
 
-    updateTrip({
-      ...currentTrip,
-      users: currentTrip.users.map(u => u === oldName ? trimmed : u),
-      expenses: currentTrip.expenses.map(e => ({
+    updateLedger({
+      ...currentLedger,
+      users: currentLedger.users.map(u => u === oldName ? trimmed : u),
+      expenses: currentLedger.expenses.map(e => ({
         ...e,
         paidBy: e.paidBy === oldName ? trimmed : e.paidBy,
         splitAmong: e.splitAmong.map(u => u === oldName ? trimmed : u),
@@ -178,10 +178,10 @@ function App() {
 
   const handleRemovePerson = (name: string) => {
     if (!confirm(`${t('app_remove_person_confirm')}${name}?`)) return;
-    updateTrip({ 
-      ...currentTrip, 
-      users: currentTrip.users.filter(u => u !== name),
-      expenses: currentTrip.expenses.map(e => ({
+    updateLedger({ 
+      ...currentLedger, 
+      users: currentLedger.users.filter(u => u !== name),
+      expenses: currentLedger.expenses.map(e => ({
         ...e,
         splitAmong: e.splitAmong.filter(u => u !== name)
       }))
@@ -189,9 +189,9 @@ function App() {
   };
 
   const handleAddExchange = (currency: string, foreignAmount: number, myrSpent: number) => {
-    updateTrip({
-      ...currentTrip,
-      exchanges: [...currentTrip.exchanges, {
+    updateLedger({
+      ...currentLedger,
+      exchanges: [...currentLedger.exchanges, {
         id: Date.now().toString(),
         currency, foreignAmount, myrSpent, date: new Date().toISOString()
       }]
@@ -199,30 +199,30 @@ function App() {
   };
 
   const handleRemoveExchange = (id: string) => {
-    updateTrip({
-      ...currentTrip,
-      exchanges: currentTrip.exchanges.filter(e => e.id !== id)
+    updateLedger({
+      ...currentLedger,
+      exchanges: currentLedger.exchanges.filter(e => e.id !== id)
     });
   };
 
   const handleAddLoan = (loan: Loan) => {
-    updateTrip({
-      ...currentTrip,
-      loans: [...(currentTrip.loans || []), loan]
+    updateLedger({
+      ...currentLedger,
+      loans: [...(currentLedger.loans || []), loan]
     });
   };
 
   const handleEditLoan = (loan: Loan) => {
-    updateTrip({
-      ...currentTrip,
-      loans: (currentTrip.loans || []).map(l => l.id === loan.id ? loan : l)
+    updateLedger({
+      ...currentLedger,
+      loans: (currentLedger.loans || []).map(l => l.id === loan.id ? loan : l)
     });
   };
 
   const handleDeleteLoan = (id: string) => {
-    updateTrip({
-      ...currentTrip,
-      loans: (currentTrip.loans || []).filter(l => l.id !== id)
+    updateLedger({
+      ...currentLedger,
+      loans: (currentLedger.loans || []).filter(l => l.id !== id)
     });
   };
 
@@ -254,20 +254,20 @@ function App() {
             <h1 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-white hidden md:block">DailyBudgetTracker</h1>
           </div>
 
-          <TripSelector 
-            trips={appData.trips}
-            currentTripId={currentTripId}
-            onSelect={setCurrentTripId}
+          <LedgerSelector 
+            ledgers={appData.ledgers}
+            currentLedgerId={currentLedgerId}
+            onSelect={setCurrentLedgerId}
             onAdd={() => {
-              const name = prompt(t('app_new_trip_prompt'));
-              if (name) addTrip(name);
+              const name = prompt(t('app_new_ledger_prompt'));
+              if (name) addLedger(name);
             }}
             onDelete={() => {
-              if (confirm(t('app_delete_trip_confirm'))) deleteTrip(currentTripId);
+              if (confirm(t('app_delete_ledger_confirm'))) deleteLedger(currentLedgerId);
             }}
             onRename={() => {
-              const name = prompt(t('app_rename_trip_prompt'), currentTrip.name);
-              if (name) renameTrip(currentTripId, name);
+              const name = prompt(t('app_rename_ledger_prompt'), currentLedger.name);
+              if (name) renameLedger(currentLedgerId, name);
             }}
           />
 
@@ -296,7 +296,7 @@ function App() {
               title="Admin Settings"
             >
               <ShieldCheck className="w-5 h-5 sm:w-6 h-6" />
-              {needsSync && isOnline && currentTrip.gistId && (
+              {needsSync && isOnline && currentLedger.gistId && (
                 <span className="absolute top-1 right-1 w-2 h-2 bg-amber-500 rounded-full shadow-sm animate-pulse" />
               )}
               {!isOnline && <span className="absolute top-2 right-2 w-2 h-2 bg-gray-400 rounded-full border border-white dark:border-gray-800" />}
@@ -310,11 +310,11 @@ function App() {
           
           {/* Desktop: Left Sidebar (Planning & People) */}
           <div className="hidden lg:block lg:col-span-3 space-y-6">
-            <BudgetManager trip={currentTrip} onUpdateTrip={updateTrip} />
-            <Goals trip={currentTrip} onUpdateTrip={updateTrip} />
-            <RecurringTransactions trip={currentTrip} onUpdateTrip={updateTrip} />
+            <BudgetManager ledger={currentLedger} onUpdateLedger={updateLedger} />
+            <Goals ledger={currentLedger} onUpdateLedger={updateLedger} />
+            <RecurringTransactions ledger={currentLedger} onUpdateLedger={updateLedger} />
             <PeopleWallet 
-              trip={currentTrip} 
+              ledger={currentLedger} 
               onAddPerson={handleAddPerson}
               onEditPerson={handleEditPerson}
               onRemovePerson={handleRemovePerson}
@@ -330,16 +330,16 @@ function App() {
           )}>
             <div key={editingExpenseId || `${shortcutAmount}-${shortcutCategory}-${shortcutDesc}-${shortcutCurrency}-${shortcutGoalId}-${shortcutSplitAmong?.join(',')}-${shortcutPaidBy}-${shortcutSubCategory}`} ref={formRef}>
               <ExpenseForm 
-                trip={currentTrip} 
+                ledger={currentLedger} 
                 onSubmit={handleAddExpense}
-                onUpdateTrip={updateTrip}
+                onUpdateLedger={updateLedger}
                 onCancel={() => {
                   setEditingExpenseId(null);
                   clearShortcuts();
                   setIsMobileFormOpen(false);
                 }}
                 initialData={editingExpenseId 
-                  ? currentTrip.expenses.find(e => e.id === editingExpenseId) 
+                  ? currentLedger.expenses.find(e => e.id === editingExpenseId) 
                   : (shortcutAmount !== null || shortcutCategory || shortcutGoalId || shortcutDesc || shortcutCurrency || shortcutSplitAmong || shortcutPaidBy || shortcutSubCategory ? { 
                       amountOriginal: shortcutAmount ?? undefined,
                       category: shortcutCategory ?? undefined,
@@ -355,12 +355,12 @@ function App() {
               />
             </div>
             <ExpenseList 
-              trip={currentTrip}
+              ledger={currentLedger}
               onEdit={handleEditExpenseId}
               onView={setViewingExpenseId}
               onDelete={handleDeleteExpense}
               lastUpdatedId={lastUpdatedId}
-              onUpdateTrip={updateTrip}
+              onUpdateLedger={updateLedger}
               undo={undo}
               canUndo={canUndo}
             />
@@ -368,31 +368,31 @@ function App() {
 
           {/* Desktop: Right Sidebar (Stats & Balances) */}
           <div className="hidden lg:block lg:col-span-3 space-y-6">
-            <Summary trip={currentTrip} onUpdateTrip={updateTrip} />
-            <Balances trip={currentTrip} />
-            <LoanManager trip={currentTrip} onAdd={handleAddLoan} onEdit={handleEditLoan} onDelete={handleDeleteLoan} onAddExpense={handleLogPayment} />
+            <Summary ledger={currentLedger} onUpdateLedger={updateLedger} />
+            <Balances ledger={currentLedger} />
+            <LoanManager ledger={currentLedger} onAdd={handleAddLoan} onEdit={handleEditLoan} onDelete={handleDeleteLoan} onAddExpense={handleLogPayment} />
           </div>
 
           {/* Mobile Only Views */}
           <div className={cn("lg:hidden", activeTab === 'dashboard' ? 'block' : 'hidden')}>
             <div className="space-y-6">
-              <Summary trip={currentTrip} onUpdateTrip={updateTrip} />
-              <Balances trip={currentTrip} />
-              <LoanManager trip={currentTrip} onAdd={handleAddLoan} onEdit={handleEditLoan} onDelete={handleDeleteLoan} onAddExpense={handleLogPayment} />
+              <Summary ledger={currentLedger} onUpdateLedger={updateLedger} />
+              <Balances ledger={currentLedger} />
+              <LoanManager ledger={currentLedger} onAdd={handleAddLoan} onEdit={handleEditLoan} onDelete={handleDeleteLoan} onAddExpense={handleLogPayment} />
             </div>
           </div>
 
           <div className={cn("lg:hidden", activeTab === 'planning' ? 'block' : 'hidden')}>
             <div className="space-y-6">
-              <BudgetManager trip={currentTrip} onUpdateTrip={updateTrip} />
-              <Goals trip={currentTrip} onUpdateTrip={updateTrip} />
-              <RecurringTransactions trip={currentTrip} onUpdateTrip={updateTrip} />
+              <BudgetManager ledger={currentLedger} onUpdateLedger={updateLedger} />
+              <Goals ledger={currentLedger} onUpdateLedger={updateLedger} />
+              <RecurringTransactions ledger={currentLedger} onUpdateLedger={updateLedger} />
             </div>
           </div>
 
           <div className={cn("lg:hidden", activeTab === 'people' ? 'block' : 'hidden')}>
             <PeopleWallet 
-              trip={currentTrip} 
+              ledger={currentLedger} 
               onAddPerson={handleAddPerson}
               onEditPerson={handleEditPerson}
               onRemovePerson={handleRemovePerson}
@@ -412,7 +412,7 @@ function App() {
             { id: 'expenses', icon: List, label: t('nav_expenses') },
             { id: 'spacer', icon: null, label: '' },
             { id: 'planning', icon: Target, label: t('nav_planning') || 'Planning' },
-            { id: 'people', icon: Wallet, label: t('trip_wallet') }
+            { id: 'people', icon: Wallet, label: t('ledger_wallet') }
           ].map((tab) => {
             if (tab.id === 'spacer') {
               return <div key="spacer" className="w-16 h-14" />;
@@ -449,12 +449,12 @@ function App() {
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
         githubToken={githubToken} setGithubToken={setGithubToken}
-        currentTrip={currentTrip}
-        onUpdateTrip={updateTrip}
-        createGistForTrip={createGistForTrip}
+        currentLedger={currentLedger}
+        onUpdateLedger={updateLedger}
+        createGistForLedger={createGistForLedger}
         onSync={fetchFromCloud}
         onPush={pushToCloud}
-        fetchAllTripsFromCloud={fetchAllTripsFromCloud}
+        fetchAllLedgersFromCloud={fetchAllLedgersFromCloud}
         isSyncing={isSyncing}
         needsSync={needsSync}
         syncError={syncError}
@@ -462,7 +462,7 @@ function App() {
       />
 
       <ExpenseDetailsModal
-        expense={viewingExpenseId ? currentTrip.expenses.find(e => e.id === viewingExpenseId) || null : null}
+        expense={viewingExpenseId ? currentLedger.expenses.find(e => e.id === viewingExpenseId) || null : null}
         isOpen={!!viewingExpenseId}
         onClose={() => setViewingExpenseId(null)}
         onEdit={handleEditExpenseId}

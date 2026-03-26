@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Trip, Expense, CATEGORIES, Category } from '../../types';
-import { CATEGORY_COLORS, CATEGORY_STRIP_COLORS } from '../../constants';
+import { Ledger, Expense, CATEGORIES, Category } from '../../types';
+import { CATEGORY_COLORS, CATEGORY_SLEDGER_COLORS } from '../../constants';
 import { getAverageRates, formatCurrency } from '../../utils/currency';
 import { Edit2, Trash2, Calendar, User, MapPin, Gift, Handshake, Filter, ArrowUpDown, X, Search, Tag, RotateCcw, Settings, Clock } from 'lucide-react';
 import { cn } from '../../lib/utils';
@@ -11,20 +11,20 @@ import { useStore } from '../../hooks/useStore';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface ExpenseListProps {
-  trip: Trip;
+  ledger: Ledger;
   onEdit: (id: string) => void;
   onView: (id: string) => void;
   onDelete: (id: string) => void;
   lastUpdatedId?: string | null;
-  onUpdateTrip: (trip: Trip) => void;
+  onUpdateLedger: (ledger: Ledger) => void;
   undo: () => void;
   canUndo: boolean;
 }
 
-export function ExpenseList({ trip, onEdit, onView, onDelete, lastUpdatedId, onUpdateTrip, undo, canUndo }: ExpenseListProps) {
+export function ExpenseList({ ledger, onEdit, onView, onDelete, lastUpdatedId, onUpdateLedger, undo, canUndo }: ExpenseListProps) {
   const { t } = useLanguage();
   const { resolvedTheme } = useTheme();
-  const rates = getAverageRates(trip);
+  const rates = getAverageRates(ledger);
   const [filterCategory, setFilterCategory] = useState<string>('All');
   const [sortOrder, setSortOrder] = useState<'date-desc' | 'date-asc' | 'amount-desc' | 'amount-asc'>('date-desc');
   const [startDate, setStartDate] = useState<string>('');
@@ -67,7 +67,7 @@ export function ExpenseList({ trip, onEdit, onView, onDelete, lastUpdatedId, onU
   const activeFilterCount = (filterCategory !== 'All' ? 1 : 0) + (startDate ? 1 : 0) + (endDate ? 1 : 0) + (sortOrder !== 'date-desc' ? 1 : 0) + (searchKeyword ? 1 : 0);
 
   const filteredAndSortedExpenses = useMemo(() => {
-    let result = [...trip.expenses];
+    let result = [...ledger.expenses];
 
     // Filter by search keyword
     if (searchKeyword.trim()) {
@@ -124,32 +124,32 @@ export function ExpenseList({ trip, onEdit, onView, onDelete, lastUpdatedId, onU
     });
 
     return result;
-  }, [trip.expenses, filterCategory, sortOrder, startDate, endDate, rates]);
+  }, [ledger.expenses, filterCategory, sortOrder, startDate, endDate, rates]);
 
   const upcomingRecurring = useMemo(() => {
-    if (!trip.recurringTransactions) return [];
+    if (!ledger.recurringTransactions) return [];
     const now = new Date();
     const threeDaysFromNow = new Date();
     threeDaysFromNow.setDate(now.getDate() + 3);
     
-    return trip.recurringTransactions.filter(rt => {
+    return ledger.recurringTransactions.filter(rt => {
       const nextDate = new Date(rt.nextDate);
       return nextDate >= now && nextDate <= threeDaysFromNow;
     });
-  }, [trip.recurringTransactions]);
+  }, [ledger.recurringTransactions]);
 
   const upcomingLoans = useMemo(() => {
-    if (!trip.loans) return [];
+    if (!ledger.loans) return [];
     const now = new Date();
     const threeDaysFromNow = new Date();
     threeDaysFromNow.setDate(now.getDate() + 3);
     
-    return trip.loans.filter(l => {
+    return ledger.loans.filter(l => {
       if (l.status === 'paid_off') return false;
       const nextDate = new Date(l.nextInstallmentDate);
       return nextDate >= now && nextDate <= threeDaysFromNow;
     });
-  }, [trip.loans]);
+  }, [ledger.loans]);
 
   const handleMarkAsPaid = (item: { id: string, desc: string, amountOriginal: number, currency: string, paidBy: string, type: 'loan' | 'recurring', nextDate: string, splitAmong?: string[], splitDetails?: { [userName: string]: number }, category?: Category, subCategory?: string }) => {
     const newExpense: Expense = {
@@ -166,10 +166,10 @@ export function ExpenseList({ trip, onEdit, onView, onDelete, lastUpdatedId, onU
       type: 'expense'
     };
 
-    const updatedTrip = { ...trip, expenses: [...trip.expenses, newExpense] };
+    const updatedLedger = { ...ledger, expenses: [...ledger.expenses, newExpense] };
 
     if (item.type === 'loan') {
-      updatedTrip.loans = trip.loans?.map(l => {
+      updatedLedger.loans = ledger.loans?.map(l => {
         if (l.id === item.id) {
           const nextDate = new Date(l.nextInstallmentDate);
           nextDate.setMonth(nextDate.getMonth() + 1);
@@ -178,7 +178,7 @@ export function ExpenseList({ trip, onEdit, onView, onDelete, lastUpdatedId, onU
         return l;
       });
     } else {
-      updatedTrip.recurringTransactions = trip.recurringTransactions?.map(rt => {
+      updatedLedger.recurringTransactions = ledger.recurringTransactions?.map(rt => {
         if (rt.id === item.id) {
           const nextDate = new Date(rt.nextDate);
           if (rt.frequency === 'monthly') nextDate.setMonth(nextDate.getMonth() + 1);
@@ -189,10 +189,10 @@ export function ExpenseList({ trip, onEdit, onView, onDelete, lastUpdatedId, onU
       });
     }
 
-    onUpdateTrip(updatedTrip);
+    onUpdateLedger(updatedLedger);
   };
 
-  if (trip.expenses.length === 0 && upcomingRecurring.length === 0 && upcomingLoans.length === 0) {
+  if (ledger.expenses.length === 0 && upcomingRecurring.length === 0 && upcomingLoans.length === 0) {
     return (
       <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-2xl border border-dashed border-gray-300 dark:border-gray-700 transition-colors duration-200 flex flex-col items-center gap-4">
         <div className="w-20 h-20 bg-gray-50 dark:bg-gray-900 rounded-2xl flex items-center justify-center shadow-inner">
@@ -300,7 +300,7 @@ export function ExpenseList({ trip, onEdit, onView, onDelete, lastUpdatedId, onU
 
       {showCategoryManager && (
         <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors duration-200 animate-in slide-in-from-top-2">
-          <CategoryManager trip={trip} onUpdateTrip={onUpdateTrip} />
+          <CategoryManager ledger={ledger} onUpdateLedger={onUpdateLedger} />
         </div>
       )}
 

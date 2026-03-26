@@ -1,28 +1,28 @@
 import React, { useState } from 'react';
-import { Trip, Goal } from '../../types';
+import { Ledger, Goal } from '../../types';
 import { Target, Plus, Edit2, Trash2, CheckCircle2 } from 'lucide-react';
 import { formatCurrency, getAverageRates } from '../../utils/currency';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { cn } from '../../lib/utils';
 
 interface GoalsProps {
-  trip: Trip;
-  onUpdateTrip: (trip: Trip) => void;
+  ledger: Ledger;
+  onUpdateLedger: (ledger: Ledger) => void;
 }
 
 interface GoalItemProps {
   goal: Goal;
-  trip: Trip;
-  onUpdateTrip: (trip: Trip) => void;
+  ledger: Ledger;
+  onUpdateLedger: (ledger: Ledger) => void;
   onEdit: (goal: Goal) => void;
   onDelete: (id: string) => void;
   t: (key: string) => string;
 }
 
-function GoalItem({ goal, trip, onUpdateTrip, onEdit, onDelete, t }: GoalItemProps) {
-  const rates = getAverageRates(trip);
+function GoalItem({ goal, ledger, onUpdateLedger, onEdit, onDelete, t }: GoalItemProps) {
+  const rates = getAverageRates(ledger);
   
-  const linkedExpensesTotal = trip.expenses?.filter(e => e.goalId === goal.id && e.type === 'expense').reduce((sum, e) => {
+  const linkedExpensesTotal = ledger.expenses?.filter(e => e.goalId === goal.id && e.type === 'expense').reduce((sum, e) => {
     const rateToMYR = rates[e.currency] || e.rate || 1;
     const amountInMYR = e.amountOriginal * rateToMYR;
     const goalRateToMYR = rates[goal.currency] || 1;
@@ -40,8 +40,8 @@ function GoalItem({ goal, trip, onUpdateTrip, onEdit, onDelete, t }: GoalItemPro
   const handleBlur = () => {
     const val = parseFloat(localAmount) || 0;
     if (val !== goal.currentAmount) {
-      const updatedGoals = (trip.goals || []).map(g => g.id === goal.id ? { ...g, currentAmount: val } : g);
-      onUpdateTrip({ ...trip, goals: updatedGoals });
+      const updatedGoals = (ledger.goals || []).map(g => g.id === goal.id ? { ...g, currentAmount: val } : g);
+      onUpdateLedger({ ...ledger, goals: updatedGoals });
     }
   };
 
@@ -112,7 +112,7 @@ function GoalItem({ goal, trip, onUpdateTrip, onEdit, onDelete, t }: GoalItemPro
   );
 }
 
-export function Goals({ trip, onUpdateTrip }: GoalsProps) {
+export function Goals({ ledger, onUpdateLedger }: GoalsProps) {
   const { t } = useLanguage();
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -121,7 +121,7 @@ export function Goals({ trip, onUpdateTrip }: GoalsProps) {
   const [currentAmount, setCurrentAmount] = useState('');
   const [currency, setCurrency] = useState('MYR');
 
-  const goals = trip.goals || [];
+  const goals = ledger.goals || [];
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -142,7 +142,7 @@ export function Goals({ trip, onUpdateTrip }: GoalsProps) {
       newGoals = [...goals, newGoal];
     }
 
-    onUpdateTrip({ ...trip, goals: newGoals });
+    onUpdateLedger({ ...ledger, goals: newGoals });
     resetForm();
   };
 
@@ -157,7 +157,7 @@ export function Goals({ trip, onUpdateTrip }: GoalsProps) {
 
   const handleDelete = (id: string) => {
     if (confirm(t('app_delete_goal_confirm') || 'Delete this goal?')) {
-      onUpdateTrip({ ...trip, goals: goals.filter(g => g.id !== id) });
+      onUpdateLedger({ ...ledger, goals: goals.filter(g => g.id !== id) });
     }
   };
 
@@ -259,8 +259,8 @@ export function Goals({ trip, onUpdateTrip }: GoalsProps) {
           <GoalItem 
             key={goal.id} 
             goal={goal} 
-            trip={trip} 
-            onUpdateTrip={onUpdateTrip} 
+            ledger={ledger} 
+            onUpdateLedger={onUpdateLedger} 
             onEdit={handleEdit} 
             onDelete={handleDelete}
             t={t}

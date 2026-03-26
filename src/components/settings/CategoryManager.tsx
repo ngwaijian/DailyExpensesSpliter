@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
-import { Trip, Category } from '../../types';
+import { Ledger, Category } from '../../types';
 import { CATEGORIES } from '../../types';
 import { Tag, Plus, X, Edit2, Check, Trash2, ChevronUp, ChevronDown, ChevronRight } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { cn } from '../../lib/utils';
 
 interface CategoryManagerProps {
-  trip: Trip;
-  onUpdateTrip: (trip: Trip) => void;
+  ledger: Ledger;
+  onUpdateLedger: (ledger: Ledger) => void;
 }
 
-export function CategoryManager({ trip, onUpdateTrip }: CategoryManagerProps) {
+export function CategoryManager({ ledger, onUpdateLedger }: CategoryManagerProps) {
   const { t } = useLanguage();
   const [newCategory, setNewCategory] = useState('');
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -19,18 +19,18 @@ export function CategoryManager({ trip, onUpdateTrip }: CategoryManagerProps) {
   const [expandedCategory, setExpandedCategory] = useState<number | null>(null);
   const [newSubCategory, setNewSubCategory] = useState('');
 
-  const categories: Category[] = (trip.categories || CATEGORIES).map(c => typeof c === 'string' ? { name: c, subCategories: [] } : c);
+  const categories: Category[] = (ledger.categories || CATEGORIES).map(c => typeof c === 'string' ? { name: c, subCategories: [] } : c);
 
   const handleAdd = () => {
     if (!newCategory.trim()) return;
     const updatedCategories = [...categories, { name: newCategory.trim(), subCategories: [] }];
-    onUpdateTrip({ ...trip, categories: updatedCategories });
+    onUpdateLedger({ ...ledger, categories: updatedCategories });
     setNewCategory('');
   };
 
   const handleRemove = (index: number) => {
     const updatedCategories = categories.filter((_, i) => i !== index);
-    onUpdateTrip({ ...trip, categories: updatedCategories });
+    onUpdateLedger({ ...ledger, categories: updatedCategories });
   };
 
   const startEditing = (index: number) => {
@@ -42,7 +42,7 @@ export function CategoryManager({ trip, onUpdateTrip }: CategoryManagerProps) {
     if (!editValue.trim() || editingIndex === null) return;
     const updatedCategories = [...categories];
     updatedCategories[editingIndex] = { ...updatedCategories[editingIndex], name: editValue.trim() };
-    onUpdateTrip({ ...trip, categories: updatedCategories });
+    onUpdateLedger({ ...ledger, categories: updatedCategories });
     setEditingIndex(null);
   };
 
@@ -53,7 +53,7 @@ export function CategoryManager({ trip, onUpdateTrip }: CategoryManagerProps) {
     const updatedCategories = [...categories];
     const [movedItem] = updatedCategories.splice(index, 1);
     updatedCategories.splice(newIndex, 0, movedItem);
-    onUpdateTrip({ ...trip, categories: updatedCategories });
+    onUpdateLedger({ ...ledger, categories: updatedCategories });
   };
 
   const handleAddSubCategory = (catIndex: number) => {
@@ -65,7 +65,7 @@ export function CategoryManager({ trip, onUpdateTrip }: CategoryManagerProps) {
         ...updatedCategories[catIndex],
         subCategories: [...subs, newSubCategory.trim()]
       };
-      onUpdateTrip({ ...trip, categories: updatedCategories });
+      onUpdateLedger({ ...ledger, categories: updatedCategories });
     }
     setNewSubCategory('');
   };
@@ -78,12 +78,12 @@ export function CategoryManager({ trip, onUpdateTrip }: CategoryManagerProps) {
       ...updatedCategories[catIndex],
       subCategories: subs
     };
-    onUpdateTrip({ ...trip, categories: updatedCategories });
+    onUpdateLedger({ ...ledger, categories: updatedCategories });
   };
 
   const handleReset = () => {
     if (confirm('Reset categories to default? This will remove all custom categories.')) {
-      onUpdateTrip({ ...trip, categories: CATEGORIES });
+      onUpdateLedger({ ...ledger, categories: CATEGORIES });
     }
   };
 

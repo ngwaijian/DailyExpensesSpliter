@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Trip } from '../../types';
+import { Ledger } from '../../types';
 import { getAverageRates, formatCurrency } from '../../utils/currency';
 import { TrendingUp, Download, FileText, Table, Users, PieChart as PieChartIcon, List, Calendar, Target, Wallet } from 'lucide-react';
 import { cn } from '../../lib/utils';
@@ -10,8 +10,8 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { useTheme } from '../../hooks/useTheme';
 
 interface SummaryProps {
-  trip: Trip;
-  onUpdateTrip?: (trip: Trip) => void;
+  ledger: Ledger;
+  onUpdateLedger?: (ledger: Ledger) => void;
 }
 
 const CATEGORY_HEX_COLORS: { [key: string]: string } = {
@@ -27,7 +27,7 @@ const CATEGORY_HEX_COLORS: { [key: string]: string } = {
 
 const COLORS = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#6366F1', '#14B8A6'];
 
-export function Summary({ trip, onUpdateTrip }: SummaryProps) {
+export function Summary({ ledger, onUpdateLedger }: SummaryProps) {
   const { t } = useLanguage();
   const { theme } = useTheme();
   const isDarkMode = theme === 'dark';
@@ -36,9 +36,9 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isEditingBudget, setIsEditingBudget] = useState(false);
-  const [tempBudget, setTempBudget] = useState(trip.monthlyBudget?.toString() || '');
+  const [tempBudget, setTempBudget] = useState(ledger.monthlyBudget?.toString() || '');
   const exportMenuRef = useRef<HTMLDivElement>(null);
-  const rates = getAverageRates(trip);
+  const rates = getAverageRates(ledger);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -62,11 +62,11 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
   const currentYear = now.getFullYear();
 
   // Initialize stats for current users
-  trip.users.forEach(u => {
+  ledger.users.forEach(u => {
     personStats[u] = { paid: 0, share: 0 };
   });
 
-  trip.expenses.forEach(e => {
+  ledger.expenses.forEach(e => {
     // Filter by selected person if not 'All'
     if (selectedPerson !== 'All' && e.paidBy !== selectedPerson && !e.splitAmong.includes(selectedPerson)) {
       return;
@@ -101,7 +101,7 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
       if (personStats[e.paidBy]) {
         personStats[e.paidBy].share += myr;
         // Do not add to 'paid' because a sponsorship is a transfer of burden, not a new payment
-      } else if (!trip.users.includes(e.paidBy)) {
+      } else if (!ledger.users.includes(e.paidBy)) {
         personStats[e.paidBy] = { paid: 0, share: myr };
       }
 
@@ -110,7 +110,7 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
         e.splitAmong.forEach(u => {
           if (personStats[u]) {
             personStats[u].share -= splitAmount;
-          } else if (!trip.users.includes(u)) {
+          } else if (!ledger.users.includes(u)) {
              personStats[u] = { paid: 0, share: -splitAmount };
           }
         });
@@ -139,7 +139,7 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
           if (personStats[sponsor]) {
             personStats[sponsor].paid += myr;
             personStats[sponsor].share += myr;
-          } else if (!trip.users.includes(sponsor)) {
+          } else if (!ledger.users.includes(sponsor)) {
             personStats[sponsor] = { paid: myr, share: myr };
           }
         } else if (e.splitDetails) {
@@ -148,7 +148,7 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
             if (personStats[u]) {
               personStats[u].paid += numAmt * rate;
               personStats[u].share += numAmt * rate;
-            } else if (!trip.users.includes(u)) {
+            } else if (!ledger.users.includes(u)) {
               personStats[u] = { paid: numAmt * rate, share: numAmt * rate };
             }
           });
@@ -158,7 +158,7 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
             if (personStats[u]) {
               personStats[u].paid += splitAmount;
               personStats[u].share += splitAmount;
-            } else if (!trip.users.includes(u)) {
+            } else if (!ledger.users.includes(u)) {
                personStats[u] = { paid: splitAmount, share: splitAmount };
             }
           });
@@ -169,7 +169,7 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
       // Person Paid
       if (personStats[e.paidBy]) {
         personStats[e.paidBy].paid += myr;
-      } else if (!trip.users.includes(e.paidBy)) {
+      } else if (!ledger.users.includes(e.paidBy)) {
         // Handle users not in the list (e.g. removed)
         personStats[e.paidBy] = { paid: myr, share: 0 };
       }
@@ -180,7 +180,7 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
       if (sponsor) {
         if (personStats[sponsor]) {
           personStats[sponsor].share += myr;
-        } else if (!trip.users.includes(sponsor)) {
+        } else if (!ledger.users.includes(sponsor)) {
           personStats[sponsor] = { paid: 0, share: myr };
         }
       } else if (e.splitDetails) {
@@ -188,7 +188,7 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
           const numAmt = Number(amt);
           if (personStats[u]) {
             personStats[u].share += numAmt * rate;
-          } else if (!trip.users.includes(u)) {
+          } else if (!ledger.users.includes(u)) {
             personStats[u] = { paid: 0, share: numAmt * rate };
           }
         });
@@ -197,7 +197,7 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
         e.splitAmong.forEach(u => {
           if (personStats[u]) {
             personStats[u].share += splitAmount;
-          } else if (!trip.users.includes(u)) {
+          } else if (!ledger.users.includes(u)) {
             personStats[u] = { paid: 0, share: splitAmount };
           }
         });
@@ -213,7 +213,7 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
     Object.keys(categoryTotals).forEach(cat => categoryTotals[cat] = 0);
     Object.keys(thisMonthCategoryTotals).forEach(cat => thisMonthCategoryTotals[cat] = 0);
 
-    trip.expenses.forEach(e => {
+    ledger.expenses.forEach(e => {
       if (e.type === 'settlement') return;
       
       const rate = rates[e.currency] || e.rate || 1;
@@ -258,7 +258,7 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
     });
   }
 
-  const avgPerPerson = trip.users.length > 0 ? totalMYR / trip.users.length : 0;
+  const avgPerPerson = ledger.users.length > 0 ? totalMYR / ledger.users.length : 0;
   const sortedCats = Object.entries(categoryTotals).sort((a, b) => b[1] - a[1]);
   const sortedThisMonthCats = Object.entries(thisMonthCategoryTotals).sort((a, b) => b[1] - a[1]);
   const sortedPeople = Object.entries(personStats).sort((a, b) => b[1].share - a[1].share);
@@ -272,7 +272,7 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
     last7Days[dateStr] = 0;
   }
 
-  trip.expenses.forEach(e => {
+  ledger.expenses.forEach(e => {
     if (e.type === 'settlement') return;
     
     // Filter by selected person if not 'All'
@@ -331,9 +331,9 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
   const chartData = sortedThisMonthCats.map(([name, value]) => ({ name, value }));
 
   const handleSaveBudget = () => {
-    if (!onUpdateTrip) return;
+    if (!onUpdateLedger) return;
     const budget = parseFloat(tempBudget);
-    onUpdateTrip({ ...trip, monthlyBudget: isNaN(budget) ? undefined : budget });
+    onUpdateLedger({ ...ledger, monthlyBudget: isNaN(budget) ? undefined : budget });
     setIsEditingBudget(false);
   };
 
@@ -344,7 +344,7 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
 
   const exportCSV = () => {
     const headers = ['Date', 'Description', 'Category', 'Paid By', 'Amount (Original)', 'Currency', 'Amount (MYR)', 'Split Among', 'Type'];
-    const rows = trip.expenses.map(e => {
+    const rows = ledger.expenses.map(e => {
       const rate = rates[e.currency] || e.rate || 1;
       const myr = e.amountOriginal * rate;
       return [
@@ -365,7 +365,7 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `${trip.name.replace(/\s+/g, '_')}_expenses.csv`);
+    link.setAttribute('download', `${ledger.name.replace(/\s+/g, '_')}_expenses.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -442,7 +442,7 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
       
       // Download the image directly instead of using jsPDF
       const link = document.createElement('a');
-      link.download = `${trip.name.replace(/\s+/g, '_')}_summary.jpeg`;
+      link.download = `${ledger.name.replace(/\s+/g, '_')}_summary.jpeg`;
       link.href = imgData;
       link.click();
     } catch (error) {
@@ -577,7 +577,7 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
           >
             All People
           </button>
-          {trip.users.map(user => (
+          {ledger.users.map(user => (
             <button
               key={user}
               onClick={() => setSelectedPerson(user)}
@@ -601,7 +601,7 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
             <Target className="w-5 h-5 text-purple-600 dark:text-purple-400" />
             <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Budget Status</span>
           </div>
-          {!trip.budgets?.length && !trip.monthlyBudget && (
+          {!ledger.budgets?.length && !ledger.monthlyBudget && (
             <button 
               onClick={() => setIsEditingBudget(true)}
               className="text-xs text-gray-500 hover:text-blue-600 transition-colors"
@@ -611,15 +611,15 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
           )}
         </div>
         
-        {trip.budgets && trip.budgets.length > 0 ? (
+        {ledger.budgets && ledger.budgets.length > 0 ? (
           <div className="space-y-4">
-            {trip.budgets.slice(0, 3).map(budget => {
+            {ledger.budgets.slice(0, 3).map(budget => {
               if (!budget || !budget.categories) return null;
               const now = new Date();
               const currentMonth = now.getMonth();
               const currentYear = now.getFullYear();
               
-              const spentInMYR = trip.expenses.reduce((acc, exp) => {
+              const spentInMYR = ledger.expenses.reduce((acc, exp) => {
                 if (exp.type === 'income' || exp.type === 'settlement') return acc;
                 const budgetCats = Array.isArray(budget.categories) ? budget.categories : [];
                 if (!budgetCats.includes('All') && !budgetCats.includes(exp.category.name)) return acc;
@@ -663,26 +663,26 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
                 </div>
               );
             })}
-            {trip.budgets.length > 3 && (
+            {ledger.budgets.length > 3 && (
               <div className="text-[10px] text-center text-gray-400 italic">
-                + {trip.budgets.length - 3} more budgets in Planning tab
+                + {ledger.budgets.length - 3} more budgets in Planning tab
               </div>
             )}
           </div>
-        ) : trip.monthlyBudget ? (
+        ) : ledger.monthlyBudget ? (
           <div className="space-y-3">
             <div className="h-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
               <div 
                 className={cn(
                   "h-full transition-all duration-500",
-                  (thisMonthTotalMYR / trip.monthlyBudget) > 0.9 ? "bg-red-500" : (thisMonthTotalMYR / trip.monthlyBudget) > 0.7 ? "bg-amber-500" : "bg-emerald-500"
+                  (thisMonthTotalMYR / ledger.monthlyBudget) > 0.9 ? "bg-red-500" : (thisMonthTotalMYR / ledger.monthlyBudget) > 0.7 ? "bg-amber-500" : "bg-emerald-500"
                 )}
-                style={{ width: `${Math.min(100, (thisMonthTotalMYR / trip.monthlyBudget) * 100)}%` }}
+                style={{ width: `${Math.min(100, (thisMonthTotalMYR / ledger.monthlyBudget) * 100)}%` }}
               />
             </div>
             <div className="flex justify-between text-[10px] text-gray-500">
-              <span>{((thisMonthTotalMYR / trip.monthlyBudget) * 100).toFixed(1)}% used</span>
-              <span className="font-medium text-gray-700 dark:text-gray-300">{formatCurrency(Math.max(0, trip.monthlyBudget - thisMonthTotalMYR))} remaining</span>
+              <span>{((thisMonthTotalMYR / ledger.monthlyBudget) * 100).toFixed(1)}% used</span>
+              <span className="font-medium text-gray-700 dark:text-gray-300">{formatCurrency(Math.max(0, ledger.monthlyBudget - thisMonthTotalMYR))} remaining</span>
             </div>
           </div>
         ) : (
@@ -820,7 +820,7 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
                           </span>
                           <div className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
                           <span className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-wider">
-                            {trip.expenses.filter(e => (typeof e.category === 'string' ? e.category : e.category?.name) === cat).length} Transactions
+                            {ledger.expenses.filter(e => (typeof e.category === 'string' ? e.category : e.category?.name) === cat).length} Transactions
                           </span>
                         </div>
                       </div>
@@ -894,7 +894,7 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-2" style={{ color: '#111827' }}>
               <span style={{ color: '#2563eb' }}>📈</span>
-              {trip.name} - {t('dash_summary')}
+              {ledger.name} - {t('dash_summary')}
             </h1>
             <p className="mt-2 flex items-center gap-1" style={{ color: '#6b7280' }}>
               <span>📅</span> 
@@ -907,29 +907,29 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
           </div>
         </div>
 
-        {/* Trip Overview */}
+        {/* Ledger Overview */}
         <div className="mb-8 grid grid-cols-4 gap-4 p-4 rounded-xl" style={{ backgroundColor: '#f9fafb' }}>
           <div>
             <div className="text-xs mb-1" style={{ color: '#6b7280' }}>{t('dash_people')}</div>
-            <div className="font-semibold" style={{ color: '#1f2937' }}>{trip.users.length}</div>
+            <div className="font-semibold" style={{ color: '#1f2937' }}>{ledger.users.length}</div>
           </div>
           <div>
             <div className="text-xs mb-1" style={{ color: '#6b7280' }}>{t('dash_expenses_count')}</div>
-            <div className="font-semibold" style={{ color: '#1f2937' }}>{trip.expenses.length}</div>
+            <div className="font-semibold" style={{ color: '#1f2937' }}>{ledger.expenses.length}</div>
           </div>
           <div>
             <div className="text-xs mb-1" style={{ color: '#6b7280' }}>{t('dash_start_date')}</div>
             <div className="font-semibold" style={{ color: '#1f2937' }}>
-              {trip.expenses.length > 0 
-                ? formatDate(new Date(Math.min(...trip.expenses.map(e => new Date(e.date).getTime()))).toISOString())
+              {ledger.expenses.length > 0 
+                ? formatDate(new Date(Math.min(...ledger.expenses.map(e => new Date(e.date).getTime()))).toISOString())
                 : '-'}
             </div>
           </div>
           <div>
             <div className="text-xs mb-1" style={{ color: '#6b7280' }}>{t('dash_end_date')}</div>
             <div className="font-semibold" style={{ color: '#1f2937' }}>
-              {trip.expenses.length > 0 
-                ? formatDate(new Date(Math.max(...trip.expenses.map(e => new Date(e.date).getTime()))).toISOString())
+              {ledger.expenses.length > 0 
+                ? formatDate(new Date(Math.max(...ledger.expenses.map(e => new Date(e.date).getTime()))).toISOString())
                 : '-'}
             </div>
           </div>
@@ -1016,7 +1016,7 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
               </tr>
             </thead>
             <tbody>
-              {trip.expenses.slice().sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map(e => {
+              {ledger.expenses.slice().sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map(e => {
                 const rate = rates[e.currency] || e.rate || 1;
                 const myr = e.amountOriginal * rate;
                 return (
@@ -1038,7 +1038,7 @@ export function Summary({ trip, onUpdateTrip }: SummaryProps) {
                     </td>
                     <td className="p-2 font-medium" style={{ border: '1px solid #e5e7eb' }}>{e.paidBy}</td>
                     <td className="p-2" style={{ border: '1px solid #e5e7eb' }}>
-                      <div>{e.splitAmong.length === trip.users.length ? t('list_all_categories').replace('All Categories', 'All').replace('所有分类', '所有人') : e.splitAmong.join(', ')}</div>
+                      <div>{e.splitAmong.length === ledger.users.length ? t('list_all_categories').replace('All Categories', 'All').replace('所有分类', '所有人') : e.splitAmong.join(', ')}</div>
                       {e.splitDetails && Object.keys(e.splitDetails).length > 0 && (
                         <div style={{ fontSize: '10px', color: '#6b7280', marginTop: '2px' }}>
                           <span style={{ color: '#f59e0b', fontWeight: 500 }}>[{t('detail_unequal')}]</span>{' '}

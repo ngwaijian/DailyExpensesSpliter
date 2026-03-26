@@ -68,7 +68,7 @@ export interface Budget {
   categories: string[];
   amount: number;
   currency: string;
-  period: 'trip' | 'monthly';
+  period: 'ledger' | 'monthly';
 }
 
 export interface Loan {
@@ -92,7 +92,7 @@ export interface Loan {
   status: 'active' | 'paid_off';
 }
 
-export interface Trip {
+export interface Ledger {
   id: string;
   name: string;
   lastUpdated: string;
@@ -106,11 +106,11 @@ export interface Trip {
   budgets?: Budget[];
   monthlyBudget?: number;
   categories?: Category[];
-  gistId?: string; // For syncing this specific trip
+  gistId?: string; // For syncing this specific ledger
 }
 
 export interface AppData {
-  trips: Trip[];
+  ledgers: Ledger[];
 }
 
 export interface Category {

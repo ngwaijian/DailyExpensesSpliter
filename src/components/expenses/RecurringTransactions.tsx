@@ -1,27 +1,27 @@
 import React, { useState } from 'react';
-import { Trip, RecurringTransaction, CATEGORIES, Category } from '../../types';
+import { Ledger, RecurringTransaction, CATEGORIES, Category } from '../../types';
 import { Repeat, Plus, Edit2, Trash2, Calendar, Tag } from 'lucide-react';
 import { formatCurrency } from '../../utils/currency';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { cn } from '../../lib/utils';
 
 interface RecurringTransactionsProps {
-  trip: Trip;
-  onUpdateTrip: (trip: Trip) => void;
+  ledger: Ledger;
+  onUpdateLedger: (ledger: Ledger) => void;
 }
 
-export function RecurringTransactions({ trip, onUpdateTrip }: RecurringTransactionsProps) {
+export function RecurringTransactions({ ledger, onUpdateLedger }: RecurringTransactionsProps) {
   const { t } = useLanguage();
-  const tripCategories = (trip.categories || CATEGORIES).map(c => typeof c === 'string' ? { name: c, subCategories: [] } : c);
+  const ledgerCategories = (ledger.categories || CATEGORIES).map(c => typeof c === 'string' ? { name: c, subCategories: [] } : c);
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const [desc, setDesc] = useState('');
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState('MYR');
-  const [category, setCategory] = useState<Category>(tripCategories[0]);
+  const [category, setCategory] = useState<Category>(ledgerCategories[0]);
   const [subCategory, setSubCategory] = useState<string>('');
-  const defaultPaidBy = trip.users.includes('Jian') ? 'Jian' : (trip.users.length > 0 ? trip.users[0] : '');
+  const defaultPaidBy = ledger.users.includes('Jian') ? 'Jian' : (ledger.users.length > 0 ? ledger.users[0] : '');
   const [paidBy, setPaidBy] = useState(defaultPaidBy);
   const [frequency, setFrequency] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('monthly');
   const [nextDate, setNextDate] = useState(new Date().toISOString().split('T')[0]);
@@ -79,7 +79,7 @@ export function RecurringTransactions({ trip, onUpdateTrip }: RecurringTransacti
     );
   };
 
-  const selectAll = () => setSplitAmong(trip.users);
+  const selectAll = () => setSplitAmong(ledger.users);
   const selectNone = () => setSplitAmong([]);
 
   const handleSplitRemaining = () => {
@@ -105,12 +105,12 @@ export function RecurringTransactions({ trip, onUpdateTrip }: RecurringTransacti
 
   // Update paidBy if it's empty and users become available
   React.useEffect(() => {
-    if (!paidBy && trip.users.length > 0) {
+    if (!paidBy && ledger.users.length > 0) {
       setPaidBy(defaultPaidBy);
     }
-  }, [trip.users, paidBy, defaultPaidBy]);
+  }, [ledger.users, paidBy, defaultPaidBy]);
 
-  const recurring = trip.recurringTransactions || [];
+  const recurring = ledger.recurringTransactions || [];
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -181,7 +181,7 @@ export function RecurringTransactions({ trip, onUpdateTrip }: RecurringTransacti
       newRecurring = [...recurring, newTx];
     }
 
-    onUpdateTrip({ ...trip, recurringTransactions: newRecurring });
+    onUpdateLedger({ ...ledger, recurringTransactions: newRecurring });
     resetForm();
   };
 
@@ -208,7 +208,7 @@ export function RecurringTransactions({ trip, onUpdateTrip }: RecurringTransacti
 
   const handleDelete = (id: string) => {
     if (window.confirm(t('app_delete_recurring_confirm') || 'Delete this recurring transaction?')) {
-      onUpdateTrip({ ...trip, recurringTransactions: recurring.filter(r => r.id !== id) });
+      onUpdateLedger({ ...ledger, recurringTransactions: recurring.filter(r => r.id !== id) });
     }
   };
 
@@ -218,7 +218,7 @@ export function RecurringTransactions({ trip, onUpdateTrip }: RecurringTransacti
     setDesc('');
     setAmount('');
     setCurrency('MYR');
-    setCategory(tripCategories[0]);
+    setCategory(ledgerCategories[0]);
     setSubCategory('');
     setPaidBy(defaultPaidBy);
     setSplitAmong([defaultPaidBy].filter(Boolean));
@@ -249,7 +249,7 @@ export function RecurringTransactions({ trip, onUpdateTrip }: RecurringTransacti
 
       {isAdding && (
         <form onSubmit={handleSave} className="mb-6 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-2xl border border-gray-100 dark:border-gray-600">
-          {trip.users.length === 0 ? (
+          {ledger.users.length === 0 ? (
             <div className="text-center py-4">
               <p className="text-sm text-amber-600 dark:text-amber-400 mb-3">
                 {t('form_add_people_first') || "Please add people to the group first."}
@@ -281,12 +281,12 @@ export function RecurringTransactions({ trip, onUpdateTrip }: RecurringTransacti
                   <select
                     value={category.name}
                     onChange={e => {
-                      setCategory(tripCategories.find(c => c.name === e.target.value) || tripCategories[0]);
+                      setCategory(ledgerCategories.find(c => c.name === e.target.value) || ledgerCategories[0]);
                       setSubCategory('');
                     }}
                     className="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white"
                   >
-                    {tripCategories.map(c => (
+                    {ledgerCategories.map(c => (
                       <option key={c.name} value={c.name}>{c.name}</option>
                     ))}
                   </select>
@@ -330,7 +330,7 @@ export function RecurringTransactions({ trip, onUpdateTrip }: RecurringTransacti
                         onChange={e => setCurrency(e.target.value)}
                         className="h-full pl-3 pr-8 py-2.5 bg-transparent outline-none uppercase appearance-none font-medium text-gray-700 dark:text-gray-300 text-sm"
                       >
-                        {Array.from(new Set(['MYR', ...trip.exchanges.map(e => e.currency)])).map(c => (
+                        {Array.from(new Set(['MYR', ...ledger.exchanges.map(e => e.currency)])).map(c => (
                           <option key={c} value={c}>{c}</option>
                         ))}
                       </select>
@@ -373,7 +373,7 @@ export function RecurringTransactions({ trip, onUpdateTrip }: RecurringTransacti
                     onChange={e => setPaidBy(e.target.value)}
                     className="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white"
                   >
-                    {trip.users.map(u => (
+                    {ledger.users.map(u => (
                       <option key={u} value={u}>{u}</option>
                     ))}
                   </select>
@@ -393,7 +393,7 @@ export function RecurringTransactions({ trip, onUpdateTrip }: RecurringTransacti
                     "flex flex-wrap gap-2 p-2 rounded-xl border",
                     errors.splitAmong ? "border-red-500 dark:border-red-500" : "border-transparent"
                   )}>
-                    {trip.users.map(user => (
+                    {ledger.users.map(user => (
                       <button
                         key={user}
                         type="button"
@@ -411,7 +411,7 @@ export function RecurringTransactions({ trip, onUpdateTrip }: RecurringTransacti
                         {user}
                       </button>
                     ))}
-                    {trip.users.length === 0 && <span className="text-sm text-gray-400 italic">{t('form_add_people_first') || 'Add people first'}</span>}
+                    {ledger.users.length === 0 && <span className="text-sm text-gray-400 italic">{t('form_add_people_first') || 'Add people first'}</span>}
                   </div>
 
                   {/* Split Mode Toggle */}

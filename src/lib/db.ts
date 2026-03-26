@@ -1,21 +1,21 @@
 import Dexie, { Table } from 'dexie';
-import { Trip } from '../types';
+import { Ledger } from '../types';
 
 export interface AppSettings {
   id: string;
-  currentTripId: string;
-  unsyncedTripIds: string[];
+  currentLedgerId: string;
+  unsyncedLedgerIds: string[];
   githubToken: string;
 }
 
 export class AppDatabase extends Dexie {
-  trips!: Table<Trip, string>;
+  ledgers!: Table<Ledger, string>;
   settings!: Table<AppSettings, string>;
 
   constructor() {
     super('SplitWalletDB');
     this.version(1).stores({
-      trips: 'id, lastUpdated',
+      ledgers: 'id, lastUpdated',
       settings: 'id'
     });
   }

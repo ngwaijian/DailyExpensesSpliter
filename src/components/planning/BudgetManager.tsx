@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
-import { Trip, Budget, CATEGORIES } from '../../types';
+import { Ledger, Budget, CATEGORIES } from '../../types';
 import { Wallet, Plus, Edit2, Trash2, AlertCircle, PieChart, TrendingUp } from 'lucide-react';
 import { formatCurrency, getAverageRates } from '../../utils/currency';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { cn } from '../../lib/utils';
 
 interface BudgetManagerProps {
-  trip: Trip;
-  onUpdateTrip: (trip: Trip) => void;
+  ledger: Ledger;
+  onUpdateLedger: (ledger: Ledger) => void;
 }
 
-export function BudgetManager({ trip, onUpdateTrip }: BudgetManagerProps) {
+export function BudgetManager({ ledger, onUpdateLedger }: BudgetManagerProps) {
   const { t } = useLanguage();
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -19,10 +19,10 @@ export function BudgetManager({ trip, onUpdateTrip }: BudgetManagerProps) {
   const [name, setName] = useState('');
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState('MYR');
-  const [period, setPeriod] = useState<'trip' | 'monthly'>('trip');
+  const [period, setPeriod] = useState<'ledger' | 'monthly'>('ledger');
 
-  const budgets = trip.budgets || [];
-  const tripCategories = (trip.categories || CATEGORIES).map(c => typeof c === 'string' ? { name: c, subCategories: [] } : c);
+  const budgets = ledger.budgets || [];
+  const ledgerCategories = (ledger.categories || CATEGORIES).map(c => typeof c === 'string' ? { name: c, subCategories: [] } : c);
 
   const calculateSpending = (budget: Budget) => {
     if (!budget || !budget.categories) return 0;
@@ -31,9 +31,9 @@ export function BudgetManager({ trip, onUpdateTrip }: BudgetManagerProps) {
     const currentYear = now.getFullYear();
 
     // Calculate average rates for conversion
-    const rates = getAverageRates(trip);
+    const rates = getAverageRates(ledger);
 
-    return trip.expenses.reduce((acc, exp) => {
+    return ledger.expenses.reduce((acc, exp) => {
       if (exp.type === 'income' || exp.type === 'settlement') return acc;
 
       // Filter by category
@@ -77,7 +77,7 @@ export function BudgetManager({ trip, onUpdateTrip }: BudgetManagerProps) {
       newBudgets = [...budgets, newBudget];
     }
 
-    onUpdateTrip({ ...trip, budgets: newBudgets });
+    onUpdateLedger({ ...ledger, budgets: newBudgets });
     resetForm();
   };
 
@@ -93,7 +93,7 @@ export function BudgetManager({ trip, onUpdateTrip }: BudgetManagerProps) {
 
   const handleDelete = (id: string) => {
     if (confirm(t('app_delete_budget_confirm') || 'Delete this budget?')) {
-      onUpdateTrip({ ...trip, budgets: budgets.filter(b => b.id !== id) });
+      onUpdateLedger({ ...ledger, budgets: budgets.filter(b => b.id !== id) });
     }
   };
 
@@ -104,7 +104,7 @@ export function BudgetManager({ trip, onUpdateTrip }: BudgetManagerProps) {
     setCategories(['All']);
     setAmount('');
     setCurrency('MYR');
-    setPeriod('trip');
+    setPeriod('ledger');
   };
 
   return (
@@ -163,7 +163,7 @@ export function BudgetManager({ trip, onUpdateTrip }: BudgetManagerProps) {
                       className="w-24 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none text-gray-900 dark:text-white font-bold"
                     >
                       <option value="MYR">MYR</option>
-                      {trip.exchanges.map(ex => (
+                      {ledger.exchanges.map(ex => (
                         <option key={ex.currency} value={ex.currency}>{ex.currency}</option>
                       ))}
                     </select>
@@ -174,13 +174,13 @@ export function BudgetManager({ trip, onUpdateTrip }: BudgetManagerProps) {
                   <div className="flex p-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl">
                     <button
                       type="button"
-                      onClick={() => setPeriod('trip')}
+                      onClick={() => setPeriod('ledger')}
                       className={cn(
                         "flex-1 py-2 text-xs font-bold uppercase tracking-widest rounded-lg transition-all",
-                        period === 'trip' ? "bg-indigo-500 text-white shadow-sm" : "text-gray-400 hover:text-gray-600"
+                        period === 'ledger' ? "bg-indigo-500 text-white shadow-sm" : "text-gray-400 hover:text-gray-600"
                       )}
                     >
-                      Entire Trip
+                      Entire Ledger
                     </button>
                     <button
                       type="button"
@@ -208,7 +208,7 @@ export function BudgetManager({ trip, onUpdateTrip }: BudgetManagerProps) {
                     />
                     <span className="text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors">All Categories</span>
                   </label>
-                  {tripCategories.map(c => (
+                  {ledgerCategories.map(c => (
                     <label key={c.name} className="flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg cursor-pointer transition-colors group">
                       <input
                         type="checkbox"

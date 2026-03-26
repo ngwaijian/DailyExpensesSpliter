@@ -1,18 +1,18 @@
 import React, { useState } from 'react';
-import { Loan, Trip } from '../../types';
+import { Loan, Ledger } from '../../types';
 import { formatCurrency } from '../../utils/currency';
 import { LoanModal } from './LoanModal';
 import { cn } from '../../lib/utils';
 import { Plus, Trash2, Edit2, CreditCard, Calendar, Clock } from 'lucide-react';
 
 export const LoanManager: React.FC<{ 
-  trip: Trip, 
+  ledger: Ledger, 
   onAdd: (loan: Loan) => void,
   onEdit: (loan: Loan) => void,
   onDelete: (id: string) => void,
   onAddExpense: (expense: any) => void
-}> = ({ trip, onAdd, onEdit, onDelete, onAddExpense }) => {
-  const loans = trip.loans || [];
+}> = ({ ledger, onAdd, onEdit, onDelete, onAddExpense }) => {
+  const loans = ledger.loans || [];
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingLoan, setEditingLoan] = useState<Loan | undefined>(undefined);
 
@@ -169,8 +169,8 @@ export const LoanManager: React.FC<{
         onClose={() => setIsModalOpen(false)} 
         onSave={(loan) => { editingLoan ? onEdit(loan) : onAdd(loan); setIsModalOpen(false); }}
         initialData={editingLoan}
-        users={trip.users}
-        defaultCurrency={trip.expenses[0]?.currency || 'MYR'}
+        users={ledger.users}
+        defaultCurrency={ledger.expenses[0]?.currency || 'MYR'}
       />
     </div>
   );

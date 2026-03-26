@@ -1,18 +1,18 @@
 import React from 'react';
-import { Trip } from '../../types';
+import { Ledger } from '../../types';
 import { formatCurrency } from '../../utils/currency';
 import { calculateBalances, getSimplifiedDebts } from '../../utils/balances';
 import { ArrowRight, CheckCircle2 } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 interface BalancesProps {
-  trip: Trip;
+  ledger: Ledger;
 }
 
-export function Balances({ trip }: BalancesProps) {
+export function Balances({ ledger }: BalancesProps) {
   const { t } = useLanguage();
-  const balances = calculateBalances(trip);
-  const transactions = getSimplifiedDebts(balances, trip);
+  const balances = calculateBalances(ledger);
+  const transactions = getSimplifiedDebts(balances, ledger);
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-sm p-6 transition-colors duration-200">

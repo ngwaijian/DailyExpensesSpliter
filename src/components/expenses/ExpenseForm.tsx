@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Trip, CATEGORIES } from '../../types';
-import { CATEGORY_COLORS, CATEGORY_STRIP_COLORS } from '../../constants';
+import { Ledger, CATEGORIES } from '../../types';
+import { CATEGORY_COLORS, CATEGORY_SLEDGER_COLORS } from '../../constants';
 import { Calendar, Tag, DollarSign, Users, X, Calculator, MapPin, Loader2, Search } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -14,11 +14,11 @@ import { CalculatorKeypad } from './CalculatorKeypad';
 import { LocationPicker } from './LocationPicker';
 
 interface ExpenseFormProps {
-  trip: Trip;
+  ledger: Ledger;
   onSubmit: (expenseData: any) => void;
   onCancel: () => void;
   initialData?: any;
-  onUpdateTrip: (trip: Trip) => void;
+  onUpdateLedger: (ledger: Ledger) => void;
   isMobileModal?: boolean;
   onCloseMobile?: () => void;
 }
@@ -31,7 +31,7 @@ const formatDateTime = (d?: string) => {
   return new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 };
 
-export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTrip, isMobileModal, onCloseMobile }: ExpenseFormProps) {
+export function ExpenseForm({ ledger, onSubmit, onCancel, initialData, onUpdateLedger, isMobileModal, onCloseMobile }: ExpenseFormProps) {
   const { t } = useLanguage();
   const { resolvedTheme } = useTheme();
   const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false);
@@ -40,14 +40,14 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
   const [memo, setMemo] = useState(initialData?.memo || '');
   const [amount, setAmount] = useState(initialData?.amountOriginal || '');
   const [currency, setCurrency] = useState(initialData?.currency || 'MYR');
-  const tripCategories = (trip.categories || CATEGORIES).map(c => typeof c === 'string' ? { name: c, subCategories: [] } : c);
+  const ledgerCategories = (ledger.categories || CATEGORIES).map(c => typeof c === 'string' ? { name: c, subCategories: [] } : c);
   const initialCategory = initialData?.category 
     ? (typeof initialData.category === 'string' ? initialData.category : initialData.category.name)
-    : tripCategories[0].name;
+    : ledgerCategories[0].name;
   const [category, setCategory] = useState<string>(initialCategory);
   const [subCategory, setSubCategory] = useState(initialData?.subCategory || '');
   const [date, setDate] = useState(formatDateTime(initialData?.date));
-  const initialPaidBy = initialData?.paidBy || (trip.users.includes('Jian') ? 'Jian' : (trip.users.length > 0 ? trip.users[0] : ''));
+  const initialPaidBy = initialData?.paidBy || (ledger.users.includes('Jian') ? 'Jian' : (ledger.users.length > 0 ? ledger.users[0] : ''));
   const [paidBy, setPaidBy] = useState(initialPaidBy);
   const [splitAmong, setSplitAmong] = useState<string[]>(initialData?.splitAmong || (initialPaidBy ? [initialPaidBy] : []));
   const [splitMode, setSplitMode] = useState<'equal' | 'unequal' | 'shares'>(initialData?.splitDetails ? 'unequal' : 'equal');
@@ -103,7 +103,7 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
     const receiver = splitAmong[0];
     if (paidBy === receiver) return null;
 
-    const balances = calculateBalances(trip);
+    const balances = calculateBalances(ledger);
     const transactions = getSimplifiedDebts(balances);
     
     // Find if there's a debt from paidBy to receiver
@@ -114,19 +114,19 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
       // using the average rate for that currency.
       if (currency === 'MYR') return debt.amount;
       
-      const rates = getAverageRates(trip);
+      const rates = getAverageRates(ledger);
       const rate = rates[currency] || 1;
       return debt.amount / rate;
     }
     
     return null;
-  }, [type, paidBy, splitAmong, trip, currency]);
+  }, [type, paidBy, splitAmong, ledger, currency]);
 
   // Get unique descriptions from existing expenses for autocomplete
   const descriptionSuggestions = useMemo(() => {
-    const descs = trip.expenses.map(e => e.desc);
+    const descs = ledger.expenses.map(e => e.desc);
     return Array.from(new Set(descs)).filter(d => d.length > 0).sort();
-  }, [trip.expenses]);
+  }, [ledger.expenses]);
 
   const [showCalculator, setShowCalculator] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: boolean }>({});
@@ -139,7 +139,7 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
   const [isSettled, setIsSettled] = useState(initialData?.isSettled || false);
   const [sponsoredBy, setSponsoredBy] = useState(initialData?.sponsoredBy || '');
 
-  const rates = useMemo(() => getAverageRates(trip), [trip]);
+  const rates = useMemo(() => getAverageRates(ledger), [ledger]);
 
   const currentMyrEquivalent = useMemo(() => {
     if (currency === 'MYR') return null;
@@ -259,10 +259,10 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
       setMemo(initialData.memo || '');
       setAmount(initialData.amountOriginal || '');
       setCurrency(initialData.currency || 'MYR');
-      setCategory(initialData.category || tripCategories[0].name);
+      setCategory(initialData.category || ledgerCategories[0].name);
       setSubCategory(initialData.subCategory || '');
       setDate(formatDateTime(initialData.date));
-      const defaultPaidBy = trip.users.includes('Jian') ? 'Jian' : (trip.users.length > 0 ? trip.users[0] : '');
+      const defaultPaidBy = ledger.users.includes('Jian') ? 'Jian' : (ledger.users.length > 0 ? ledger.users[0] : '');
       setPaidBy(initialData.paidBy || defaultPaidBy);
       setSplitAmong(initialData.splitAmong || (initialData.paidBy ? [initialData.paidBy] : (defaultPaidBy ? [defaultPaidBy] : [])));
       setLocationName(initialData.location?.name || '');
@@ -279,10 +279,10 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
       setMemo('');
       setAmount('');
       setCurrency('MYR');
-      setCategory(tripCategories[0].name);
+      setCategory(ledgerCategories[0].name);
       setSubCategory('');
       setDate(formatDateTime());
-      const defaultPaidBy = trip.users.includes('Jian') ? 'Jian' : (trip.users.length > 0 ? trip.users[0] : '');
+      const defaultPaidBy = ledger.users.includes('Jian') ? 'Jian' : (ledger.users.length > 0 ? ledger.users[0] : '');
       setPaidBy(defaultPaidBy);
       setSplitAmong(defaultPaidBy ? [defaultPaidBy] : []);
       setLocationName('');
@@ -305,7 +305,7 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
     }
   };
 
-  const selectAll = () => setSplitAmong(trip.users);
+  const selectAll = () => setSplitAmong(ledger.users);
   const selectNone = () => setSplitAmong([]);
 
   const handleSplitRemaining = () => {
@@ -438,8 +438,8 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
               setIsSettled(false);
               setDesc(t('form_desc_settlement'));
               setCategory('📝 General / Other');
-              if (trip.users.length > 1) {
-                setSplitAmong([trip.users.find(u => u !== paidBy) || trip.users[1]]);
+              if (ledger.users.length > 1) {
+                setSplitAmong([ledger.users.find(u => u !== paidBy) || ledger.users[1]]);
               }
             }}
             className={cn(
@@ -464,7 +464,7 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
                   onChange={e => setCurrency(e.target.value)}
                   className="h-full pl-3 pr-8 py-2.5 bg-transparent outline-none uppercase appearance-none font-medium text-gray-700 dark:text-gray-300 text-sm text-center lg:text-left"
                 >
-                  {Array.from(new Set(['MYR', ...trip.exchanges.map(e => e.currency)])).map(c => (
+                  {Array.from(new Set(['MYR', ...ledger.exchanges.map(e => e.currency)])).map(c => (
                     <option key={c} value={c}>{c}</option>
                   ))}
                 </select>
@@ -635,7 +635,7 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
                 </button>
               </div>
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-3">
-                {tripCategories.map(c => (
+                {ledgerCategories.map(c => (
                   <button
                     key={c.name}
                     type="button"
@@ -665,11 +665,11 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
                   </button>
                 ))}
               </div>
-              {category && tripCategories.find(c => c.name === category)?.subCategories && tripCategories.find(c => c.name === category)!.subCategories!.length > 0 && (
+              {category && ledgerCategories.find(c => c.name === category)?.subCategories && ledgerCategories.find(c => c.name === category)!.subCategories!.length > 0 && (
                 <div className="mt-4">
                   <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2">Sub-category</label>
                   <div className="flex gap-2 flex-wrap">
-                    {tripCategories.find(c => c.name === category)!.subCategories!.map(sub => (
+                    {ledgerCategories.find(c => c.name === category)!.subCategories!.map(sub => (
                       <button
                         key={sub}
                         type="button"
@@ -691,7 +691,7 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
           )}
 
           {/* Link to Goal */}
-          {type === 'expense' && trip.goals && trip.goals.length > 0 && (
+          {type === 'expense' && ledger.goals && ledger.goals.length > 0 && (
             <div className="col-span-2 md:col-span-12 lg:order-5">
               <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Link to Goal (Optional)</label>
               <div className="relative">
@@ -701,7 +701,7 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
                   className="w-full p-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white transition-colors text-sm appearance-none min-h-[42px]"
                 >
                   <option value="">-- No Goal --</option>
-                  {trip.goals.map(g => (
+                  {ledger.goals.map(g => (
                     <option key={g.id} value={g.id}>{g.name}</option>
                   ))}
                 </select>
@@ -758,7 +758,7 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
               )}
             >
               <option value="" disabled>{t('form_select_person')}</option>
-              {trip.users.map(u => <option key={u} value={u}>{u}</option>)}
+              {ledger.users.map(u => <option key={u} value={u}>{u}</option>)}
             </select>
             
             {type === 'expense' && (
@@ -801,7 +801,7 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
                       }}
                       className="w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white transition-colors text-sm"
                     >
-                      {trip.users.map(u => <option key={u} value={u}>{u}</option>)}
+                      {ledger.users.map(u => <option key={u} value={u}>{u}</option>)}
                     </select>
                   </div>
                 )}
@@ -825,7 +825,7 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
                   className="w-full p-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white transition-colors"
                 >
                   <option value="" disabled>{t('form_select_person')}</option>
-                  {trip.users.map(u => <option key={u} value={u}>{u}</option>)}
+                  {ledger.users.map(u => <option key={u} value={u}>{u}</option>)}
                 </select>
               </>
             ) : (
@@ -843,7 +843,7 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
                   "flex flex-wrap gap-2 p-2 rounded-xl border",
                   errors.splitAmong ? "border-red-500 dark:border-red-500" : "border-transparent"
                 )}>
-                  {trip.users.map(user => (
+                  {ledger.users.map(user => (
                     <button
                       key={user}
                       type="button"
@@ -861,7 +861,7 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
                       {user}
                     </button>
                   ))}
-                  {trip.users.length === 0 && <span className="text-sm text-gray-400 italic">{t('form_add_people_first')}</span>}
+                  {ledger.users.length === 0 && <span className="text-sm text-gray-400 italic">{t('form_add_people_first')}</span>}
                 </div>
 
                 {/* Split Mode Toggle */}
@@ -1077,7 +1077,7 @@ export function ExpenseForm({ trip, onSubmit, onCancel, initialData, onUpdateTri
               </button>
             </div>
             <div className="p-4 max-h-[60vh] overflow-y-auto">
-              <CategoryManager trip={trip} onUpdateTrip={onUpdateTrip} />
+              <CategoryManager ledger={ledger} onUpdateLedger={onUpdateLedger} />
             </div>
           </div>
         </div>

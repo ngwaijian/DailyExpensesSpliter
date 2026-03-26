@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Trip, CATEGORIES, Category } from '../types';
+import { Ledger, CATEGORIES, Category } from '../types';
 
 interface UseUrlShortcutsProps {
-  currentTrip: Trip | null;
-  updateTrip: (trip: Trip) => void;
+  currentLedger: Ledger | null;
+  updateLedger: (ledger: Ledger) => void;
   t: (key: string, fallback?: string) => string;
 }
 
-export function useUrlShortcuts({ currentTrip, updateTrip, t }: UseUrlShortcutsProps) {
+export function useUrlShortcuts({ currentLedger, updateLedger, t }: UseUrlShortcutsProps) {
   const [shortcutAmount, setShortcutAmount] = useState<number | null>(null);
   const [shortcutCategory, setShortcutCategory] = useState<string | null>(null);
   const [shortcutDesc, setShortcutDesc] = useState<string | null>(null);
@@ -39,7 +39,7 @@ export function useUrlShortcuts({ currentTrip, updateTrip, t }: UseUrlShortcutsP
     const paidByParam = getParam(['paidBy', 'payer', 'paid_by', 'paidby']);
     const subCategory = getParam(['subCategory', 'subcat']);
     
-    if (!currentTrip) return;
+    if (!currentLedger) return;
 
     let shouldClear = false;
 
@@ -47,7 +47,7 @@ export function useUrlShortcuts({ currentTrip, updateTrip, t }: UseUrlShortcutsP
     let parsedPaidBy = paidByParam;
     if (paidByParam) {
       const paidByLower = paidByParam.toLowerCase();
-      const matchedUser = currentTrip.users.find(u => u.toLowerCase() === paidByLower);
+      const matchedUser = currentLedger.users.find(u => u.toLowerCase() === paidByLower);
       if (matchedUser) {
         parsedPaidBy = matchedUser;
       }
@@ -59,9 +59,9 @@ export function useUrlShortcuts({ currentTrip, updateTrip, t }: UseUrlShortcutsP
       if (splitAmongParam.includes(',')) {
         parsedSplitAmong = splitAmongParam.split(',').map(u => u.trim()).filter(Boolean);
       } else {
-        // Filter currentTrip.users to see which existing user names are included in the raw string
+        // Filter currentLedger.users to see which existing user names are included in the raw string
         const rawLower = splitAmongParam.toLowerCase();
-        const matchedUsers = currentTrip.users.filter(u => rawLower.includes(u.toLowerCase()));
+        const matchedUsers = currentLedger.users.filter(u => rawLower.includes(u.toLowerCase()));
         if (matchedUsers.length > 0) {
           parsedSplitAmong = matchedUsers;
         } else {
@@ -71,8 +71,8 @@ export function useUrlShortcuts({ currentTrip, updateTrip, t }: UseUrlShortcutsP
     }
 
     // --- Category Matching ---
-    const tripCategories = (currentTrip.categories || CATEGORIES).map(c => typeof c === 'string' ? { name: c, subCategories: [] } : c);
-    let cleanCategory: Category = tripCategories[0]; // Default to first category
+    const ledgerCategories = (currentLedger.categories || CATEGORIES).map(c => typeof c === 'string' ? { name: c, subCategories: [] } : c);
+    let cleanCategory: Category = ledgerCategories[0]; // Default to first category
     let matchedCategory = false;
 
     if (category) {
@@ -80,14 +80,14 @@ export function useUrlShortcuts({ currentTrip, updateTrip, t }: UseUrlShortcutsP
       const normalizedRaw = rawCategory.toLowerCase();
       
       // Try exact match first
-      let match = tripCategories.find(c => {
+      let match = ledgerCategories.find(c => {
         const translated = t(`cat_${c.name}`, c.name).toLowerCase();
         return c.name.toLowerCase() === normalizedRaw || translated === normalizedRaw;
       });
       
       // Then try fuzzy match
       if (!match) {
-        match = tripCategories.find(c => {
+        match = ledgerCategories.find(c => {
           const lowerC = c.name.toLowerCase();
           const translated = t(`cat_${c.name}`, c.name).toLowerCase();
           const nameOnly = lowerC.replace(/^[^\s]+\s/, '').trim();
@@ -125,9 +125,9 @@ export function useUrlShortcuts({ currentTrip, updateTrip, t }: UseUrlShortcutsP
     if (autoSave && amount) {
       const parsedAmount = parseFloat(amount);
       if (!isNaN(parsedAmount)) {
-        const paidBy = parsedPaidBy || (currentTrip.users.length > 0 ? currentTrip.users[0] : 'Me');
+        const paidBy = parsedPaidBy || (currentLedger.users.length > 0 ? currentLedger.users[0] : 'Me');
         
-        let splitAmong = currentTrip.users.length > 0 ? currentTrip.users : ['Me'];
+        let splitAmong = currentLedger.users.length > 0 ? currentLedger.users : ['Me'];
         if (parsedSplitAmong && parsedSplitAmong.length > 0) {
           splitAmong = parsedSplitAmong;
         }
@@ -163,9 +163,9 @@ export function useUrlShortcuts({ currentTrip, updateTrip, t }: UseUrlShortcutsP
           goalId: goalId || undefined,
         };
         
-        updateTrip({
-          ...currentTrip,
-          expenses: [newExpense, ...currentTrip.expenses]
+        updateLedger({
+          ...currentLedger,
+          expenses: [newExpense, ...currentLedger.expenses]
         });
         
         window.history.replaceState({}, '', window.location.pathname);
@@ -221,7 +221,7 @@ export function useUrlShortcuts({ currentTrip, updateTrip, t }: UseUrlShortcutsP
     if (shouldClear) {
       window.history.replaceState({}, '', window.location.pathname);
     }
-  }, [currentTrip?.id, currentTrip?.users, currentTrip?.expenses, updateTrip, t]);
+  }, [currentLedger?.id, currentLedger?.users, currentLedger?.expenses, updateLedger, t]);
 
   const clearShortcuts = () => {
     setShortcutAmount(null);

@@ -9,7 +9,7 @@ export const CATEGORY_COLORS: { [key: string]: string } = {
   "📝 General / Other": "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400 border-gray-200 dark:border-gray-700",
 };
 
-export const CATEGORY_STRIP_COLORS: { [key: string]: string } = {
+export const CATEGORY_SLEDGER_COLORS: { [key: string]: string } = {
   "🍽️ Meals & Dining": "bg-orange-500",
   "🏨 Accommodation": "bg-sky-500",
   "🚕 Transport & Fuel": "bg-blue-500",

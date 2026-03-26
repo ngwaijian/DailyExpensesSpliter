@@ -19,8 +19,8 @@ const translations: Record<Language, Translations> = {
     plan_recurring: "Recurring",
     
     // Header
-    header_select_trip: "Select Account",
-    header_new_trip: "New Account",
+    header_select_ledger: "Select Account",
+    header_new_ledger: "New Account",
     
     // Expense Form
     form_type_expense: "Entry",
@@ -171,24 +171,24 @@ const translations: Record<Language, Translations> = {
     detail_confirm_delete: "Are you sure you want to delete this entry?",
     
     // Account People & Wallet
-    trip_people: "People",
-    trip_name_placeholder: "Name",
-    trip_no_people: "No people added yet.",
-    trip_wallet: "Currency Wallet",
-    trip_cur_placeholder: "CUR",
-    trip_foreign_placeholder: "Foreign",
-    trip_myr_placeholder: "MYR",
-    trip_log_exchange: "Log Exchange",
-    trip_avg_rate: "Avg:",
-    trip_no_exchanges: "No exchanges logged. Rate 1:1.",
-    trip_new: "New Account",
-    trip_rename: "Rename Account",
-    trip_delete: "Delete Account",
+    ledger_people: "People",
+    ledger_name_placeholder: "Name",
+    ledger_no_people: "No people added yet.",
+    ledger_wallet: "Currency Wallet",
+    ledger_cur_placeholder: "CUR",
+    ledger_foreign_placeholder: "Foreign",
+    ledger_myr_placeholder: "MYR",
+    ledger_log_exchange: "Log Exchange",
+    ledger_avg_rate: "Avg:",
+    ledger_no_exchanges: "No exchanges logged. Rate 1:1.",
+    ledger_new: "New Account",
+    ledger_rename: "Rename Account",
+    ledger_delete: "Delete Account",
     
     // App
-    app_new_trip_prompt: "New Account Name:",
-    app_delete_trip_confirm: "Delete current account?",
-    app_rename_trip_prompt: "Rename Account:",
+    app_new_ledger_prompt: "New Account Name:",
+    app_delete_ledger_confirm: "Delete current account?",
+    app_rename_ledger_prompt: "Rename Account:",
     app_delete_expense_confirm: "Delete this entry?",
     app_person_exists: "A person with this name already exists.",
     app_remove_person_confirm: "Remove ",
