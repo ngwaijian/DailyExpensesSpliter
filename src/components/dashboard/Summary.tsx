@@ -76,6 +76,12 @@ export function Summary({ ledger, onUpdateLedger }: SummaryProps) {
     const myr = e.amountOriginal * rate;
 
     if (e.type === 'settlement') {
+      if (personStats[e.paidBy]) {
+        personStats[e.paidBy].paid += myr;
+      }
+      if (e.splitAmong.length > 0 && personStats[e.splitAmong[0]]) {
+        personStats[e.splitAmong[0]].paid -= myr;
+      }
       return; // Settlements don't affect total spent or individual shares
     } else if (e.type === 'income') {
       totalIncomeMYR += myr;
