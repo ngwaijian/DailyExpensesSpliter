@@ -68,6 +68,9 @@ export function getSimplifiedDebts(balances: Record<string, number>, ledger?: Le
     else if (rounded >= 0.01) creditors.push({ name, amount: rounded });
   });
 
+  debtors.sort((a, b) => b.amount - a.amount);
+  creditors.sort((a, b) => b.amount - a.amount);
+
   let originalBalances: Record<string, number> | null = null;
   if (ledger) {
     const ledgerWithoutSettlements = {
@@ -78,15 +81,13 @@ export function getSimplifiedDebts(balances: Record<string, number>, ledger?: Le
   }
 
   const transactions: { from: string; to: string; amount: number; isRefund?: boolean }[] = [];
-  const debtorsCopy = debtors.map(d => ({ ...d }));
-  const creditorsCopy = creditors.map(c => ({ ...c }));
   
   let i = 0, j = 0;
-  while (i < debtorsCopy.length && j < creditorsCopy.length) {
-    const settle = Math.min(debtorsCopy[i].amount, creditorsCopy[j].amount);
+  while (i < debtors.length && j < creditors.length) {
+    const settle = Math.min(debtors[i].amount, creditors[j].amount);
     
-    const from = debtorsCopy[i].name;
-    const to = creditorsCopy[j].name;
+    const from = debtors[i].name;
+    const to = creditors[j].name;
     
     let isRefund = false;
     if (originalBalances) {
@@ -104,11 +105,11 @@ export function getSimplifiedDebts(balances: Record<string, number>, ledger?: Le
       isRefund
     });
     
-    debtorsCopy[i].amount -= settle;
-    creditorsCopy[j].amount -= settle;
+    debtors[i].amount -= settle;
+    creditors[j].amount -= settle;
 
-    if (debtorsCopy[i].amount < 0.005) i++;
-    if (creditorsCopy[j].amount < 0.005) j++;
+    if (debtors[i].amount < 0.005) i++;
+    if (creditors[j].amount < 0.005) j++;
   }
 
   return transactions;
