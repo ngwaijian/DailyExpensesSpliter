@@ -50,12 +50,12 @@ export function ExpenseForm({ ledger, onSubmit, onCancel, initialData, onUpdateL
   const initialPaidBy = initialData?.paidBy || (ledger.users.includes('Jian') ? 'Jian' : (ledger.users.length > 0 ? ledger.users[0] : ''));
   const [paidBy, setPaidBy] = useState(initialPaidBy);
   const [splitAmong, setSplitAmong] = useState<string[]>(initialData?.splitAmong || (initialPaidBy ? [initialPaidBy] : []));
-  const [splitMode, setSplitMode] = useState<'equal' | 'unequal' | 'shares'>(initialData?.splitDetails ? 'unequal' : 'equal');
+  const [splitMode, setSplitMode] = useState<'equal' | 'unequal'>(initialData?.splitDetails ? 'unequal' : 'equal');
   const [splitDetails, setSplitDetails] = useState<{ [key: string]: number | string }>(initialData?.splitDetails || {});
   const [splitShares, setSplitShares] = useState<{ [key: string]: number }>({});
   const [goalId, setGoalId] = useState<string>(initialData?.goalId || '');
 
-  // Update splitDetails when amount changes in equal or shares mode
+  // Update splitDetails when amount changes in equal mode
   useEffect(() => {
     if (splitMode === 'equal' && amount && !isNaN(parseFloat(amount)) && splitAmong.length > 0) {
       const total = parseFloat(amount);
@@ -65,36 +65,8 @@ export function ExpenseForm({ ledger, onSubmit, onCancel, initialData, onUpdateL
         newDetails[user] = perPerson;
       });
       setSplitDetails(newDetails);
-    } else if (splitMode === 'shares' && amount && !isNaN(parseFloat(amount)) && splitAmong.length > 0) {
-      const total = parseFloat(amount);
-      const totalShares = splitAmong.reduce((sum, user) => sum + (splitShares[user] ?? 1), 0);
-      
-      const newDetails: { [key: string]: number } = {};
-      
-      if (totalShares > 0) {
-        const perShare = total / totalShares;
-        let distributed = 0;
-        let firstUserWithShares: string | null = null;
-        
-        splitAmong.forEach(user => {
-          const shares = splitShares[user] ?? 1;
-          if (shares > 0 && !firstUserWithShares) firstUserWithShares = user;
-          const userAmount = Math.floor((shares * perShare) * 100) / 100;
-          newDetails[user] = userAmount;
-          distributed += userAmount;
-        });
-        
-        const diff = total - distributed;
-        if (firstUserWithShares && Math.abs(diff) > 0.001) {
-          newDetails[firstUserWithShares] = Number((newDetails[firstUserWithShares] + diff).toFixed(2));
-        }
-      } else {
-        splitAmong.forEach(user => newDetails[user] = 0);
-      }
-      
-      setSplitDetails(newDetails);
     }
-  }, [amount, splitAmong, splitMode, splitShares]);
+  }, [amount, splitAmong, splitMode]);
 
   // Suggested settlement amount logic
   const suggestedAmount = useMemo(() => {
@@ -206,8 +178,9 @@ export function ExpenseForm({ ledger, onSubmit, onCancel, initialData, onUpdateL
     }
 
     let finalSplitDetails: { [key: string]: number } | undefined = undefined;
+    let finalSplitAmong = [...splitAmong];
 
-    if (type === 'expense' && (splitMode === 'unequal' || splitMode === 'shares')) {
+    if (type === 'expense' && splitMode === 'unequal') {
       const totalSplit = Object.values(splitDetails).reduce<number>((a, b) => a + (parseFloat(b.toString()) || 0), 0);
       const totalAmount = parseFloat(finalAmount);
       
@@ -217,12 +190,21 @@ export function ExpenseForm({ ledger, onSubmit, onCancel, initialData, onUpdateL
       }
       // Filter out 0 amounts and ensure only selected users are included
       finalSplitDetails = {};
-      splitAmong.forEach(user => {
+      
+      const u1 = ledger.users[0];
+      const u2 = ledger.users[1];
+      const customUsers = [u1, u2].filter(Boolean);
+      customUsers.forEach(user => {
         const val = parseFloat(splitDetails[user]?.toString() || '0');
         if (val > 0) {
           finalSplitDetails![user] = val;
         }
       });
+      finalSplitAmong = Object.keys(finalSplitDetails);
+      if (finalSplitAmong.length === 0) {
+        // Fallback if both are 0 but total is 0
+        finalSplitAmong = customUsers;
+      }
     }
 
     onSubmit({
@@ -234,7 +216,7 @@ export function ExpenseForm({ ledger, onSubmit, onCancel, initialData, onUpdateL
       subCategory: subCategory || undefined,
       date,
       paidBy,
-      splitAmong,
+      splitAmong: finalSplitAmong,
       isSponsored,
       isSettled,
       sponsoredBy: isSponsored ? (sponsoredBy || paidBy) : undefined,
@@ -739,27 +721,33 @@ export function ExpenseForm({ ledger, onSubmit, onCancel, initialData, onUpdateL
         {/* Payer & Split */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
           <div>
-            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
               {type === 'sponsorship' ? t('form_sponsored_by') : type === 'settlement' ? t('form_paid_by') : t('form_paid_by')}
             </label>
-            <select 
-              value={paidBy}
-              onChange={e => {
-                if (errors.paidBy) setErrors(prev => ({ ...prev, paidBy: false }));
-                const newPaidBy = e.target.value;
-                if (splitAmong.length === 1 && splitAmong[0] === paidBy) {
-                  setSplitAmong([newPaidBy]);
-                }
-                setPaidBy(newPaidBy);
-              }}
-              className={cn(
-                "w-full p-2.5 bg-gray-50 dark:bg-gray-700 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white transition-colors",
-                errors.paidBy ? "border-red-500 dark:border-red-500" : "border-gray-200 dark:border-gray-600"
-              )}
-            >
-              <option value="" disabled>{t('form_select_person')}</option>
-              {ledger.users.map(u => <option key={u} value={u}>{u}</option>)}
-            </select>
+            <div className="flex bg-gray-100 dark:bg-gray-700 p-1 rounded-xl">
+              {ledger.users.slice(0, 2).map(user => (
+                <button
+                  key={user}
+                  type="button"
+                  onClick={() => {
+                    if (errors.paidBy) setErrors(prev => ({ ...prev, paidBy: false }));
+                    if (splitAmong.length === 1 && splitAmong[0] === paidBy) {
+                      setSplitAmong([user]);
+                    }
+                    setPaidBy(user);
+                  }}
+                  className={cn(
+                    "flex-1 py-2 px-2 text-sm font-medium rounded-lg transition-colors whitespace-normal h-auto min-h-[36px] flex items-center justify-center text-center",
+                    paidBy === user 
+                      ? "bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm" 
+                      : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                  )}
+                >
+                  {user}
+                </button>
+              ))}
+            </div>
+            {errors.paidBy && <p className="text-red-500 text-xs mt-1">Please select who paid</p>}
             
             {type === 'expense' && (
               <>
@@ -874,7 +862,7 @@ export function ExpenseForm({ ledger, onSubmit, onCancel, initialData, onUpdateL
                           type="button"
                           onClick={() => setSplitMode('equal')}
                           className={cn(
-                            "px-3 py-1 text-xs font-medium rounded-md transition-colors",
+                            "px-4 py-1.5 text-xs font-medium rounded-md transition-colors",
                             splitMode === 'equal' ? "bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm" : "text-gray-500 dark:text-gray-400"
                           )}
                         >
@@ -883,26 +871,19 @@ export function ExpenseForm({ ledger, onSubmit, onCancel, initialData, onUpdateL
                         <button
                           type="button"
                           onClick={() => {
-                            setSplitMode('shares');
-                            const newShares = { ...splitShares };
-                            splitAmong.forEach(u => { if (newShares[u] === undefined) newShares[u] = 1; });
-                            setSplitShares(newShares);
-                          }}
-                          className={cn(
-                            "px-3 py-1 text-xs font-medium rounded-md transition-colors",
-                            splitMode === 'shares' ? "bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm" : "text-gray-500 dark:text-gray-400"
-                          )}
-                        >
-                          {t('form_shares')}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
                             setSplitMode('unequal');
-                            setSplitDetails({});
+                            const u1 = ledger.users[0];
+                            const u2 = ledger.users[1];
+                            const total = parseFloat(amount) || 0;
+                            if (u1 && u2 && !splitDetails[u1] && !splitDetails[u2]) {
+                              setSplitDetails({
+                                [u1]: (total / 2).toFixed(2),
+                                [u2]: (total / 2).toFixed(2)
+                              });
+                            }
                           }}
                           className={cn(
-                            "px-3 py-1 text-xs font-medium rounded-md transition-colors",
+                            "px-4 py-1.5 text-xs font-medium rounded-md transition-colors",
                             splitMode === 'unequal' ? "bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm" : "text-gray-500 dark:text-gray-400"
                           )}
                         >
@@ -911,123 +892,38 @@ export function ExpenseForm({ ledger, onSubmit, onCancel, initialData, onUpdateL
                       </div>
                     </div>
 
-                    {splitMode === 'shares' && (() => {
-                      const totalShares = splitAmong.reduce((sum, u) => sum + (splitShares[u] ?? 1), 0);
-                      const maxShares = splitAmong.length;
-                      const remainingShares = Math.max(0, maxShares - totalShares);
-                      
-                      return (
-                        <div className="space-y-2 animate-in slide-in-from-top-2">
-                          <div className="text-xs text-gray-500 dark:text-gray-400 mb-3 bg-gray-50 dark:bg-gray-700/50 p-2 rounded-lg flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
-                            <span>{t('form_assign_shares').replace('{maxShares}', maxShares.toString())}</span>
-                            <span className={cn("font-bold", remainingShares > 0 ? "text-orange-500" : "text-blue-600")}>
-                              {t('form_remaining_shares').replace('{remainingShares}', remainingShares.toString())}
-                            </span>
-                          </div>
-                          {splitAmong.map(user => (
-                            <div key={user} className="flex items-center gap-2">
-                              <span className="text-sm text-gray-700 dark:text-gray-300 w-20 truncate">{user}</span>
-                              <div className="flex-1 flex items-center gap-3">
-                                <div className="flex items-center bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden">
-                                  <button 
-                                    type="button"
-                                    onClick={() => setSplitShares(prev => ({ ...prev, [user]: Math.max(0, (prev[user] ?? 1) - 1) }))}
-                                    className="px-3 py-1.5 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                                  >-</button>
-                                  <input
-                                    type="text"
-                                    inputMode="decimal"
-                                    pattern="[0-9]*\.?[0-9]*"
-                                    value={splitShares[user] ?? 1}
-                                    onChange={e => {
-                                      const valStr = e.target.value;
-                                      if (valStr === '') {
-                                        setSplitShares(prev => ({ ...prev, [user]: 0 }));
-                                        return;
-                                      }
-                                      const val = parseFloat(valStr);
-                                      if (!isNaN(val)) {
-                                        const currentVal = splitShares[user] ?? 1;
-                                        const maxAllowed = currentVal + remainingShares;
-                                        setSplitShares(prev => ({ ...prev, [user]: Math.min(Math.max(0, val), maxAllowed) }));
-                                      }
-                                    }}
-                                    className="w-12 text-center bg-transparent text-sm font-medium outline-none text-gray-900 dark:text-white"
-                                  />
-                                  <button 
-                                    type="button"
-                                    onClick={() => {
-                                      if (remainingShares > 0) {
-                                        setSplitShares(prev => ({ ...prev, [user]: (prev[user] ?? 1) + 1 }));
-                                      }
-                                    }}
-                                    disabled={remainingShares <= 0}
-                                    className="px-3 py-1.5 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
-                                  >+</button>
-                                </div>
-                                <span className="text-sm font-medium text-blue-600 dark:text-blue-400 ml-auto">
-                                  {currency} {(parseFloat(splitDetails[user]?.toString() || '0')).toFixed(2)}
-                                </span>
+                    {splitMode === 'unequal' && (
+                      <div className="flex gap-4 animate-in slide-in-from-top-2">
+                        {[ledger.users[0], ledger.users[1]].filter(Boolean).map((user, index, arr) => {
+                          const otherUser = arr[1 - index];
+                          return (
+                            <div key={user} className="flex-1">
+                              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{user}</label>
+                              <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-medium pointer-events-none">{currency}</span>
+                                <input
+                                  type="text"
+                                  inputMode="decimal"
+                                  pattern="[0-9]*\.?[0-9]*"
+                                  value={splitDetails[user] ?? ''}
+                                  onChange={e => {
+                                    const val = e.target.value;
+                                    const numVal = parseFloat(val) || 0;
+                                    const totalAmount = parseFloat(amount) || 0;
+                                    
+                                    setSplitDetails(prev => ({
+                                      ...prev,
+                                      [user]: val,
+                                      ...(otherUser && totalAmount > 0 && val !== '' ? { [otherUser]: Math.max(0, totalAmount - numVal).toFixed(2) } : {})
+                                    }));
+                                  }}
+                                  className="w-full pl-12 pr-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-colors"
+                                  placeholder="0.00"
+                                />
                               </div>
                             </div>
-                          ))}
-                        </div>
-                      );
-                    })()}
-
-                    {splitMode === 'unequal' && (
-                      <div className="space-y-2 animate-in slide-in-from-top-2">
-                        {splitAmong.map(user => (
-                          <div key={user} className="flex items-center gap-2">
-                            <span className="text-sm text-gray-700 dark:text-gray-300 w-20 truncate">{user}</span>
-                            <div className="flex-1 relative">
-                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-medium pointer-events-none">{currency}</span>
-                              <input
-                                type="text"
-                                inputMode="decimal"
-                                pattern="[0-9]*\.?[0-9]*"
-                                value={splitDetails[user] ?? ''}
-                                onChange={e => {
-                                  setSplitDetails(prev => ({
-                                    ...prev,
-                                    [user]: e.target.value
-                                  }));
-                                }}
-                                className="w-full pl-12 pr-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-colors"
-                                placeholder="0.00"
-                              />
-                            </div>
-                          </div>
-                        ))}
-                        <div className="flex justify-between items-center pt-2 border-t border-gray-100 dark:border-gray-700 mt-2">
-                          <div className="flex gap-2">
-                            <button
-                              type="button"
-                              onClick={handleSplitRemaining}
-                              className="text-[10px] sm:text-xs font-medium bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 px-2 py-1 rounded hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
-                            >
-                              {t('form_split_remaining')}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={handleClearSplit}
-                              className="text-[10px] sm:text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400 px-2 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                            >
-                              {t('form_clear')}
-                            </button>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-medium text-gray-500">{t('form_total')}</span>
-                            <span className={cn(
-                              "text-sm font-bold",
-                              Object.values(splitDetails).reduce<number>((a, b) => a + (parseFloat(b.toString()) || 0), 0).toFixed(2) === (parseFloat(amount) || 0).toFixed(2) 
-                                ? "text-blue-600" 
-                                : "text-red-500"
-                            )}>
-                              {Object.values(splitDetails).reduce<number>((a, b) => a + (parseFloat(b.toString()) || 0), 0).toFixed(2)} / {amount || '0.00'}
-                            </span>
-                          </div>
-                        </div>
+                          );
+                        })}
                       </div>
                     )}
                   </div>

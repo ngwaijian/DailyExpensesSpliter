@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Trip } from '../../types';
+import { Ledger } from '../../types';
 import { Plus, Trash2, Edit2, MoreVertical, ChevronDown, Check, Users, X, Wallet } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { getAverageRates } from '../../utils/currency';
@@ -7,7 +7,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface TripSelectorProps {
-  trips: Trip[];
+  trips: Ledger[];
   currentTripId: string;
   onSelect: (id: string) => void;
   onAdd: () => void;
@@ -148,7 +148,7 @@ export function TripSelector({ trips, currentTripId, onSelect, onAdd, onDelete, 
 }
 
 interface PeopleWalletProps {
-  trip: Trip;
+  trip: Ledger;
   onAddPerson: (name: string) => void;
   onEditPerson: (oldName: string, newName: string) => void;
   onRemovePerson: (name: string) => void;
