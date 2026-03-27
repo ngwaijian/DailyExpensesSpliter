@@ -107,6 +107,7 @@ export interface Ledger {
   monthlyBudget?: number;
   categories?: Category[];
   gistId?: string; // For syncing this specific ledger
+  archivedYears?: { year: string; gistId: string }[];
 }
 
 export interface AppData {

@@ -279,6 +279,90 @@ export function useStore() {
     return ledger.categories || CATEGORIES;
   }, []);
 
+  const archiveYear = useCallback(async (ledgerId: string, year: number) => {
+    if (!githubToken) throw new Error("GitHub token required for archiving.");
+    
+    const ledger = appData.ledgers.find(l => l.id === ledgerId);
+    if (!ledger) throw new Error("Ledger not found.");
+
+    const yearStr = year.toString();
+    
+    const archivedExpenses = ledger.expenses.filter(e => e.date.startsWith(yearStr));
+    const archivedExchanges = ledger.exchanges.filter(e => e.date.startsWith(yearStr));
+    
+    if (archivedExpenses.length === 0 && archivedExchanges.length === 0) {
+      throw new Error("No records found for the specified year.");
+    }
+
+    const archiveData = {
+      ...ledger,
+      expenses: archivedExpenses,
+      exchanges: archivedExchanges,
+      name: `Archive ${year} - ${ledger.name}`,
+      archivedYears: undefined
+    };
+
+    const response = await fetch('https://api.github.com/gists', {
+      method: 'POST',
+      headers: {
+        'Authorization': `token ${githubToken}`,
+        'Accept': 'application/vnd.github.v3+json',
+      },
+      body: JSON.stringify({
+        description: `Archive ${year} - ${ledger.name}`,
+        public: false,
+        files: {
+          'split_wallet_archive.json': {
+            content: JSON.stringify(archiveData, null, 2)
+          }
+        }
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to create archive gist: ${response.statusText}`);
+    }
+
+    const gistData = await response.json();
+    const archiveGistId = gistData.id;
+
+    const remainingExpenses = ledger.expenses.filter(e => !e.date.startsWith(yearStr));
+    const remainingExchanges = ledger.exchanges.filter(e => !e.date.startsWith(yearStr));
+
+    const updatedLedger = {
+      ...ledger,
+      expenses: remainingExpenses,
+      exchanges: remainingExchanges,
+      archivedYears: [...(ledger.archivedYears || []), { year: yearStr, gistId: archiveGistId }],
+      lastUpdated: new Date().toISOString()
+    };
+
+    updateLedger(updatedLedger);
+  }, [appData.ledgers, githubToken, updateLedger]);
+
+  const fetchArchive = useCallback(async (gistId: string): Promise<Ledger> => {
+    if (!githubToken) throw new Error("GitHub token required to fetch archive.");
+    
+    const response = await fetch(`https://api.github.com/gists/${gistId}`, {
+      headers: {
+        'Authorization': `token ${githubToken}`,
+        'Accept': 'application/vnd.github.v3+json',
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch archive gist: ${response.statusText}`);
+    }
+
+    const gistData = await response.json();
+    const file = gistData.files['split_wallet_archive.json'] || gistData.files['split_wallet.json'];
+    if (!file) {
+      throw new Error("Archive file not found in gist.");
+    }
+
+    return JSON.parse(file.content) as Ledger;
+  }, [githubToken]);
+
   return {
     appData,
     currentLedger,
@@ -299,6 +383,8 @@ export function useStore() {
     createGistForLedger,
     fetchAllLedgersFromCloud,
     getLedgerCategories,
+    archiveYear,
+    fetchArchive,
     undo,
     canUndo: history.length > 0
   };
