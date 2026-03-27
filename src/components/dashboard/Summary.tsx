@@ -37,6 +37,9 @@ export function Summary({ ledger, onUpdateLedger }: SummaryProps) {
   const [isExporting, setIsExporting] = useState(false);
   const [isEditingBudget, setIsEditingBudget] = useState(false);
   const [tempBudget, setTempBudget] = useState(ledger.monthlyBudget?.toString() || '');
+  const [exportRange, setExportRange] = useState<'all' | 'this_month' | 'custom'>('all');
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
   const exportMenuRef = useRef<HTMLDivElement>(null);
   const rates = getAverageRates(ledger);
 
@@ -348,9 +351,49 @@ export function Summary({ ledger, onUpdateLedger }: SummaryProps) {
     return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
   };
 
+  const filteredExpensesToExport = ledger.expenses.filter(e => {
+    if (exportRange === 'all') return true;
+    
+    const expDate = new Date(e.date);
+    if (exportRange === 'this_month') {
+      const now = new Date();
+      return expDate.getMonth() === now.getMonth() && expDate.getFullYear() === now.getFullYear();
+    }
+    
+    if (exportRange === 'custom') {
+      if (!customStartDate && !customEndDate) return true;
+      
+      const expTime = expDate.getTime();
+      let startValid = true;
+      let endValid = true;
+      
+      if (customStartDate) {
+        const start = new Date(customStartDate);
+        start.setHours(0, 0, 0, 0);
+        startValid = expTime >= start.getTime();
+      }
+      
+      if (customEndDate) {
+        const end = new Date(customEndDate);
+        end.setHours(23, 59, 59, 999);
+        endValid = expTime <= end.getTime();
+      }
+      
+      return startValid && endValid;
+    }
+    
+    return true;
+  });
+
+  const exportTotalMYR = filteredExpensesToExport.reduce((sum, e) => {
+    if (e.type === 'income' || e.type === 'settlement') return sum;
+    const rate = rates[e.currency] || e.rate || 1;
+    return sum + (e.amountOriginal * rate);
+  }, 0);
+
   const exportCSV = () => {
     const headers = ['Date', 'Description', 'Category', 'Paid By', 'Amount (Original)', 'Currency', 'Amount (MYR)', 'Split Among', 'Type'];
-    const rows = ledger.expenses.map(e => {
+    const rows = filteredExpensesToExport.map(e => {
       const rate = rates[e.currency] || e.rate || 1;
       const myr = e.amountOriginal * rate;
       return [
@@ -502,7 +545,69 @@ export function Summary({ ledger, onUpdateLedger }: SummaryProps) {
           </button>
           
           {showExportMenu && (
-            <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden z-20 animate-in fade-in slide-in-from-top-2">
+            <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden z-20 animate-in fade-in slide-in-from-top-2">
+              <div className="p-4 border-b border-gray-100 dark:border-gray-700">
+                <h4 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3">Date Range</h4>
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+                    <input 
+                      type="radio" 
+                      name="exportRange" 
+                      value="all" 
+                      checked={exportRange === 'all'} 
+                      onChange={() => setExportRange('all')}
+                      className="text-blue-600 focus:ring-blue-500"
+                    />
+                    All Time
+                  </label>
+                  <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+                    <input 
+                      type="radio" 
+                      name="exportRange" 
+                      value="this_month" 
+                      checked={exportRange === 'this_month'} 
+                      onChange={() => setExportRange('this_month')}
+                      className="text-blue-600 focus:ring-blue-500"
+                    />
+                    This Month
+                  </label>
+                  <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+                    <input 
+                      type="radio" 
+                      name="exportRange" 
+                      value="custom" 
+                      checked={exportRange === 'custom'} 
+                      onChange={() => setExportRange('custom')}
+                      className="text-blue-600 focus:ring-blue-500"
+                    />
+                    Custom
+                  </label>
+                </div>
+                
+                {exportRange === 'custom' && (
+                  <div className="mt-3 space-y-2">
+                    <div>
+                      <label className="block text-[10px] uppercase font-bold text-gray-400 dark:text-gray-500 mb-1">Start Date</label>
+                      <input 
+                        type="date" 
+                        value={customStartDate}
+                        onChange={(e) => setCustomStartDate(e.target.value)}
+                        className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-1.5 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] uppercase font-bold text-gray-400 dark:text-gray-500 mb-1">End Date</label>
+                      <input 
+                        type="date" 
+                        value={customEndDate}
+                        onChange={(e) => setCustomEndDate(e.target.value)}
+                        className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-1.5 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+              
               <button
                 onClick={exportImage}
                 disabled={isExporting}
@@ -909,7 +1014,7 @@ export function Summary({ ledger, onUpdateLedger }: SummaryProps) {
           </div>
           <div className="text-right">
             <div className="text-sm" style={{ color: '#6b7280' }}>{t('dash_total_spent')}</div>
-            <div className="text-3xl font-bold" style={{ color: '#2563eb' }}>{formatCurrency(totalMYR)}</div>
+            <div className="text-3xl font-bold" style={{ color: '#2563eb' }}>{formatCurrency(exportTotalMYR)}</div>
           </div>
         </div>
 
@@ -921,21 +1026,21 @@ export function Summary({ ledger, onUpdateLedger }: SummaryProps) {
           </div>
           <div>
             <div className="text-xs mb-1" style={{ color: '#6b7280' }}>{t('dash_expenses_count')}</div>
-            <div className="font-semibold" style={{ color: '#1f2937' }}>{ledger.expenses.length}</div>
+            <div className="font-semibold" style={{ color: '#1f2937' }}>{filteredExpensesToExport.length}</div>
           </div>
           <div>
             <div className="text-xs mb-1" style={{ color: '#6b7280' }}>{t('dash_start_date')}</div>
             <div className="font-semibold" style={{ color: '#1f2937' }}>
-              {ledger.expenses.length > 0 
-                ? formatDate(new Date(Math.min(...ledger.expenses.map(e => new Date(e.date).getTime()))).toISOString())
+              {filteredExpensesToExport.length > 0 
+                ? formatDate(new Date(Math.min(...filteredExpensesToExport.map(e => new Date(e.date).getTime()))).toISOString())
                 : '-'}
             </div>
           </div>
           <div>
             <div className="text-xs mb-1" style={{ color: '#6b7280' }}>{t('dash_end_date')}</div>
             <div className="font-semibold" style={{ color: '#1f2937' }}>
-              {ledger.expenses.length > 0 
-                ? formatDate(new Date(Math.max(...ledger.expenses.map(e => new Date(e.date).getTime()))).toISOString())
+              {filteredExpensesToExport.length > 0 
+                ? formatDate(new Date(Math.max(...filteredExpensesToExport.map(e => new Date(e.date).getTime()))).toISOString())
                 : '-'}
             </div>
           </div>
@@ -1022,7 +1127,7 @@ export function Summary({ ledger, onUpdateLedger }: SummaryProps) {
               </tr>
             </thead>
             <tbody>
-              {ledger.expenses.slice().sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map(e => {
+              {filteredExpensesToExport.slice().sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map(e => {
                 const rate = rates[e.currency] || e.rate || 1;
                 const myr = e.amountOriginal * rate;
                 return (
