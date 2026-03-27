@@ -339,7 +339,7 @@ export function RecurringTransactions({ ledger, onUpdateLedger }: RecurringTrans
                       </div>
                     </div>
                     <input
-                      type="text"
+                      type="number"
                       inputMode="decimal"
                       value={amount}
                       onChange={e => {
@@ -485,8 +485,7 @@ export function RecurringTransactions({ ledger, onUpdateLedger }: RecurringTrans
                                       className="px-3 py-1.5 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                                     >-</button>
                                     <input
-                                      type="text"
-                                      inputMode="decimal"
+                                      type="number" inputMode="decimal"
                                       pattern="[0-9]*\.?[0-9]*"
                                       value={splitShares[user] ?? 1}
                                       onChange={e => {
@@ -533,8 +532,7 @@ export function RecurringTransactions({ ledger, onUpdateLedger }: RecurringTrans
                               <div className="flex-1 relative">
                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-medium pointer-events-none">{currency}</span>
                                 <input
-                                  type="text"
-                                  inputMode="decimal"
+                                  type="number" inputMode="decimal"
                                   pattern="[0-9]*\.?[0-9]*"
                                   value={splitDetails[user] ?? ''}
                                   onChange={e => {

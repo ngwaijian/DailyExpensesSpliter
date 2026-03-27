@@ -462,7 +462,7 @@ export function ExpenseList({ ledger, onEdit, onView, onDelete, lastUpdatedId, o
                       index !== filteredAndSortedExpenses.length - 1 && !filteredAndSortedExpenses[index + 1]?.date.startsWith(getDatePart(exp.date)) && "border-b border-gray-50 dark:border-gray-700/50",
                       index !== filteredAndSortedExpenses.length - 1 && "border-b border-gray-50 dark:border-gray-700/30",
                       highlightedId === exp.id ? "bg-blue-50/50 dark:bg-blue-900/10" : "hover:bg-gray-50/50 dark:hover:bg-gray-700/20",
-                      exp.paidBy === ledger.users[0] ? "border-l-4 border-l-blue-500" : exp.paidBy === ledger.users[1] ? "border-l-4 border-l-emerald-500" : ""
+                      ledger.users.length === 2 ? (exp.paidBy === ledger.users[0] ? "border-l-4 border-l-blue-500" : exp.paidBy === ledger.users[1] ? "border-l-4 border-l-emerald-500" : "") : ""
                     )}
                   >
                     {/* Minimal Category Icon */}

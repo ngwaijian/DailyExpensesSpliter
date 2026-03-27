@@ -144,7 +144,7 @@ export function BudgetManager({ ledger, onUpdateLedger }: BudgetManagerProps) {
                   <label className="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2">Amount</label>
                   <div className="flex gap-2">
                     <input
-                      type="text"
+                      type="number"
                       inputMode="decimal"
                       value={amount}
                       onChange={e => {

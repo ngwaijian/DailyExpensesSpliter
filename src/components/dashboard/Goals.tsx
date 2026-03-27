@@ -88,7 +88,7 @@ function GoalItem({ goal, ledger, onUpdateLedger, onEdit, onDelete, t }: GoalIte
         <div className="flex items-center gap-2">
           <span className="text-xs text-gray-500 dark:text-gray-400">Manual Entry:</span>
           <input
-            type="text"
+            type="number"
             inputMode="decimal"
             pattern="[0-9]*\.?[0-9]*"
             value={localAmount}
@@ -204,8 +204,7 @@ export function Goals({ ledger, onUpdateLedger }: GoalsProps) {
               <div>
                 <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Target Amount</label>
                 <input
-                  type="text"
-                  inputMode="decimal"
+                  type="number" inputMode="decimal"
                   pattern="[0-9]*\.?[0-9]*"
                   value={targetAmount}
                   onChange={e => {
@@ -221,8 +220,7 @@ export function Goals({ ledger, onUpdateLedger }: GoalsProps) {
               <div>
                 <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Current Amount</label>
                 <input
-                  type="text"
-                  inputMode="decimal"
+                  type="number" inputMode="decimal"
                   pattern="[0-9]*\.?[0-9]*"
                   value={currentAmount}
                   onChange={e => {

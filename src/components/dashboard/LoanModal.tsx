@@ -304,7 +304,7 @@ export const LoanModal: React.FC<LoanModalProps> = ({ isOpen, onClose, onSave, i
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">{currency}</span>
               <input 
-                type="text" 
+                type="number" 
                 inputMode="decimal" 
                 value={totalAmount} 
                 onChange={e => {
@@ -324,8 +324,7 @@ export const LoanModal: React.FC<LoanModalProps> = ({ isOpen, onClose, onSave, i
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">{currency}</span>
               <input 
-                type="text" 
-                inputMode="decimal" 
+                type="number" inputMode="decimal" 
                 value={remainingAmount} 
                 onChange={e => {
                   const val = e.target.value;
@@ -343,8 +342,7 @@ export const LoanModal: React.FC<LoanModalProps> = ({ isOpen, onClose, onSave, i
           <div className="space-y-1.5">
             <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">Monthly Installment</label>
             <input 
-              type="text" 
-              inputMode="decimal" 
+              type="number" inputMode="decimal" 
               pattern="[0-9]*\.?[0-9]*" 
               value={installmentAmount} 
               onChange={e => {
@@ -361,8 +359,7 @@ export const LoanModal: React.FC<LoanModalProps> = ({ isOpen, onClose, onSave, i
           <div className="space-y-1.5">
             <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">Interest Rate (%)</label>
             <input 
-              type="text" 
-              inputMode="decimal" 
+              type="number" inputMode="decimal" 
               pattern="[0-9]*\.?[0-9]*" 
               value={interestRate} 
               onChange={e => {
@@ -380,7 +377,7 @@ export const LoanModal: React.FC<LoanModalProps> = ({ isOpen, onClose, onSave, i
           <div className="space-y-1.5">
             <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">Term (Months)</label>
             <input 
-              type="text" 
+              type="number" 
               inputMode="numeric" 
               pattern="[0-9]*" 
               value={termMonths} 
@@ -569,8 +566,7 @@ export const LoanModal: React.FC<LoanModalProps> = ({ isOpen, onClose, onSave, i
                                 className="px-4 py-2 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors font-bold"
                               >-</button>
                               <input
-                                type="text"
-                                inputMode="decimal"
+                                type="number" inputMode="decimal"
                                 pattern="[0-9]*\.?[0-9]*"
                                 value={splitShares[user] ?? 1}
                                 onChange={e => {
@@ -621,8 +617,7 @@ export const LoanModal: React.FC<LoanModalProps> = ({ isOpen, onClose, onSave, i
                         <div className="flex-1 flex items-center bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 rounded-xl overflow-hidden px-3">
                           <span className="text-gray-400 font-bold text-sm">{currency}</span>
                           <input
-                            type="text"
-                            inputMode="decimal"
+                            type="number" inputMode="decimal"
                             value={splitDetails[user] || ''}
                             onChange={e => {
                               const val = e.target.value;

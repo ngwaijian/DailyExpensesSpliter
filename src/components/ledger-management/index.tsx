@@ -297,7 +297,7 @@ export function PeopleWallet({ ledger, onAddPerson, onEditPerson, onRemovePerson
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider ml-1">{t('ledger_foreign_placeholder')}</label>
                 <input 
-                  type="text" 
+                  type="number" 
                   inputMode="decimal"
                   pattern="[0-9]*\.?[0-9]*"
                   value={foreign} onChange={e => setForeign(e.target.value)}
