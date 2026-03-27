@@ -71,38 +71,16 @@ export function getSimplifiedDebts(balances: Record<string, number>, ledger?: Le
   debtors.sort((a, b) => b.amount - a.amount);
   creditors.sort((a, b) => b.amount - a.amount);
 
-  let originalBalances: Record<string, number> | null = null;
-  if (ledger) {
-    const ledgerWithoutSettlements = {
-      ...ledger,
-      expenses: ledger.expenses.filter(e => e.type !== 'settlement')
-    };
-    originalBalances = calculateBalances(ledgerWithoutSettlements);
-  }
-
-  const transactions: { from: string; to: string; amount: number; isRefund?: boolean }[] = [];
+  const transactions: { from: string; to: string; amount: number }[] = [];
   
   let i = 0, j = 0;
   while (i < debtors.length && j < creditors.length) {
     const settle = Math.min(debtors[i].amount, creditors[j].amount);
     
-    const from = debtors[i].name;
-    const to = creditors[j].name;
-    
-    let isRefund = false;
-    if (originalBalances) {
-      const origFrom = originalBalances[from] || 0;
-      const origTo = originalBalances[to] || 0;
-      if (origFrom > -0.01 || origTo < 0.01) {
-        isRefund = true;
-      }
-    }
-
     transactions.push({
-      from,
-      to,
-      amount: Math.round(settle * 100) / 100,
-      isRefund
+      from: debtors[i].name,
+      to: creditors[j].name,
+      amount: Math.round(settle * 100) / 100
     });
     
     debtors[i].amount -= settle;

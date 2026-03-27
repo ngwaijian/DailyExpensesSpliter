@@ -48,11 +48,6 @@ export function Balances({ ledger }: BalancesProps) {
               <div className="text-right ml-4 shrink-0 flex flex-col items-end">
                 <span className="text-[10px] uppercase font-bold text-gray-400 dark:text-gray-500 block mb-1">Amount</span>
                 <div className="flex items-center gap-2">
-                  {t_trans.isRefund && (
-                    <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400 text-[10px] font-bold uppercase tracking-wider">
-                      Refund Due
-                    </span>
-                  )}
                   <span className="font-black text-gray-900 dark:text-white text-base">{formatCurrency(t_trans.amount)}</span>
                 </div>
               </div>
