@@ -14,7 +14,7 @@ import { RecurringTransactions } from './components/expenses/RecurringTransactio
 import { BudgetManager } from './components/planning/BudgetManager';
 import { LoanManager } from './components/dashboard/LoanManager';
 import { ExpenseDetailsModal } from './components/expenses/ExpenseDetailsModal';
-import { ShieldCheck, LayoutGrid, List, Users, RefreshCw, Plus, Globe, Target, RotateCcw, Settings, Sun, Moon, Monitor, Wallet } from 'lucide-react';
+import { ShieldCheck, LayoutGrid, List, Users, RefreshCw, Plus, Globe, Target, RotateCcw, Settings, Sun, Moon, Monitor, Wallet, Check } from 'lucide-react';
 import { cn } from './lib/utils';
 import { motion } from 'framer-motion';
 
@@ -57,6 +57,7 @@ function App() {
     shortcutLocName,
     shortcutLat,
     shortcutLng,
+    isAutoSaved,
     clearShortcuts
   } = useUrlShortcuts({ currentLedger, updateLedger, t });
 
@@ -71,6 +72,23 @@ function App() {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (isAutoSaved) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center p-4">
+        <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-xl text-center max-w-sm w-full">
+          <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Check className="w-8 h-8" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">Expense Saved!</h2>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">You can safely close this tab or return to the app.</p>
+          <button onClick={() => window.location.href = '/'} className="w-full py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-800 dark:text-white rounded-xl font-medium transition-colors">
+            View Expenses
+          </button>
+        </div>
       </div>
     );
   }

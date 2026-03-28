@@ -19,6 +19,7 @@ export function useUrlShortcuts({ currentLedger, updateLedger, t }: UseUrlShortc
   const [shortcutLocName, setShortcutLocName] = useState<string | null>(null);
   const [shortcutLat, setShortcutLat] = useState<number | null>(null);
   const [shortcutLng, setShortcutLng] = useState<number | null>(null);
+  const [isAutoSaved, setIsAutoSaved] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -188,9 +189,7 @@ export function useUrlShortcuts({ currentLedger, updateLedger, t }: UseUrlShortc
         });
         
         window.history.replaceState({}, '', window.location.pathname);
-        setTimeout(() => {
-          alert('Expense saved! You can close this Safari tab.');
-        }, 500);
+        setIsAutoSaved(true);
         return;
       }
     }
@@ -289,6 +288,7 @@ export function useUrlShortcuts({ currentLedger, updateLedger, t }: UseUrlShortc
     shortcutLocName,
     shortcutLat,
     shortcutLng,
+    isAutoSaved,
     clearShortcuts
   };
 }
