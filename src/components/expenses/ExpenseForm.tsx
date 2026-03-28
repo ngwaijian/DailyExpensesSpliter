@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Ledger, CATEGORIES } from '../../types';
 import { CATEGORY_COLORS, CATEGORY_SLEDGER_COLORS } from '../../constants';
-import { Calendar, Tag, DollarSign, Users, X, Calculator, MapPin, Loader2, Search } from 'lucide-react';
+import { Calendar, Tag, DollarSign, Users, X, Calculator, MapPin, Loader2, Search, ArrowLeft } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getAverageRates, formatCurrency } from '../../utils/currency';
@@ -21,6 +21,7 @@ interface ExpenseFormProps {
   onUpdateLedger: (ledger: Ledger) => void;
   isMobileModal?: boolean;
   onCloseMobile?: () => void;
+  defaultType?: 'expense' | 'income' | 'sponsorship' | 'settlement';
 }
 
 const formatDateTime = (d?: string) => {
@@ -31,11 +32,11 @@ const formatDateTime = (d?: string) => {
   return new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 };
 
-export function ExpenseForm({ ledger, onSubmit, onCancel, initialData, onUpdateLedger, isMobileModal, onCloseMobile }: ExpenseFormProps) {
+export function ExpenseForm({ ledger, onSubmit, onCancel, initialData, onUpdateLedger, isMobileModal, onCloseMobile, defaultType }: ExpenseFormProps) {
   const { t } = useLanguage();
   const { resolvedTheme } = useTheme();
   const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false);
-  const [type, setType] = useState<'expense' | 'income' | 'sponsorship' | 'settlement'>(initialData?.type || 'expense');
+  const [type, setType] = useState<'expense' | 'income' | 'sponsorship' | 'settlement'>(initialData?.type || defaultType || 'expense');
   const [desc, setDesc] = useState(initialData?.desc || '');
   const [memo, setMemo] = useState(initialData?.memo || '');
   const [amount, setAmount] = useState(initialData?.amountOriginal || '');
@@ -407,6 +408,14 @@ export function ExpenseForm({ ledger, onSubmit, onCancel, initialData, onUpdateL
             : "hidden lg:block"
         )}
       >
+        {isMobileModal && (
+          <div className="sticky top-0 z-10 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center mb-4 -mx-4 mt-0 sm:hidden">
+            <button type="button" onClick={onCloseMobile} className="flex items-center text-blue-600 dark:text-blue-400 font-medium active:opacity-70">
+              <ArrowLeft className="w-5 h-5 mr-1" />
+              Back
+            </button>
+          </div>
+        )}
         {/* Drag handle for mobile */}
         {isMobileModal && (
           <div className="lg:hidden flex justify-center mb-4 sticky top-0 bg-white dark:bg-gray-900 pt-2 pb-1 z-10">
