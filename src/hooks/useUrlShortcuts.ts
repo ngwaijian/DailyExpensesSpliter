@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Ledger, CATEGORIES, Category } from '../types';
+import { db } from '../lib/db';
 
 interface UseUrlShortcutsProps {
   currentLedger: Ledger | null;
@@ -26,9 +27,11 @@ export function useUrlShortcuts({ currentLedger, updateLedger, t }: UseUrlShortc
     
     // Helper to get parameter case-insensitively
     const getParam = (names: string[]) => {
-      for (const name of names) {
-        const val = params.get(name) || params.get(name.toLowerCase()) || params.get(name.charAt(0).toUpperCase() + name.slice(1));
-        if (val) return val;
+      const lowerNames = names.map(n => n.toLowerCase());
+      for (const [key, value] of params.entries()) {
+        if (lowerNames.includes(key.toLowerCase())) {
+          return value.replace(/^=+/, '');
+        }
       }
       return null;
     };
@@ -39,7 +42,7 @@ export function useUrlShortcuts({ currentLedger, updateLedger, t }: UseUrlShortc
     const currency = getParam(['currency', 'curr']);
     const goalId = getParam(['goalId', 'goal']);
     const autoSaveRaw = getParam(['autoSave']);
-    const autoSave = autoSaveRaw ? autoSaveRaw.toLowerCase() === 'true' : false;
+    const autoSave = autoSaveRaw ? autoSaveRaw.toLowerCase().includes('true') : false;
     const splitAmongParam = getParam(['splitAmong', 'split', 'split_among', 'users']);
     const paidByParam = getParam(['paidBy', 'payer', 'paid_by', 'paidby']);
     const subCategory = getParam(['subCategory', 'subcat']);
@@ -55,9 +58,14 @@ export function useUrlShortcuts({ currentLedger, updateLedger, t }: UseUrlShortc
     let parsedPaidBy = paidByParam;
     if (paidByParam) {
       const paidByLower = paidByParam.toLowerCase();
-      const matchedUser = currentLedger.users.find(u => u.toLowerCase() === paidByLower);
+      let matchedUser = currentLedger.users.find(u => u.toLowerCase() === paidByLower);
+      if (!matchedUser) {
+        matchedUser = currentLedger.users.find(u => u.toLowerCase().includes(paidByLower) || paidByLower.includes(u.toLowerCase()));
+      }
       if (matchedUser) {
         parsedPaidBy = matchedUser;
+      } else {
+        parsedPaidBy = paidByParam.charAt(0).toUpperCase() + paidByParam.slice(1);
       }
     }
 
@@ -65,17 +73,39 @@ export function useUrlShortcuts({ currentLedger, updateLedger, t }: UseUrlShortc
     let parsedSplitAmong: string[] | null = null;
     if (splitAmongParam) {
       if (splitAmongParam.includes(',')) {
-        parsedSplitAmong = splitAmongParam.split(',').map(u => u.trim()).filter(Boolean);
+        const rawNames = splitAmongParam.split(',').map(u => u.trim()).filter(Boolean);
+        parsedSplitAmong = [];
+        for (const rawName of rawNames) {
+          const rawLower = rawName.toLowerCase();
+          let matched = currentLedger.users.find(u => u.toLowerCase() === rawLower);
+          if (!matched) {
+            matched = currentLedger.users.find(u => u.toLowerCase().includes(rawLower) || rawLower.includes(u.toLowerCase()));
+          }
+          if (matched) {
+            parsedSplitAmong.push(matched);
+          } else {
+            parsedSplitAmong.push(rawName.charAt(0).toUpperCase() + rawName.slice(1));
+          }
+        }
       } else {
-        // Filter currentLedger.users to see which existing user names are included in the raw string
         const rawLower = splitAmongParam.toLowerCase();
-        const matchedUsers = currentLedger.users.filter(u => rawLower.includes(u.toLowerCase()));
+        const matchedUsers = currentLedger.users.filter(u => {
+          // Use word boundaries to prevent "A" from matching "Alice"
+          try {
+            const regex = new RegExp(`\\b${u.toLowerCase()}\\b`, 'i');
+            return regex.test(rawLower);
+          } catch (e) {
+            // Fallback for names with special characters that break regex
+            return rawLower.includes(u.toLowerCase());
+          }
+        });
         if (matchedUsers.length > 0) {
           parsedSplitAmong = matchedUsers;
         } else {
-          parsedSplitAmong = splitAmongParam.split(' ').map(u => u.trim()).filter(Boolean);
+          parsedSplitAmong = splitAmongParam.split(' ').map(u => u.trim()).filter(Boolean).map(n => n.charAt(0).toUpperCase() + n.slice(1));
         }
       }
+      parsedSplitAmong = Array.from(new Set(parsedSplitAmong));
     }
 
     // --- Category Matching ---
@@ -188,27 +218,24 @@ export function useUrlShortcuts({ currentLedger, updateLedger, t }: UseUrlShortc
           expenses: [newExpense, ...currentLedger.expenses]
         };
         
-        updateLedger(updatedLedgerData);
-        
-        // Synchronous failsafe for localStorage
-        try {
-          const stored = localStorage.getItem('sw_app_data');
-          if (stored) {
-            const parsed = JSON.parse(stored);
-            if (parsed.ledgers) {
-              parsed.ledgers = parsed.ledgers.map((l: any) => l.id === currentLedger.id ? updatedLedgerData : l);
-              localStorage.setItem('sw_app_data', JSON.stringify(parsed));
-            }
+        const saveAndExit = async () => {
+          updateLedger(updatedLedgerData);
+          
+          // Asynchronous failsafe for IndexedDB to ensure data is written before the tab closes
+          try {
+            await db.ledgers.put(updatedLedgerData);
+          } catch (e) {
+            console.error('Failsafe sync error:', e);
           }
-        } catch (e) {
-          console.error('Failsafe sync error:', e);
-        }
+          
+          window.history.replaceState({}, '', window.location.pathname);
+          setIsAutoSaved(true);
+          setTimeout(() => {
+            alert('Expense saved! You can close this Safari tab.');
+          }, 400);
+        };
         
-        window.history.replaceState({}, '', window.location.pathname);
-        setIsAutoSaved(true);
-        setTimeout(() => {
-          alert('Expense saved! You can close this Safari tab.');
-        }, 400);
+        saveAndExit();
         return;
       }
     }
