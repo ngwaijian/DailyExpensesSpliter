@@ -183,13 +183,32 @@ export function useUrlShortcuts({ currentLedger, updateLedger, t }: UseUrlShortc
           location: locationObj,
         };
         
-        updateLedger({
+        const updatedLedgerData = {
           ...currentLedger,
           expenses: [newExpense, ...currentLedger.expenses]
-        });
+        };
+        
+        updateLedger(updatedLedgerData);
+        
+        // Synchronous failsafe for localStorage
+        try {
+          const stored = localStorage.getItem('sw_app_data');
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            if (parsed.ledgers) {
+              parsed.ledgers = parsed.ledgers.map((l: any) => l.id === currentLedger.id ? updatedLedgerData : l);
+              localStorage.setItem('sw_app_data', JSON.stringify(parsed));
+            }
+          }
+        } catch (e) {
+          console.error('Failsafe sync error:', e);
+        }
         
         window.history.replaceState({}, '', window.location.pathname);
         setIsAutoSaved(true);
+        setTimeout(() => {
+          alert('Expense saved! You can close this Safari tab.');
+        }, 400);
         return;
       }
     }
