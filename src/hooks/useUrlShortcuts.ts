@@ -70,43 +70,8 @@ export function useUrlShortcuts({ currentLedger, updateLedger, t }: UseUrlShortc
     }
 
     // --- Parse splitAmong ---
-    let parsedSplitAmong: string[] | null = null;
-    if (splitAmongParam) {
-      if (splitAmongParam.includes(',')) {
-        const rawNames = splitAmongParam.split(',').map(u => u.trim()).filter(Boolean);
-        parsedSplitAmong = [];
-        for (const rawName of rawNames) {
-          const rawLower = rawName.toLowerCase();
-          let matched = currentLedger.users.find(u => u.toLowerCase() === rawLower);
-          if (!matched) {
-            matched = currentLedger.users.find(u => u.toLowerCase().includes(rawLower) || rawLower.includes(u.toLowerCase()));
-          }
-          if (matched) {
-            parsedSplitAmong.push(matched);
-          } else {
-            parsedSplitAmong.push(rawName.charAt(0).toUpperCase() + rawName.slice(1));
-          }
-        }
-      } else {
-        const rawLower = splitAmongParam.toLowerCase();
-        const matchedUsers = currentLedger.users.filter(u => {
-          // Use word boundaries to prevent "A" from matching "Alice"
-          try {
-            const regex = new RegExp(`\\b${u.toLowerCase()}\\b`, 'i');
-            return regex.test(rawLower);
-          } catch (e) {
-            // Fallback for names with special characters that break regex
-            return rawLower.includes(u.toLowerCase());
-          }
-        });
-        if (matchedUsers.length > 0) {
-          parsedSplitAmong = matchedUsers;
-        } else {
-          parsedSplitAmong = splitAmongParam.split(' ').map(u => u.trim()).filter(Boolean).map(n => n.charAt(0).toUpperCase() + n.slice(1));
-        }
-      }
-      parsedSplitAmong = Array.from(new Set(parsedSplitAmong));
-    }
+    const parsedSplit = splitAmongParam ? splitAmongParam.split(',').map(s => s.trim()).filter(Boolean) : [];
+    let parsedSplitAmong: string[] | null = parsedSplit.length > 0 ? parsedSplit : null;
 
     // --- Category Matching ---
     const ledgerCategories = (currentLedger.categories || CATEGORIES).map(c => typeof c === 'string' ? { name: c, subCategories: [] } : c);
@@ -165,10 +130,7 @@ export function useUrlShortcuts({ currentLedger, updateLedger, t }: UseUrlShortc
       if (!isNaN(parsedAmount)) {
         const paidBy = parsedPaidBy || (currentLedger.users.length > 0 ? currentLedger.users[0] : 'Me');
         
-        let splitAmong = currentLedger.users.length > 0 ? currentLedger.users : ['Me'];
-        if (parsedSplitAmong && parsedSplitAmong.length > 0) {
-          splitAmong = parsedSplitAmong;
-        }
+        const finalSplitAmong = parsedSplit.length > 0 ? parsedSplit : (currentLedger.users.length > 0 ? currentLedger.users : ['Me']);
 
         // Handle timezone offset formatting
         const now = new Date();
@@ -207,7 +169,7 @@ export function useUrlShortcuts({ currentLedger, updateLedger, t }: UseUrlShortc
           subCategory: finalSubCategory || undefined,
           date: isoString,
           paidBy,
-          splitAmong,
+          splitAmong: finalSplitAmong,
           type: 'expense' as const,
           goalId: goalId || undefined,
           location: locationObj,
@@ -221,6 +183,17 @@ export function useUrlShortcuts({ currentLedger, updateLedger, t }: UseUrlShortc
         const saveAndExit = async () => {
           updateLedger(updatedLedgerData);
           
+          try {
+            const s = localStorage.getItem('sw_app_data');
+            if (s) {
+              const p = JSON.parse(s);
+              if (p.ledgers) {
+                p.ledgers = p.ledgers.map((t: any) => t.id === currentLedger.id ? { ...t, expenses: [newExpense, ...t.expenses] } : t);
+                localStorage.setItem('sw_app_data', JSON.stringify(p));
+              }
+            }
+          } catch(e) {}
+          
           // Asynchronous failsafe for IndexedDB to ensure data is written before the tab closes
           try {
             await db.ledgers.put(updatedLedgerData);
@@ -232,7 +205,7 @@ export function useUrlShortcuts({ currentLedger, updateLedger, t }: UseUrlShortc
           setIsAutoSaved(true);
           setTimeout(() => {
             alert('Expense saved! You can close this Safari tab.');
-          }, 400);
+          }, 300);
         };
         
         saveAndExit();

@@ -71,8 +71,8 @@ export function useCloudSync({
       if (token) headers['Authorization'] = `Bearer ${token}`;
       
       const res = await customFetch(`https://api.github.com/gists/${targetGistId}?t=${Date.now()}`, { headers });
-      if (res.status === 401) throw new Error("401: Invalid GitHub token.");
-      if (res.status === 403) throw new Error("403: GitHub token lacks permission or rate limited.");
+      if (res.status === 401) throw new Error("401: Invalid GitHub token. Please check your settings.");
+      if (res.status === 403) throw new Error("403: GitHub token lacks 'gist' permission or is rate limited. Please create a new token with 'gist' scope.");
       if (res.status === 404) throw new Error("404: Cloud storage (Gist) not found.");
       if (!res.ok) throw new Error(`Failed to fetch gist: ${res.status}`);
       
@@ -176,7 +176,7 @@ export function useCloudSync({
           }
         }
       } else if (checkRes.status === 401) {
-        throw new Error("401: Invalid GitHub token.");
+        throw new Error("401: Invalid GitHub token. Please check your settings.");
       } else if (checkRes.status === 404) {
         throw new Error("404: Cloud storage (Gist) not found.");
       }
@@ -192,8 +192,8 @@ export function useCloudSync({
         body: JSON.stringify(payload)
       });
       
-      if (res.status === 401) throw new Error("401: Invalid GitHub token.");
-      if (res.status === 403) throw new Error("403: GitHub token lacks permission or rate limited.");
+      if (res.status === 401) throw new Error("401: Invalid GitHub token. Please check your settings.");
+      if (res.status === 403) throw new Error("403: GitHub token lacks 'gist' permission or is rate limited. Please create a new token with 'gist' scope.");
       if (res.status === 404) throw new Error("404: Cloud storage (Gist) not found.");
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
@@ -231,8 +231,8 @@ export function useCloudSync({
           'Accept': 'application/vnd.github.v3+json'
         }
       });
-      if (res.status === 401) throw new Error("401: Invalid GitHub token.");
-      if (res.status === 403) throw new Error("403: GitHub token lacks permission or rate limited.");
+      if (res.status === 401) throw new Error("401: Invalid GitHub token. Please check your settings.");
+      if (res.status === 403) throw new Error("403: GitHub token lacks 'gist' permission or is rate limited. Please create a new token with 'gist' scope.");
       if (!res.ok) {
         let errorText = "";
         try {
