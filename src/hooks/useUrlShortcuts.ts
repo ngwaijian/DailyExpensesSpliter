@@ -129,8 +129,18 @@ export function useUrlShortcuts({ currentLedger, updateLedger, t, pushToCloud }:
     }
 
     if (autoSave && amount) {
-      const parsedAmount = parseFloat(amount);
-      if (!isNaN(parsedAmount)) {
+      let finalAmountStr = amount.toString();
+      try {
+        if (/^[0-9+\-*/().\s,.]+$/.test(finalAmountStr)) {
+          // eslint-disable-next-line no-eval
+          finalAmountStr = eval(finalAmountStr.replace(/[^0-9+\-*/.]/g, '')).toString();
+        }
+      } catch (e) {
+        // Ignore eval errors
+      }
+
+      const parsedAmount = parseFloat(finalAmountStr);
+      if (!isNaN(parsedAmount) && parsedAmount > 0) {
         const paidBy = parsedPaidBy || (currentLedger.users.length > 0 ? currentLedger.users[0] : 'Me');
         
         const finalSplitAmong = parsedSplit.length > 0 ? parsedSplit : (currentLedger.users.length > 0 ? currentLedger.users : ['Me']);
@@ -163,11 +173,22 @@ export function useUrlShortcuts({ currentLedger, updateLedger, t, pushToCloud }:
           };
         }
 
+        let finalDesc = desc ? desc.trim() : '';
+        if (!finalDesc) {
+          if (finalSubCategory) {
+            finalDesc = finalSubCategory;
+          } else if (cleanCategory.name) {
+            finalDesc = cleanCategory.name;
+          } else {
+            finalDesc = 'Quick Add';
+          }
+        }
+
         const newExpense = {
           id: Date.now().toString(),
-          desc: desc || cleanCategory.name || 'Quick Add',
+          desc: finalDesc,
           amountOriginal: parsedAmount,
-          currency: currency || 'MYR',
+          currency: (currency || 'MYR').toUpperCase(),
           category: cleanCategory,
           subCategory: finalSubCategory || undefined,
           date: isoString,
@@ -180,39 +201,42 @@ export function useUrlShortcuts({ currentLedger, updateLedger, t, pushToCloud }:
         
         const updatedLedgerData = {
           ...currentLedger,
-          expenses: [newExpense, ...currentLedger.expenses]
+          expenses: [newExpense, ...currentLedger.expenses],
+          lastUpdated: new Date().toISOString()
         };
         
         const saveAndExit = async () => {
-          updateLedger(updatedLedgerData);
           hasProcessedShortcut.current = true;
           
           try {
-            const s = localStorage.getItem('sw_app_data');
-            if (s) {
-              const p = JSON.parse(s);
-              if (p.ledgers) {
-                p.ledgers = p.ledgers.map((t: any) => t.id === currentLedger.id ? { ...t, expenses: [newExpense, ...t.expenses] } : t);
-                localStorage.setItem('sw_app_data', JSON.stringify(p));
-              }
-            }
-          } catch(e) {}
-          
-          // Asynchronous failsafe for IndexedDB to ensure data is written before the tab closes
-          try {
+            // Asynchronous failsafe for IndexedDB to ensure data is written before the tab closes
             await db.ledgers.put(updatedLedgerData);
+            
+            // Also update local storage as fallback
+            try {
+              const s = localStorage.getItem('sw_app_data');
+              if (s) {
+                const p = JSON.parse(s);
+                if (p.ledgers) {
+                  p.ledgers = p.ledgers.map((t: any) => t.id === currentLedger.id ? { ...t, expenses: [newExpense, ...t.expenses] } : t);
+                  localStorage.setItem('sw_app_data', JSON.stringify(p));
+                }
+              }
+            } catch(e) {}
+            
+            updateLedger(updatedLedgerData);
+            window.history.replaceState({}, '', window.location.pathname);
+            setIsAutoSaved(true);
+            
+            pushToCloud(currentLedger.id).finally(() => {
+              setTimeout(() => {
+                alert('Expense saved! You can close this Safari tab.');
+              }, 100);
+            });
           } catch (e) {
             console.error('Failsafe sync error:', e);
+            alert('Failed to save expense to database. Please try again.');
           }
-          
-          window.history.replaceState({}, '', window.location.pathname);
-          setIsAutoSaved(true);
-          
-          pushToCloud(currentLedger.id).finally(() => {
-            setTimeout(() => {
-              alert('Expense saved! You can close this Safari tab.');
-            }, 100);
-          });
         };
         
         saveAndExit();
