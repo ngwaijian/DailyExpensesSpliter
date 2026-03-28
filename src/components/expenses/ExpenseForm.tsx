@@ -21,6 +21,7 @@ interface ExpenseFormProps {
   onUpdateLedger: (ledger: Ledger) => void;
   isMobileModal?: boolean;
   onCloseMobile?: () => void;
+  defaultType?: 'expense' | 'income' | 'sponsorship' | 'settlement';
 }
 
 const formatDateTime = (d?: string) => {
@@ -31,11 +32,11 @@ const formatDateTime = (d?: string) => {
   return new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 };
 
-export function ExpenseForm({ ledger, onSubmit, onCancel, initialData, onUpdateLedger, isMobileModal, onCloseMobile }: ExpenseFormProps) {
+export function ExpenseForm({ ledger, onSubmit, onCancel, initialData, onUpdateLedger, isMobileModal, onCloseMobile, defaultType }: ExpenseFormProps) {
   const { t } = useLanguage();
   const { resolvedTheme } = useTheme();
   const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false);
-  const [type, setType] = useState<'expense' | 'income' | 'sponsorship' | 'settlement'>(initialData?.type || 'expense');
+  const [type, setType] = useState<'expense' | 'income' | 'sponsorship' | 'settlement'>(initialData?.type || defaultType || 'expense');
   const [desc, setDesc] = useState(initialData?.desc || '');
   const [memo, setMemo] = useState(initialData?.memo || '');
   const [amount, setAmount] = useState(initialData?.amountOriginal || '');

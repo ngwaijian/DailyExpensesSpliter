@@ -8,9 +8,10 @@ import { cn } from '../../lib/utils';
 
 interface BalancesProps {
   ledger: Ledger;
+  onSettleUp?: () => void;
 }
 
-export function Balances({ ledger }: BalancesProps) {
+export function Balances({ ledger, onSettleUp }: BalancesProps) {
   const { t } = useLanguage();
   const balances = calculateBalances(ledger);
   const transactions = getSimplifiedDebts(balances, ledger);
@@ -54,7 +55,17 @@ export function Balances({ ledger }: BalancesProps) {
               <div className="absolute bottom-0 left-0 -mb-4 -ml-4 w-24 h-24 bg-white opacity-10 rounded-full blur-xl"></div>
               
               <div className="relative z-10">
-                <h2 className="text-blue-100 text-sm font-medium mb-2 uppercase tracking-wider">Net Balance</h2>
+                <div className="flex justify-between items-start mb-2">
+                  <h2 className="text-blue-100 text-sm font-medium uppercase tracking-wider">Net Balance</h2>
+                  {onSettleUp && (
+                    <button
+                      onClick={onSettleUp}
+                      className="bg-white/20 hover:bg-white/30 text-white text-xs font-bold py-1.5 px-3 rounded-full transition-colors backdrop-blur-sm"
+                    >
+                      {t('bal_settle_up') || 'Settle Up'}
+                    </button>
+                  )}
+                </div>
                 <div className="flex flex-col gap-2">
                   {transactions.map((t_trans, idx) => (
                     <div key={idx} className="flex items-end gap-3">

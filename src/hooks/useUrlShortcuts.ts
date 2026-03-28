@@ -16,6 +16,9 @@ export function useUrlShortcuts({ currentLedger, updateLedger, t }: UseUrlShortc
   const [shortcutSplitAmong, setShortcutSplitAmong] = useState<string[] | null>(null);
   const [shortcutPaidBy, setShortcutPaidBy] = useState<string | null>(null);
   const [shortcutSubCategory, setShortcutSubCategory] = useState<string | null>(null);
+  const [shortcutLocName, setShortcutLocName] = useState<string | null>(null);
+  const [shortcutLat, setShortcutLat] = useState<number | null>(null);
+  const [shortcutLng, setShortcutLng] = useState<number | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -38,6 +41,9 @@ export function useUrlShortcuts({ currentLedger, updateLedger, t }: UseUrlShortc
     const splitAmongParam = getParam(['splitAmong', 'split', 'split_among', 'users']);
     const paidByParam = getParam(['paidBy', 'payer', 'paid_by', 'paidby']);
     const subCategory = getParam(['subCategory', 'subcat']);
+    const locName = getParam(['locName', 'location', 'loc']);
+    const lat = getParam(['lat', 'latitude']);
+    const lng = getParam(['lng', 'lon', 'longitude']);
     
     if (!currentLedger) return;
 
@@ -149,6 +155,17 @@ export function useUrlShortcuts({ currentLedger, updateLedger, t }: UseUrlShortc
             dif + pad(tzo / 60) +
             ':' + pad(tzo % 60);
 
+        let locationObj = undefined;
+        if (locName || lat || lng) {
+          const parsedLat = lat ? parseFloat(lat) : undefined;
+          const parsedLng = lng ? parseFloat(lng) : undefined;
+          locationObj = {
+            name: locName || '',
+            lat: parsedLat && !isNaN(parsedLat) ? parsedLat : undefined,
+            lng: parsedLng && !isNaN(parsedLng) ? parsedLng : undefined
+          };
+        }
+
         const newExpense = {
           id: Date.now().toString(),
           desc: desc || cleanCategory.name || 'Quick Add',
@@ -161,6 +178,7 @@ export function useUrlShortcuts({ currentLedger, updateLedger, t }: UseUrlShortc
           splitAmong,
           type: 'expense' as const,
           goalId: goalId || undefined,
+          location: locationObj,
         };
         
         updateLedger({
@@ -218,6 +236,27 @@ export function useUrlShortcuts({ currentLedger, updateLedger, t }: UseUrlShortc
       shouldClear = true;
     }
 
+    if (locName) {
+      setShortcutLocName(locName);
+      shouldClear = true;
+    }
+
+    if (lat) {
+      const parsedLat = parseFloat(lat);
+      if (!isNaN(parsedLat)) {
+        setShortcutLat(parsedLat);
+        shouldClear = true;
+      }
+    }
+
+    if (lng) {
+      const parsedLng = parseFloat(lng);
+      if (!isNaN(parsedLng)) {
+        setShortcutLng(parsedLng);
+        shouldClear = true;
+      }
+    }
+
     if (shouldClear) {
       window.history.replaceState({}, '', window.location.pathname);
     }
@@ -232,6 +271,9 @@ export function useUrlShortcuts({ currentLedger, updateLedger, t }: UseUrlShortc
     setShortcutSplitAmong(null);
     setShortcutPaidBy(null);
     setShortcutSubCategory(null);
+    setShortcutLocName(null);
+    setShortcutLat(null);
+    setShortcutLng(null);
   };
 
   return {
@@ -243,6 +285,9 @@ export function useUrlShortcuts({ currentLedger, updateLedger, t }: UseUrlShortc
     shortcutSplitAmong,
     shortcutPaidBy,
     shortcutSubCategory,
+    shortcutLocName,
+    shortcutLat,
+    shortcutLng,
     clearShortcuts
   };
 }
