@@ -37,7 +37,8 @@ export function useUrlShortcuts({ currentLedger, updateLedger, t }: UseUrlShortc
     const desc = getParam(['desc', 'description', 'note']);
     const currency = getParam(['currency', 'curr']);
     const goalId = getParam(['goalId', 'goal']);
-    const autoSave = getParam(['autoSave']) === 'true';
+    const autoSaveRaw = getParam(['autoSave']);
+    const autoSave = autoSaveRaw ? autoSaveRaw.toLowerCase() === 'true' : false;
     const splitAmongParam = getParam(['splitAmong', 'split', 'split_among', 'users']);
     const paidByParam = getParam(['paidBy', 'payer', 'paid_by', 'paidby']);
     const subCategory = getParam(['subCategory', 'subcat']);
@@ -189,7 +190,7 @@ export function useUrlShortcuts({ currentLedger, updateLedger, t }: UseUrlShortc
         window.history.replaceState({}, '', window.location.pathname);
         setTimeout(() => {
           alert('Expense saved! You can close this Safari tab.');
-        }, 100);
+        }, 500);
         return;
       }
     }
