@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Ledger, CATEGORIES, Category } from '../types';
 import { db } from '../lib/db';
 
@@ -6,9 +6,10 @@ interface UseUrlShortcutsProps {
   currentLedger: Ledger | null;
   updateLedger: (ledger: Ledger) => void;
   t: (key: string, fallback?: string) => string;
+  pushToCloud: (id: string) => Promise<void>;
 }
 
-export function useUrlShortcuts({ currentLedger, updateLedger, t }: UseUrlShortcutsProps) {
+export function useUrlShortcuts({ currentLedger, updateLedger, t, pushToCloud }: UseUrlShortcutsProps) {
   const [shortcutAmount, setShortcutAmount] = useState<number | null>(null);
   const [shortcutCategory, setShortcutCategory] = useState<string | null>(null);
   const [shortcutDesc, setShortcutDesc] = useState<string | null>(null);
@@ -21,8 +22,10 @@ export function useUrlShortcuts({ currentLedger, updateLedger, t }: UseUrlShortc
   const [shortcutLat, setShortcutLat] = useState<number | null>(null);
   const [shortcutLng, setShortcutLng] = useState<number | null>(null);
   const [isAutoSaved, setIsAutoSaved] = useState(false);
+  const hasProcessedShortcut = useRef(false);
 
   useEffect(() => {
+    if (hasProcessedShortcut.current) return;
     const params = new URLSearchParams(window.location.search);
     
     // Helper to get parameter case-insensitively
@@ -182,6 +185,7 @@ export function useUrlShortcuts({ currentLedger, updateLedger, t }: UseUrlShortc
         
         const saveAndExit = async () => {
           updateLedger(updatedLedgerData);
+          hasProcessedShortcut.current = true;
           
           try {
             const s = localStorage.getItem('sw_app_data');
@@ -203,9 +207,12 @@ export function useUrlShortcuts({ currentLedger, updateLedger, t }: UseUrlShortc
           
           window.history.replaceState({}, '', window.location.pathname);
           setIsAutoSaved(true);
-          setTimeout(() => {
-            alert('Expense saved! You can close this Safari tab.');
-          }, 300);
+          
+          pushToCloud(currentLedger.id).finally(() => {
+            setTimeout(() => {
+              alert('Expense saved! You can close this Safari tab.');
+            }, 100);
+          });
         };
         
         saveAndExit();
@@ -277,9 +284,10 @@ export function useUrlShortcuts({ currentLedger, updateLedger, t }: UseUrlShortc
     }
 
     if (shouldClear) {
+      hasProcessedShortcut.current = true;
       window.history.replaceState({}, '', window.location.pathname);
     }
-  }, [currentLedger?.id, currentLedger?.users, currentLedger?.expenses, updateLedger, t]);
+  }, [currentLedger?.id, currentLedger?.users, currentLedger?.expenses, updateLedger, t, pushToCloud]);
 
   const clearShortcuts = () => {
     setShortcutAmount(null);

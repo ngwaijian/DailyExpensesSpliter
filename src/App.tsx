@@ -59,7 +59,7 @@ function App() {
     shortcutLng,
     isAutoSaved,
     clearShortcuts
-  } = useUrlShortcuts({ currentLedger, updateLedger, t });
+  } = useUrlShortcuts({ currentLedger, updateLedger, t, pushToCloud });
 
   React.useEffect(() => {
     if (shortcutAmount !== null || shortcutCategory || shortcutDesc || shortcutLocName) {
