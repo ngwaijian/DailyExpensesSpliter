@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Ledger, CATEGORIES, Category } from '../types';
-import { db } from '../lib/db';
 
 interface UseUrlShortcutsProps {
   currentLedger: Ledger | null;
@@ -17,21 +16,15 @@ export function useUrlShortcuts({ currentLedger, updateLedger, t }: UseUrlShortc
   const [shortcutSplitAmong, setShortcutSplitAmong] = useState<string[] | null>(null);
   const [shortcutPaidBy, setShortcutPaidBy] = useState<string | null>(null);
   const [shortcutSubCategory, setShortcutSubCategory] = useState<string | null>(null);
-  const [shortcutLocName, setShortcutLocName] = useState<string | null>(null);
-  const [shortcutLat, setShortcutLat] = useState<number | null>(null);
-  const [shortcutLng, setShortcutLng] = useState<number | null>(null);
-  const [isAutoSaved, setIsAutoSaved] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     
     // Helper to get parameter case-insensitively
     const getParam = (names: string[]) => {
-      const lowerNames = names.map(n => n.toLowerCase());
-      for (const [key, value] of params.entries()) {
-        if (lowerNames.includes(key.toLowerCase())) {
-          return value.replace(/^=+/, '');
-        }
+      for (const name of names) {
+        const val = params.get(name) || params.get(name.toLowerCase()) || params.get(name.charAt(0).toUpperCase() + name.slice(1));
+        if (val) return val;
       }
       return null;
     };
@@ -41,14 +34,10 @@ export function useUrlShortcuts({ currentLedger, updateLedger, t }: UseUrlShortc
     const desc = getParam(['desc', 'description', 'note']);
     const currency = getParam(['currency', 'curr']);
     const goalId = getParam(['goalId', 'goal']);
-    const autoSaveRaw = getParam(['autoSave']);
-    const autoSave = autoSaveRaw ? autoSaveRaw.toLowerCase().includes('true') : false;
+    const autoSave = getParam(['autoSave']) === 'true';
     const splitAmongParam = getParam(['splitAmong', 'split', 'split_among', 'users']);
     const paidByParam = getParam(['paidBy', 'payer', 'paid_by', 'paidby']);
     const subCategory = getParam(['subCategory', 'subcat']);
-    const locName = getParam(['locName', 'location', 'loc']);
-    const lat = getParam(['lat', 'latitude']);
-    const lng = getParam(['lng', 'lon', 'longitude']);
     
     if (!currentLedger) return;
 
@@ -58,14 +47,9 @@ export function useUrlShortcuts({ currentLedger, updateLedger, t }: UseUrlShortc
     let parsedPaidBy = paidByParam;
     if (paidByParam) {
       const paidByLower = paidByParam.toLowerCase();
-      let matchedUser = currentLedger.users.find(u => u.toLowerCase() === paidByLower);
-      if (!matchedUser) {
-        matchedUser = currentLedger.users.find(u => u.toLowerCase().includes(paidByLower) || paidByLower.includes(u.toLowerCase()));
-      }
+      const matchedUser = currentLedger.users.find(u => u.toLowerCase() === paidByLower);
       if (matchedUser) {
         parsedPaidBy = matchedUser;
-      } else {
-        parsedPaidBy = paidByParam.charAt(0).toUpperCase() + paidByParam.slice(1);
       }
     }
 
@@ -73,39 +57,17 @@ export function useUrlShortcuts({ currentLedger, updateLedger, t }: UseUrlShortc
     let parsedSplitAmong: string[] | null = null;
     if (splitAmongParam) {
       if (splitAmongParam.includes(',')) {
-        const rawNames = splitAmongParam.split(',').map(u => u.trim()).filter(Boolean);
-        parsedSplitAmong = [];
-        for (const rawName of rawNames) {
-          const rawLower = rawName.toLowerCase();
-          let matched = currentLedger.users.find(u => u.toLowerCase() === rawLower);
-          if (!matched) {
-            matched = currentLedger.users.find(u => u.toLowerCase().includes(rawLower) || rawLower.includes(u.toLowerCase()));
-          }
-          if (matched) {
-            parsedSplitAmong.push(matched);
-          } else {
-            parsedSplitAmong.push(rawName.charAt(0).toUpperCase() + rawName.slice(1));
-          }
-        }
+        parsedSplitAmong = splitAmongParam.split(',').map(u => u.trim()).filter(Boolean);
       } else {
+        // Filter currentLedger.users to see which existing user names are included in the raw string
         const rawLower = splitAmongParam.toLowerCase();
-        const matchedUsers = currentLedger.users.filter(u => {
-          // Use word boundaries to prevent "A" from matching "Alice"
-          try {
-            const regex = new RegExp(`\\b${u.toLowerCase()}\\b`, 'i');
-            return regex.test(rawLower);
-          } catch (e) {
-            // Fallback for names with special characters that break regex
-            return rawLower.includes(u.toLowerCase());
-          }
-        });
+        const matchedUsers = currentLedger.users.filter(u => rawLower.includes(u.toLowerCase()));
         if (matchedUsers.length > 0) {
           parsedSplitAmong = matchedUsers;
         } else {
-          parsedSplitAmong = splitAmongParam.split(' ').map(u => u.trim()).filter(Boolean).map(n => n.charAt(0).toUpperCase() + n.slice(1));
+          parsedSplitAmong = splitAmongParam.split(' ').map(u => u.trim()).filter(Boolean);
         }
       }
-      parsedSplitAmong = Array.from(new Set(parsedSplitAmong));
     }
 
     // --- Category Matching ---
@@ -187,17 +149,6 @@ export function useUrlShortcuts({ currentLedger, updateLedger, t }: UseUrlShortc
             dif + pad(tzo / 60) +
             ':' + pad(tzo % 60);
 
-        let locationObj = undefined;
-        if (locName || lat || lng) {
-          const parsedLat = lat ? parseFloat(lat) : undefined;
-          const parsedLng = lng ? parseFloat(lng) : undefined;
-          locationObj = {
-            name: locName || '',
-            lat: parsedLat && !isNaN(parsedLat) ? parsedLat : undefined,
-            lng: parsedLng && !isNaN(parsedLng) ? parsedLng : undefined
-          };
-        }
-
         const newExpense = {
           id: Date.now().toString(),
           desc: desc || cleanCategory.name || 'Quick Add',
@@ -210,32 +161,17 @@ export function useUrlShortcuts({ currentLedger, updateLedger, t }: UseUrlShortc
           splitAmong,
           type: 'expense' as const,
           goalId: goalId || undefined,
-          location: locationObj,
         };
         
-        const updatedLedgerData = {
+        updateLedger({
           ...currentLedger,
           expenses: [newExpense, ...currentLedger.expenses]
-        };
+        });
         
-        const saveAndExit = async () => {
-          updateLedger(updatedLedgerData);
-          
-          // Asynchronous failsafe for IndexedDB to ensure data is written before the tab closes
-          try {
-            await db.ledgers.put(updatedLedgerData);
-          } catch (e) {
-            console.error('Failsafe sync error:', e);
-          }
-          
-          window.history.replaceState({}, '', window.location.pathname);
-          setIsAutoSaved(true);
-          setTimeout(() => {
-            alert('Expense saved! You can close this Safari tab.');
-          }, 400);
-        };
-        
-        saveAndExit();
+        window.history.replaceState({}, '', window.location.pathname);
+        setTimeout(() => {
+          alert('Expense saved! You can close this Safari tab.');
+        }, 100);
         return;
       }
     }
@@ -282,27 +218,6 @@ export function useUrlShortcuts({ currentLedger, updateLedger, t }: UseUrlShortc
       shouldClear = true;
     }
 
-    if (locName) {
-      setShortcutLocName(locName);
-      shouldClear = true;
-    }
-
-    if (lat) {
-      const parsedLat = parseFloat(lat);
-      if (!isNaN(parsedLat)) {
-        setShortcutLat(parsedLat);
-        shouldClear = true;
-      }
-    }
-
-    if (lng) {
-      const parsedLng = parseFloat(lng);
-      if (!isNaN(parsedLng)) {
-        setShortcutLng(parsedLng);
-        shouldClear = true;
-      }
-    }
-
     if (shouldClear) {
       window.history.replaceState({}, '', window.location.pathname);
     }
@@ -317,9 +232,6 @@ export function useUrlShortcuts({ currentLedger, updateLedger, t }: UseUrlShortc
     setShortcutSplitAmong(null);
     setShortcutPaidBy(null);
     setShortcutSubCategory(null);
-    setShortcutLocName(null);
-    setShortcutLat(null);
-    setShortcutLng(null);
   };
 
   return {
@@ -331,10 +243,6 @@ export function useUrlShortcuts({ currentLedger, updateLedger, t }: UseUrlShortc
     shortcutSplitAmong,
     shortcutPaidBy,
     shortcutSubCategory,
-    shortcutLocName,
-    shortcutLat,
-    shortcutLng,
-    isAutoSaved,
     clearShortcuts
   };
 }

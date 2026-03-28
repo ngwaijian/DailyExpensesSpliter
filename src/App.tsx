@@ -14,7 +14,7 @@ import { RecurringTransactions } from './components/expenses/RecurringTransactio
 import { BudgetManager } from './components/planning/BudgetManager';
 import { LoanManager } from './components/dashboard/LoanManager';
 import { ExpenseDetailsModal } from './components/expenses/ExpenseDetailsModal';
-import { ShieldCheck, LayoutGrid, List, Users, RefreshCw, Plus, Globe, Target, RotateCcw, Settings, Sun, Moon, Monitor, Wallet, Check } from 'lucide-react';
+import { ShieldCheck, LayoutGrid, List, Users, RefreshCw, Plus, Globe, Target, RotateCcw, Settings, Sun, Moon, Monitor, Wallet } from 'lucide-react';
 import { cn } from './lib/utils';
 import { motion } from 'framer-motion';
 
@@ -37,7 +37,6 @@ function App() {
   const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
   const [viewingExpenseId, setViewingExpenseId] = useState<string | null>(null);
   const [lastUpdatedId, setLastUpdatedId] = useState<string | null>(null);
-  const [isSettlingUp, setIsSettlingUp] = useState(false);
   const formRef = useRef<HTMLDivElement>(null);
   
   // Mobile Tab State
@@ -54,41 +53,13 @@ function App() {
     shortcutSplitAmong,
     shortcutPaidBy,
     shortcutSubCategory,
-    shortcutLocName,
-    shortcutLat,
-    shortcutLng,
-    isAutoSaved,
     clearShortcuts
   } = useUrlShortcuts({ currentLedger, updateLedger, t });
-
-  React.useEffect(() => {
-    if (shortcutAmount !== null || shortcutCategory || shortcutDesc || shortcutLocName) {
-      setIsMobileFormOpen(true);
-      setActiveTab('expenses');
-    }
-  }, [shortcutAmount, shortcutCategory, shortcutDesc, shortcutLocName]);
 
   if (!currentLedger) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
-
-  if (isAutoSaved) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center p-4">
-        <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-xl text-center max-w-sm w-full">
-          <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Check className="w-8 h-8" />
-          </div>
-          <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">Expense Saved!</h2>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">You can safely close this tab or return to the app.</p>
-          <button onClick={() => window.location.href = '/'} className="w-full py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-800 dark:text-white rounded-xl font-medium transition-colors">
-            View Expenses
-          </button>
-        </div>
       </div>
     );
   }
@@ -357,23 +328,19 @@ function App() {
             "lg:col-span-6",
             activeTab === 'expenses' ? 'block' : 'hidden lg:block'
           )}>
-            <div key={editingExpenseId || (isSettlingUp ? 'settling' : '') || `${shortcutAmount}-${shortcutCategory}-${shortcutDesc}-${shortcutCurrency}-${shortcutGoalId}-${shortcutSplitAmong?.join(',')}-${shortcutPaidBy}-${shortcutSubCategory}-${shortcutLocName}-${shortcutLat}-${shortcutLng}`} ref={formRef}>
+            <div key={editingExpenseId || `${shortcutAmount}-${shortcutCategory}-${shortcutDesc}-${shortcutCurrency}-${shortcutGoalId}-${shortcutSplitAmong?.join(',')}-${shortcutPaidBy}-${shortcutSubCategory}`} ref={formRef}>
               <ExpenseForm 
                 ledger={currentLedger} 
-                onSubmit={(data) => {
-                  handleAddExpense(data);
-                  setIsSettlingUp(false);
-                }}
+                onSubmit={handleAddExpense}
                 onUpdateLedger={updateLedger}
                 onCancel={() => {
                   setEditingExpenseId(null);
-                  setIsSettlingUp(false);
                   clearShortcuts();
                   setIsMobileFormOpen(false);
                 }}
                 initialData={editingExpenseId 
                   ? currentLedger.expenses.find(e => e.id === editingExpenseId) 
-                  : (shortcutAmount !== null || shortcutCategory || shortcutGoalId || shortcutDesc || shortcutCurrency || shortcutSplitAmong || shortcutPaidBy || shortcutSubCategory || shortcutLocName || shortcutLat !== null || shortcutLng !== null ? { 
+                  : (shortcutAmount !== null || shortcutCategory || shortcutGoalId || shortcutDesc || shortcutCurrency || shortcutSplitAmong || shortcutPaidBy || shortcutSubCategory ? { 
                       amountOriginal: shortcutAmount ?? undefined,
                       category: shortcutCategory ?? undefined,
                       desc: shortcutDesc ?? undefined,
@@ -381,14 +348,8 @@ function App() {
                       goalId: shortcutGoalId ?? undefined,
                       splitAmong: shortcutSplitAmong ?? undefined,
                       paidBy: shortcutPaidBy ?? undefined,
-                      subCategory: shortcutSubCategory ?? undefined,
-                      location: (shortcutLocName || shortcutLat !== null || shortcutLng !== null) ? {
-                        name: shortcutLocName || '',
-                        lat: shortcutLat ?? undefined,
-                        lng: shortcutLng ?? undefined
-                      } : undefined
+                      subCategory: shortcutSubCategory ?? undefined
                     } : undefined)}
-                defaultType={isSettlingUp ? 'settlement' : undefined}
                 isMobileModal={isMobileFormOpen}
                 onCloseMobile={() => setIsMobileFormOpen(false)}
               />
@@ -408,14 +369,7 @@ function App() {
           {/* Desktop: Right Sidebar (Stats & Balances) */}
           <div className="hidden lg:block lg:col-span-3 space-y-6">
             <Summary ledger={currentLedger} onUpdateLedger={updateLedger} />
-            <Balances 
-              ledger={currentLedger} 
-              onSettleUp={() => {
-                setIsSettlingUp(true);
-                setActiveTab('expenses');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }} 
-            />
+            <Balances ledger={currentLedger} />
             <LoanManager ledger={currentLedger} onAdd={handleAddLoan} onEdit={handleEditLoan} onDelete={handleDeleteLoan} onAddExpense={handleLogPayment} />
           </div>
 
@@ -423,15 +377,7 @@ function App() {
           <div className={cn("lg:hidden", activeTab === 'dashboard' ? 'block' : 'hidden')}>
             <div className="space-y-6">
               <Summary ledger={currentLedger} onUpdateLedger={updateLedger} />
-              <Balances 
-                ledger={currentLedger} 
-                onSettleUp={() => {
-                  setIsSettlingUp(true);
-                  setActiveTab('expenses');
-                  setIsMobileFormOpen(true);
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }} 
-              />
+              <Balances ledger={currentLedger} />
               <LoanManager ledger={currentLedger} onAdd={handleAddLoan} onEdit={handleEditLoan} onDelete={handleDeleteLoan} onAddExpense={handleLogPayment} />
             </div>
           </div>
