@@ -955,27 +955,47 @@ export function Summary({ ledger, onUpdateLedger }: SummaryProps) {
                 </div>
               )}
             </>
-          ) : (
+) : (
             <>
-              {sortedPeople.map(([name, stats]) => (
-                <div key={name} className="flex items-center justify-between p-4 bg-gray-50/50 dark:bg-gray-900/20 rounded-3xl border border-gray-100 dark:border-gray-700/50 hover:border-indigo-100 dark:hover:border-indigo-900/50 transition-all">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-10 h-10 rounded-2xl bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 flex items-center justify-center text-sm font-black shrink-0">
-                      {name.charAt(0).toUpperCase()}
+              {sortedPeople.map(([name, stats]) => {
+                const balance = stats.paid - stats.share;
+                const isOwed = balance > 0.01;
+                const owes = balance < -0.01;
+
+                return (
+                  <div key={name} className="flex items-center justify-between p-4 bg-gray-50/50 dark:bg-gray-900/20 rounded-3xl border border-gray-100 dark:border-gray-700/50 hover:border-indigo-100 dark:hover:border-indigo-900/50 transition-all">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-10 h-10 rounded-2xl bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 flex items-center justify-center text-sm font-black shrink-0">
+                        {name.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-gray-900 dark:text-white truncate font-bold text-sm">{name}</span>
+                        <span className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-wider">
+                          Paid {formatCurrency(stats.paid)} • Share {formatCurrency(stats.share)}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex flex-col min-w-0">
-                      <span className="text-gray-900 dark:text-white truncate font-bold text-sm">{name}</span>
-                      <span className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-wider">
-                        {t('dash_paid')} {formatCurrency(stats.paid)}
-                      </span>
+                    <div className="text-right shrink-0">
+                      <div className={cn("text-[10px] font-bold uppercase tracking-widest mb-0.5", 
+                        isOwed ? "text-emerald-500" : 
+                        owes ? "text-red-500" : 
+                        "text-gray-400"
+                      )}>
+                        {isOwed ? t('bal_gets_back', 'Gets Back') : 
+                         owes ? t('bal_owes', 'Owes') : 
+                         t('bal_settled', 'Settled')}
+                      </div>
+                      <div className={cn("font-black text-base",
+                        isOwed ? "text-emerald-600 dark:text-emerald-400" : 
+                        owes ? "text-red-600 dark:text-red-400" : 
+                        "text-gray-500 dark:text-gray-400"
+                      )}>
+                        {formatCurrency(Math.abs(balance))}
+                      </div>
                     </div>
                   </div>
-                  <div className="text-right shrink-0">
-                    <div className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-widest mb-0.5">Share</div>
-                    <div className="font-black text-gray-900 dark:text-white text-base">{formatCurrency(stats.share)}</div>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
               {sortedPeople.length === 0 && (
                 <div className="text-center py-12 bg-gray-50/50 dark:bg-gray-900/20 rounded-3xl border border-dashed border-gray-200 dark:border-gray-700">
                   <Users className="w-8 h-8 text-gray-300 mx-auto mb-2" />
