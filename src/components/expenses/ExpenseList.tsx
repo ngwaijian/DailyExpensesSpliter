@@ -222,7 +222,7 @@ export function ExpenseList({ ledger, onEdit, onView, onDelete, lastUpdatedId, o
                 <div>
                   <div className="font-medium text-gray-900 dark:text-white">{rt.desc}</div>
                   <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 flex items-center gap-1 flex-wrap">
-                    <span>Due: {new Date(rt.nextDate).toLocaleDateString()} • {rt.frequency}</span>
+                    <span>Due: {new Date(rt.nextDate).toLocaleDateString('en-GB')} • {rt.frequency}</span>
                     <span className="mx-1 text-gray-300 dark:text-gray-600">|</span>
                     <span className="text-blue-500 dark:text-blue-400 font-medium">{rt.paidBy}</span>
                     {rt.splitAmong && rt.splitAmong.length > 0 && (
@@ -248,7 +248,7 @@ export function ExpenseList({ ledger, onEdit, onView, onDelete, lastUpdatedId, o
                 <div>
                   <div className="font-medium text-gray-900 dark:text-white">{l.name}</div>
                   <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 flex items-center gap-1 flex-wrap">
-                    <span>Due: {new Date(l.nextInstallmentDate).toLocaleDateString()} • Installment</span>
+                    <span>Due: {new Date(l.nextInstallmentDate).toLocaleDateString('en-GB')} • Installment</span>
                     <span className="mx-1 text-gray-300 dark:text-gray-600">|</span>
                     <span className="text-blue-500 dark:text-blue-400 font-medium">{l.paidBy}</span>
                     {l.splitAmong && l.splitAmong.length > 0 && (

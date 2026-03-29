@@ -629,7 +629,7 @@ export function RecurringTransactions({ ledger, onUpdateLedger }: RecurringTrans
                 )}
                 <span>•</span>
                 <Calendar className="w-3 h-3 ml-1" />
-                Next: {new Date(tx.nextDate).toLocaleDateString()}
+                Next: {new Date(tx.nextDate).toLocaleDateString('en-GB')}
               </div>
             </div>
             <div className="flex flex-col items-end gap-2">
