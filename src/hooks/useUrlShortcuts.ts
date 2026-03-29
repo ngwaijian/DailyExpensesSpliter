@@ -223,10 +223,9 @@ export function useUrlShortcuts({ currentLedger, updateLedger, t, pushToCloud }:
             window.history.replaceState({}, '', window.location.pathname);
             setIsAutoSaved(true);
             
-pushToCloud(currentLedger.id, updatedLedgerData).finally(() => {
-              setTimeout(() => {
-                alert('Expense saved! You can close this Safari tab.');
-              }, 100);
+            // Push to cloud in the background without triggering a system alert
+            pushToCloud(currentLedger.id, updatedLedgerData).catch((err) => {
+              console.error('Background sync error:', err);
             });
           } catch (e) {
             console.error('Failsafe sync error:', e);
