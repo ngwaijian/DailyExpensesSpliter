@@ -345,7 +345,7 @@ interestRate: parseFloat(interestRate) || 0,
           </div>
 
 <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">Installment Amount</label>
+            <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">Monthly Installment</label>
             <input 
               type="number" inputMode="decimal" 
               pattern="[0-9]*\.?[0-9]*" 
@@ -360,20 +360,6 @@ interestRate: parseFloat(interestRate) || 0,
               placeholder="0.00"
               required 
             />
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">Frequency</label>
-            <select
-              value={frequency}
-              onChange={e => setFrequency(e.target.value as any)}
-              className="w-full p-4 bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all text-gray-900 dark:text-white font-bold appearance-none"
-            >
-              <option value="daily">Daily</option>
-              <option value="weekly">Weekly</option>
-              <option value="monthly">Monthly</option>
-              <option value="yearly">Yearly</option>
-            </select>
           </div>
             <input 
               type="number" inputMode="decimal" 
