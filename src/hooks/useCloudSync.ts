@@ -13,6 +13,7 @@ interface UseCloudSyncProps {
   unsyncedLedgerIds: string[];
   setUnsyncedLedgerIds: React.Dispatch<React.SetStateAction<string[]>>;
   updateLedger: (ledger: Ledger) => void;
+  isInitialized: boolean; // <--- ADD THIS
 }
 
 export function useCloudSync({
@@ -24,6 +25,7 @@ export function useCloudSync({
   unsyncedLedgerIds,
   setUnsyncedLedgerIds,
   updateLedger
+  isInitialized // <--- ADD THIS
 }: UseCloudSyncProps) {
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
@@ -374,6 +376,7 @@ const pushToCloud = useCallback(async (ledgerId?: string, overrideLedger?: Ledge
   // Auto-sync on network connection
   useEffect(() => {
     const handleOnline = () => {
+		if (!isInitialized) return; // <--- ADD THIS
       if (needsSync && currentLedger?.gistId) {
         pushToCloud();
       } else if (currentLedger?.gistId) {
@@ -386,6 +389,7 @@ const pushToCloud = useCallback(async (ledgerId?: string, overrideLedger?: Ledge
 
   // Initial sync on mount/credential change if online
   useEffect(() => {
+	  if (!isInitialized) return; // <--- ADD THIS
     if (navigator.onLine && githubToken && !isSyncing) {
       if (unsyncedLedgerIds.length > 0) {
         // Push all unsynced ledgers
@@ -398,10 +402,11 @@ const pushToCloud = useCallback(async (ledgerId?: string, overrideLedger?: Ledge
         fetchAllLedgersFromCloud();
       }
     }
-  }, [githubToken]); // Run when credentials change or on mount
+  }, [githubToken, isInitialized]); // <--- ADD isInitialized
 
   // Auto-push on data change (debounced)
   useEffect(() => {
+	  if (!isInitialized) return; // <--- ADD THIS
     if (needsSync && githubToken && currentLedger?.gistId && !isSyncing && isOnline) {
       const timer = setTimeout(() => {
         pushToCloud(currentLedgerId);
@@ -412,7 +417,7 @@ const pushToCloud = useCallback(async (ledgerId?: string, overrideLedger?: Ledge
 
   // Background polling (Auto-pull)
   useEffect(() => {
-    if (!currentLedger?.gistId || !isOnline) return;
+if (!currentLedger?.gistId || !isOnline || !isInitialized) return; // <--- ADD !isInitialized
 
     const interval = setInterval(() => {
       // Check localStorage directly to be tab-aware
@@ -432,6 +437,7 @@ const pushToCloud = useCallback(async (ledgerId?: string, overrideLedger?: Ledge
   // Auto-Fetch on Wake
   useEffect(() => {
     const handleVisibilityChange = () => {
+		if (!isInitialized) return; // <--- ADD THIS
       if (document.visibilityState === 'visible' && currentLedger?.gistId && isOnline && !isSyncing) {
         console.log("App regained focus: Pulling data from cloud...");
         fetchFromCloud();
@@ -444,7 +450,7 @@ const pushToCloud = useCallback(async (ledgerId?: string, overrideLedger?: Ledge
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('focus', handleVisibilityChange);
     };
-  }, [currentLedger?.gistId, isOnline, isSyncing, fetchFromCloud]);
+  }, [currentLedger?.gistId, isOnline, isSyncing, fetchFromCloud, isInitialized]); // <--- ADD isInitialized
 
   return {
     isSyncing,

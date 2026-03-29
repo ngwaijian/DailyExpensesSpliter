@@ -276,7 +276,8 @@ export function useStore() {
     githubToken,
     unsyncedLedgerIds,
     setUnsyncedLedgerIds,
-    updateLedger
+    updateLedger,
+	isInitialized // <--- ADD THIS HERE
   });
 
   const getLedgerCategories = useCallback((ledger: Ledger) => {
