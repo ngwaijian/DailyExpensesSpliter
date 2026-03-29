@@ -19,8 +19,10 @@ export function useUrlShortcuts({ currentLedger, updateLedger, t, pushToCloud }:
   const [shortcutPaidBy, setShortcutPaidBy] = useState<string | null>(null);
   const [shortcutSubCategory, setShortcutSubCategory] = useState<string | null>(null);
   const [shortcutLocName, setShortcutLocName] = useState<string | null>(null);
-  const [shortcutLat, setShortcutLat] = useState<number | null>(null);
+const [shortcutLat, setShortcutLat] = useState<number | null>(null);
   const [shortcutLng, setShortcutLng] = useState<number | null>(null);
+  const [shortcutIsSponsored, setShortcutIsSponsored] = useState<boolean>(false);
+  const [shortcutSponsoredBy, setShortcutSponsoredBy] = useState<string | null>(null);
   const [isAutoSaved, setIsAutoSaved] = useState(false);
   const hasProcessedShortcut = useRef(false);
 
@@ -73,8 +75,11 @@ export function useUrlShortcuts({ currentLedger, updateLedger, t, pushToCloud }:
     const paidByParam = getParam(['paidBy', 'payer', 'paid_by', 'paidby']);
 	
 	    // --- MISSING DECLARATIONS FIX ---
-    const parsedPaidBy = paidByParam;
+   const parsedPaidBy = paidByParam;
     const subCategory = getParam(['subCategory', 'subcat', 'sub']);
+    const isSponsoredStr = getParam(['isSponsored', 'sponsor', 'sponsored']);
+    const isSponsoredParam = isSponsoredStr === 'true' || isSponsoredStr === '1' || isSponsoredStr?.toLowerCase() === 'yes';
+    const sponsoredByParam = getParam(['sponsoredBy', 'sponsorName']);
     const locName = getParam(['locName', 'location', 'loc']);
     const lat = getParam(['lat', 'latitude']);
     const lng = getParam(['lng', 'longitude']);
@@ -189,7 +194,7 @@ export function useUrlShortcuts({ currentLedger, updateLedger, t, pushToCloud }:
           }
         }
 
-        const newExpense = {
+const newExpense = {
           id: Date.now().toString(),
           desc: finalDesc,
           amountOriginal: parsedAmount,
@@ -202,6 +207,8 @@ export function useUrlShortcuts({ currentLedger, updateLedger, t, pushToCloud }:
           type: 'expense' as const,
           goalId: goalId || undefined,
           location: locationObj,
+          isSponsored: isSponsoredParam,
+          sponsoredBy: isSponsoredParam ? (sponsoredByParam || paidBy) : undefined,
         };
         
         const updatedLedgerData = {
@@ -311,6 +318,21 @@ export function useUrlShortcuts({ currentLedger, updateLedger, t, pushToCloud }:
       }
     }
 
+// Add this right before the `if (shouldClear)` block:
+    if (isSponsoredParam) {
+      setShortcutIsSponsored(true);
+      shouldClear = true;
+    }
+
+    if (sponsoredByParam) {
+      setShortcutSponsoredBy(sponsoredByParam);
+      shouldClear = true;
+    }
+
+    if (shouldClear) {
+      hasProcessedShortcut.current = true;
+// ...
+
     if (shouldClear) {
       hasProcessedShortcut.current = true;
       window.history.replaceState({}, '', window.location.pathname);
@@ -329,6 +351,8 @@ export function useUrlShortcuts({ currentLedger, updateLedger, t, pushToCloud }:
     setShortcutLocName(null);
     setShortcutLat(null);
     setShortcutLng(null);
+	    setShortcutIsSponsored(false);
+    setShortcutSponsoredBy(null);
   };
 
   return {
@@ -343,6 +367,8 @@ export function useUrlShortcuts({ currentLedger, updateLedger, t, pushToCloud }:
     shortcutLocName,
     shortcutLat,
     shortcutLng,
+shortcutIsSponsored,
+    shortcutSponsoredBy,
     isAutoSaved,
     clearShortcuts
   };

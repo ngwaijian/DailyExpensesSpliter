@@ -57,6 +57,8 @@ function App() {
     shortcutLocName,
     shortcutLat,
     shortcutLng,
+	    shortcutIsSponsored, // <-- ADD THIS
+    shortcutSponsoredBy, // <-- ADD THIS
     isAutoSaved,
     clearShortcuts
   } = useUrlShortcuts({ currentLedger: isLoading ? null : currentLedger,updateLedger, t, pushToCloud });
@@ -371,9 +373,11 @@ if (isLoading || !currentLedger) {
                   clearShortcuts();
                   setIsMobileFormOpen(false);
                 }}
+// Replace your current initialData block with this:
+
                 initialData={editingExpenseId 
                   ? currentLedger.expenses.find(e => e.id === editingExpenseId) 
-                  : (shortcutAmount !== null || shortcutCategory || shortcutGoalId || shortcutDesc || shortcutCurrency || shortcutSplitAmong || shortcutPaidBy || shortcutSubCategory || shortcutLocName || shortcutLat !== null || shortcutLng !== null ? { 
+                  : (shortcutAmount !== null || shortcutCategory || shortcutGoalId || shortcutDesc || shortcutCurrency || shortcutSplitAmong || shortcutPaidBy || shortcutSubCategory || shortcutLocName || shortcutLat !== null || shortcutLng !== null || shortcutIsSponsored ? { 
                       amountOriginal: shortcutAmount ?? undefined,
                       category: shortcutCategory ?? undefined,
                       desc: shortcutDesc ?? undefined,
@@ -382,6 +386,8 @@ if (isLoading || !currentLedger) {
                       splitAmong: shortcutSplitAmong ?? undefined,
                       paidBy: shortcutPaidBy ?? undefined,
                       subCategory: shortcutSubCategory ?? undefined,
+                      isSponsored: shortcutIsSponsored ?? false,         // <-- ADD THIS
+                      sponsoredBy: shortcutSponsoredBy ?? undefined,     // <-- ADD THIS
                       location: (shortcutLocName || shortcutLat !== null || shortcutLng !== null) ? {
                         name: shortcutLocName || '',
                         lat: shortcutLat ?? undefined,
