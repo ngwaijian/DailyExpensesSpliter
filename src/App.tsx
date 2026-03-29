@@ -63,12 +63,12 @@ function App() {
     clearShortcuts
   } = useUrlShortcuts({ currentLedger: isLoading ? null : currentLedger,updateLedger, t, pushToCloud });
 
-  React.useEffect(() => {
-    if (shortcutAmount !== null || shortcutCategory || shortcutDesc || shortcutLocName) {
+React.useEffect(() => {
+    if (shortcutAmount !== null || shortcutCategory || shortcutDesc || shortcutLocName || shortcutIsSponsored) {
       setIsMobileFormOpen(true);
       setActiveTab('expenses');
     }
-  }, [shortcutAmount, shortcutCategory, shortcutDesc, shortcutLocName]);
+  }, [shortcutAmount, shortcutCategory, shortcutDesc, shortcutLocName, shortcutIsSponsored]);
 
 if (isLoading || !currentLedger) {
     return (
@@ -359,7 +359,7 @@ if (isLoading || !currentLedger) {
             "lg:col-span-6",
             activeTab === 'expenses' ? 'block' : 'hidden lg:block'
           )}>
-            <div key={editingExpenseId || (isSettlingUp ? 'settling' : '') || `${shortcutAmount}-${shortcutCategory}-${shortcutDesc}-${shortcutCurrency}-${shortcutGoalId}-${shortcutSplitAmong?.join(',')}-${shortcutPaidBy}-${shortcutSubCategory}-${shortcutLocName}-${shortcutLat}-${shortcutLng}`} ref={formRef}>
+<div key={editingExpenseId || (isSettlingUp ? 'settling' : '') || `${shortcutAmount}-${shortcutCategory}-${shortcutDesc}-${shortcutCurrency}-${shortcutGoalId}-${shortcutSplitAmong?.join(',')}-${shortcutPaidBy}-${shortcutSubCategory}-${shortcutLocName}-${shortcutLat}-${shortcutLng}-${shortcutIsSponsored}-${shortcutSponsoredBy}`} ref={formRef}>
               <ExpenseForm 
                 ledger={currentLedger} 
                 onSubmit={(data) => {

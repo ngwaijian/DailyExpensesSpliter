@@ -77,8 +77,8 @@ const [shortcutLat, setShortcutLat] = useState<number | null>(null);
 	    // --- MISSING DECLARATIONS FIX ---
    const parsedPaidBy = paidByParam;
     const subCategory = getParam(['subCategory', 'subcat', 'sub']);
-    const isSponsoredStr = getParam(['isSponsored', 'sponsor', 'sponsored']);
-    const isSponsoredParam = isSponsoredStr === 'true' || isSponsoredStr === '1' || isSponsoredStr?.toLowerCase() === 'yes';
+const isSponsoredStr = getParam(['isSponsored', 'sponsor', 'sponsored'])?.trim()?.toLowerCase();
+    const isSponsoredParam = isSponsoredStr === 'true' || isSponsoredStr === '1' || isSponsoredStr === 'yes';
     const sponsoredByParam = getParam(['sponsoredBy', 'sponsorName']);
     const locName = getParam(['locName', 'location', 'loc']);
     const lat = getParam(['lat', 'latitude']);
