@@ -319,7 +319,7 @@ const newExpense = {
     }
 
 // Add this right before the `if (shouldClear)` block:
-    if (isSponsoredParam) {
+if (isSponsoredParam) {
       setShortcutIsSponsored(true);
       shouldClear = true;
     }
@@ -328,10 +328,6 @@ const newExpense = {
       setShortcutSponsoredBy(sponsoredByParam);
       shouldClear = true;
     }
-
-    if (shouldClear) {
-      hasProcessedShortcut.current = true;
-// ...
 
     if (shouldClear) {
       hasProcessedShortcut.current = true;
