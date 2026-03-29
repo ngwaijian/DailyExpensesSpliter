@@ -149,8 +149,8 @@ const progress = loan.totalAmount > 0 ? ((loan.totalAmount - loan.remainingAmoun
                     <div className="flex justify-between items-center">
                       <div className="flex items-center gap-1.5">
                         <Calendar className={cn("w-3 h-3", isOverdue ? "text-red-500" : "text-gray-400")} />
-                        <span className={cn("text-[10px] font-bold", isOverdue ? "text-red-500" : "text-gray-500")}>
-                          {loan.status === 'paid_off' ? 'Paid Off' : `Next: ${new Date(loan.nextInstallmentDate).toLocaleDateString()}`}
+<span className={cn("text-[10px] font-bold", isOverdue ? "text-red-500" : "text-gray-500")}>
+                          {loan.status === 'paid_off' ? 'Paid Off' : `Next: ${new Date(loan.nextInstallmentDate).toLocaleDateString('en-GB')}`}
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5">

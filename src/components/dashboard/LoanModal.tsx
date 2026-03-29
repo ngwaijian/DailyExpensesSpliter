@@ -425,45 +425,57 @@ interestRate: parseFloat(interestRate) || 0,
           </div>
 
 {/* Category */}
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">{t('form_category') || 'Category'}</label>
-            <div className="relative">
-              <select
-                value={category}
-                onChange={e => {
-                  setCategory(e.target.value);
-                  setSubCategory('');
-                }}
-                className="w-full p-4 bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all text-gray-900 dark:text-white font-medium appearance-none"
-              >
-                {CATEGORIES.map(c => (
-                  <option key={c.name} value={c.name}>{c.name}</option>
-                ))}
-              </select>
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-              </div>
+          <div className="md:col-span-2 space-y-3">
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">{t('form_category') || 'Category'}</label>
             </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">Sub-category</label>
-            <div className="relative">
-              <select
-                value={subCategory}
-                onChange={e => setSubCategory(e.target.value)}
-                className="w-full p-4 bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all text-gray-900 dark:text-white font-medium appearance-none disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={!category || !CATEGORIES.find(c => c.name === category)?.subCategories?.length}
-              >
-                <option value="">None</option>
-                {category && CATEGORIES.find(c => c.name === category)?.subCategories?.map(sub => (
-                  <option key={sub} value={sub}>{sub}</option>
-                ))}
-              </select>
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-              </div>
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-3">
+              {CATEGORIES.map(c => (
+                <button
+                  key={c.name}
+                  type="button"
+                  onClick={() => { setCategory(c.name); setSubCategory(''); }}
+                  className={cn(
+                    "flex flex-col items-center justify-center p-3 rounded-2xl border transition-all gap-1.5 group relative overflow-hidden",
+                    category === c.name 
+                      ? "bg-blue-50 dark:bg-blue-900/30 border-blue-500 text-blue-700 dark:text-blue-400 shadow-sm" 
+                      : "bg-gray-50 dark:bg-gray-700/30 border-gray-100 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-500"
+                  )}
+                >
+                  <span className={cn(
+                    "text-2xl transition-transform duration-200",
+                    category === c.name ? "scale-110" : "group-hover:scale-110"
+                  )}>
+                    {c.name.split(' ')[0]}
+                  </span>
+                  <span className="text-[10px] font-bold uppercase tracking-tight text-center leading-tight truncate w-full">
+                    {c.name.split(' ').slice(1).join(' ')}
+                  </span>
+                </button>
+              ))}
             </div>
+            {category && CATEGORIES.find(c => c.name === category)?.subCategories && CATEGORIES.find(c => c.name === category)!.subCategories!.length > 0 && (
+              <div className="mt-4">
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2">Sub-category</label>
+                <div className="flex gap-2 flex-wrap">
+                  {CATEGORIES.find(c => c.name === category)!.subCategories!.map(sub => (
+                    <button
+                      key={sub}
+                      type="button"
+                      onClick={() => setSubCategory(sub)}
+                      className={cn(
+                        "px-4 py-2 rounded-xl border text-[11px] font-bold uppercase tracking-tight transition-all",
+                        subCategory === sub
+                          ? "bg-blue-100 dark:bg-blue-900/40 border-blue-500 text-blue-700 dark:text-blue-400 shadow-sm"
+                          : "bg-gray-50 dark:bg-gray-700/30 border-gray-100 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-500"
+                      )}
+                    >
+                      {sub}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Split Among */}
