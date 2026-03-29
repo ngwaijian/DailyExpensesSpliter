@@ -174,13 +174,14 @@ const progress = loan.totalAmount > 0 ? ((loan.totalAmount - loan.remainingAmoun
           })}
         </div>
       )}
-      <LoanModal 
+<LoanModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
         onSave={(loan) => { editingLoan ? onEdit(loan) : onAdd(loan); setIsModalOpen(false); }}
         initialData={editingLoan}
         users={ledger.users}
         defaultCurrency={ledger.expenses[0]?.currency || 'MYR'}
+        categories={ledger.categories || []}
       />
     </div>
   );

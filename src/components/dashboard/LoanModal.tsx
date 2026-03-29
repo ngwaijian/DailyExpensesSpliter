@@ -11,9 +11,11 @@ interface LoanModalProps {
   initialData?: Loan;
   users: string[];
   defaultCurrency: string;
+  categories: Category[];
 }
 
-export const LoanModal: React.FC<LoanModalProps> = ({ isOpen, onClose, onSave, initialData, users, defaultCurrency }) => {
+export const LoanModal: React.FC<LoanModalProps> = ({ isOpen, onClose, onSave, initialData, users, defaultCurrency, categories }) => {
+  const ledgerCategories = categories.length > 0 ? categories.map(c => typeof c === 'string' ? { name: c, subCategories: [] } : c) : ledgerCategories;
   const { t } = useLanguage();
   const [name, setName] = useState(initialData?.name || '');
   const [type, setType] = useState<'loan' | 'installment'>(initialData?.type || 'loan');
@@ -31,7 +33,7 @@ const [termMonths, setTermMonths] = useState(initialData?.termMonths.toString() 
   const [status, setStatus] = useState(initialData?.status || 'active');
 
   // New state variables for category and split logic
-  const defaultCategory = CATEGORIES.find(c => c.name === '🏦 Bank / Finance') || CATEGORIES[0];
+const defaultCategory = ledgerCategories.find(c => c.name === '🏦 Bank / Finance') || ledgerCategories[0];
   const [category, setCategory] = useState<string>(initialData?.category?.name || defaultCategory.name);
   const [subCategory, setSubCategory] = useState(initialData?.subCategory || '');
   
@@ -196,7 +198,7 @@ setTermMonths(initialData.termMonths.toString() || '');
       });
     }
 
-    const categoryObj = CATEGORIES.find(c => c.name === category) || { name: category, subCategories: [] };
+const categoryObj = ledgerCategories.find(c => c.name === category) || { name: category, subCategories: [] };
 
     onSave({
       id: initialData?.id || Date.now().toString(),
@@ -430,7 +432,7 @@ interestRate: parseFloat(interestRate) || 0,
               <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">{t('form_category') || 'Category'}</label>
             </div>
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-3">
-              {CATEGORIES.map(c => (
+              {ledgerCategories.map(c => (
                 <button
                   key={c.name}
                   type="button"
@@ -454,11 +456,11 @@ interestRate: parseFloat(interestRate) || 0,
                 </button>
               ))}
             </div>
-            {category && CATEGORIES.find(c => c.name === category)?.subCategories && CATEGORIES.find(c => c.name === category)!.subCategories!.length > 0 && (
+            {category && ledgerCategories.find(c => c.name === category)?.subCategories && ledgerCategories.find(c => c.name === category)!.subCategories!.length > 0 && (
               <div className="mt-4">
                 <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2">Sub-category</label>
                 <div className="flex gap-2 flex-wrap">
-                  {CATEGORIES.find(c => c.name === category)!.subCategories!.map(sub => (
+                  {ledgerCategories.find(c => c.name === category)!.subCategories!.map(sub => (
                     <button
                       key={sub}
                       type="button"
