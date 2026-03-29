@@ -82,8 +82,8 @@ export const LoanManager: React.FC<{
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-4">
           {loans.map(loan => {
-            const progress = loan.totalAmount > 0 ? ((loan.totalAmount - loan.remainingAmount) / loan.totalAmount) * 100 : 0;
-            const isOverdue = loan.dueDate && new Date(loan.dueDate) < new Date() && loan.status === 'active';
+const progress = loan.totalAmount > 0 ? ((loan.totalAmount - loan.remainingAmount) / loan.totalAmount) * 100 : 0;
+            const isOverdue = loan.nextInstallmentDate && new Date(loan.nextInstallmentDate) < new Date() && loan.status === 'active';
             
             return (
               <div key={loan.id} className={cn(
@@ -150,7 +150,7 @@ export const LoanManager: React.FC<{
                       <div className="flex items-center gap-1.5">
                         <Calendar className={cn("w-3 h-3", isOverdue ? "text-red-500" : "text-gray-400")} />
                         <span className={cn("text-[10px] font-bold", isOverdue ? "text-red-500" : "text-gray-500")}>
-                          {loan.status === 'paid_off' ? 'Paid Off' : `Due: ${new Date(loan.dueDate).toLocaleDateString()}`}
+                          {loan.status === 'paid_off' ? 'Paid Off' : `Next: ${new Date(loan.nextInstallmentDate).toLocaleDateString()}`}
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5">
