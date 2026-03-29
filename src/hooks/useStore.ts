@@ -121,7 +121,7 @@ export function useStore() {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
-  const setAppData = useCallback((value: React.SetStateAction<AppData>) => {
+const setAppData = useCallback((value: React.SetStateAction<AppData>) => {
     db.transaction('rw', db.ledgers, async () => {
       const currentLedgers = await db.ledgers.toArray();
       const currentAppData = { ledgers: currentLedgers };
@@ -134,6 +134,9 @@ export function useStore() {
         await db.ledgers.bulkDelete(ledgersToDelete);
       }
       await db.ledgers.bulkPut(newAppData.ledgers);
+      
+      // ADD THIS: Keep localStorage in sync so the background Cloud Sync pushes the correct latest data
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(newAppData));
     });
   }, []);
 
