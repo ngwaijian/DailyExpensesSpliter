@@ -38,6 +38,23 @@ export function useUrlShortcuts({ currentLedger, updateLedger, t, pushToCloud }:
       }
       return null;
     };
+	
+	// --- ADD THIS NEW HELPER ---
+    // Helper to safely extract arrays (handles ?split=A&split=B AND ?split=A,B)
+    const getArrayParam = (names: string[]) => {
+      const lowerNames = names.map(n => n.toLowerCase());
+      let results: string[] = [];
+      for (const [key, value] of params.entries()) {
+        if (lowerNames.includes(key.toLowerCase()) || lowerNames.includes(key.toLowerCase().replace(/\[\]$/, ''))) {
+          const cleanedValue = value.replace(/^=+/, '');
+          // Split by comma in case they passed "A,B", then trim spaces
+          const parts = cleanedValue.split(',').map(s => s.trim()).filter(Boolean);
+          results = [...results, ...parts];
+        }
+      }
+      return results;
+    };
+    // ---------------------------
 
     const amount = getParam(['amount', 'amt']);
     const category = getParam(['category', 'cat', 'type']);
@@ -46,35 +63,13 @@ export function useUrlShortcuts({ currentLedger, updateLedger, t, pushToCloud }:
     const goalId = getParam(['goalId', 'goal']);
     const autoSaveRaw = getParam(['autoSave']);
     const autoSave = autoSaveRaw ? autoSaveRaw.toLowerCase().includes('true') : false;
-    const splitAmongParam = getParam(['splitAmong', 'split', 'split_among', 'users']);
-    const paidByParam = getParam(['paidBy', 'payer', 'paid_by', 'paidby']);
-    const subCategory = getParam(['subCategory', 'subcat']);
-    const locName = getParam(['locName', 'location', 'loc']);
-    const lat = getParam(['lat', 'latitude']);
-    const lng = getParam(['lng', 'lon', 'longitude']);
     
-    if (!currentLedger) return;
-
-    let shouldClear = false;
-
-    // --- Parse paidBy ---
-    let parsedPaidBy = paidByParam;
-    if (paidByParam) {
-      const paidByLower = paidByParam.toLowerCase();
-      let matchedUser = currentLedger.users.find(u => u.toLowerCase() === paidByLower);
-      if (!matchedUser) {
-        matchedUser = currentLedger.users.find(u => u.toLowerCase().includes(paidByLower) || paidByLower.includes(u.toLowerCase()));
-      }
-      if (matchedUser) {
-        parsedPaidBy = matchedUser;
-      } else {
-        parsedPaidBy = paidByParam.charAt(0).toUpperCase() + paidByParam.slice(1);
-      }
-    }
-
-    // --- Parse splitAmong ---
-    const parsedSplit = splitAmongParam ? splitAmongParam.split(',').map(s => s.trim()).filter(Boolean) : [];
+    // --- USE THE NEW HELPER ---
+    const parsedSplit = getArrayParam(['splitAmong', 'split', 'split_among', 'users']);
     let parsedSplitAmong: string[] | null = parsedSplit.length > 0 ? parsedSplit : null;
+    // --------------------------
+    
+    const paidByParam = getParam(['paidBy', 'payer', 'paid_by', 'paidby']);
 
     // --- Category Matching ---
     const ledgerCategories = (currentLedger.categories || CATEGORIES).map(c => typeof c === 'string' ? { name: c, subCategories: [] } : c);
