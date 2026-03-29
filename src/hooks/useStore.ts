@@ -90,6 +90,10 @@ export function useStore() {
   const currentLedgerId = settings?.currentLedgerId || DEFAULT_DATA.ledgers[0].id;
   const unsyncedLedgerIds = settings?.unsyncedLedgerIds || [];
   const githubToken = settings?.githubToken || (GITHUB_TOKEN || '').trim();
+  
+  // Add this line right here:
+  const isLoading = ledgers === undefined || settings === undefined || !isInitialized;
+  // ... existing code
 
   // For useCloudSync compatibility, we still write SYNC_KEY to localStorage
   // because useCloudSync reads it directly in setInterval to avoid stale closures.
@@ -364,6 +368,7 @@ export function useStore() {
   }, [githubToken]);
 
   return {
+	  isLoading, // <-- ADD THIS
     appData,
     currentLedger,
     currentLedgerId,

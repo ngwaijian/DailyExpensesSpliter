@@ -27,7 +27,7 @@ function App() {
     isSyncing, needsSync, syncError, isOnline,
     githubToken, setGithubToken, 
     fetchFromCloud, pushToCloud, createGistForLedger: createGistForLedger, fetchAllLedgersFromCloud: fetchAllLedgersFromCloud,
-    undo, canUndo
+    undo, canUndo, isLoading // <-- ADD THIS HERE
   } = useStore();
 
   const { theme, setTheme, resolvedTheme } = useTheme();
@@ -68,7 +68,7 @@ function App() {
     }
   }, [shortcutAmount, shortcutCategory, shortcutDesc, shortcutLocName]);
 
-  if (!currentLedger) {
+if (isLoading || !currentLedger) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
