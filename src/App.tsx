@@ -268,7 +268,7 @@ if (isLoading || !currentLedger) {
   };
 
   return (
-<div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans transition-colors duration-200">
+<div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans pb-48 lg:pb-0 transition-colors duration-200">
       {/* Header */}
       <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30 transition-colors duration-200">
         <div className="w-full max-w-[98%] mx-auto px-2 sm:px-4 py-2 sm:py-3 flex justify-between items-center">
@@ -334,7 +334,7 @@ if (isLoading || !currentLedger) {
         </div>
       </header>
 
-<main className="w-full max-w-7xl mx-auto px-2 sm:px-4 pt-4 pb-40 sm:py-6 lg:pb-6">
+<main className="w-full max-w-7xl mx-auto px-2 sm:px-4 py-4 sm:py-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
           
           {/* Desktop: Left Sidebar (Planning & People) */}
