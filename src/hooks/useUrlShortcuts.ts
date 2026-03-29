@@ -26,6 +26,7 @@ export function useUrlShortcuts({ currentLedger, updateLedger, t, pushToCloud }:
 
   useEffect(() => {
     if (hasProcessedShortcut.current) return;
+	 if (!currentLedger) return; // <--- ADD THIS: Wait for the database to load the ledger
     const params = new URLSearchParams(window.location.search);
     
     // Helper to get parameter case-insensitively
