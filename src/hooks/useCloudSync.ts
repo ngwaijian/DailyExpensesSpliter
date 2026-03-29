@@ -144,9 +144,9 @@ export function useCloudSync({
     }
   }, [githubToken, currentLedger?.gistId, currentLedgerId, setAppData, setCurrentLedgerId, setUnsyncedLedgerIds]);
 
-  const pushToCloud = useCallback(async (ledgerId?: string) => {
+const pushToCloud = useCallback(async (ledgerId?: string, overrideLedger?: Ledger) => {
     const targetId = ledgerId || currentLedgerId;
-    let targetLedger = appData.ledgers.find(t => t.id === targetId);
+    let targetLedger = overrideLedger || appData.ledgers.find(t => t.id === targetId);
     const token = githubToken?.trim();
     if (!token || !targetLedger?.gistId) return;
     if (!navigator.onLine) {

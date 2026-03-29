@@ -6,7 +6,7 @@ interface UseUrlShortcutsProps {
   currentLedger: Ledger | null;
   updateLedger: (ledger: Ledger) => void;
   t: (key: string, fallback?: string) => string;
-  pushToCloud: (id: string) => Promise<void>;
+  pushToCloud: (id?: string, overrideLedger?: Ledger) => Promise<void>;
 }
 
 export function useUrlShortcuts({ currentLedger, updateLedger, t, pushToCloud }: UseUrlShortcutsProps) {
@@ -228,7 +228,7 @@ export function useUrlShortcuts({ currentLedger, updateLedger, t, pushToCloud }:
             window.history.replaceState({}, '', window.location.pathname);
             setIsAutoSaved(true);
             
-            pushToCloud(currentLedger.id).finally(() => {
+pushToCloud(currentLedger.id, updatedLedgerData).finally(() => {
               setTimeout(() => {
                 alert('Expense saved! You can close this Safari tab.');
               }, 100);
