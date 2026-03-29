@@ -24,7 +24,7 @@ export function useCloudSync({
   githubToken,
   unsyncedLedgerIds,
   setUnsyncedLedgerIds,
-  updateLedger
+  updateLedger,
   isInitialized // <--- ADD THIS
 }: UseCloudSyncProps) {
   const [isSyncing, setIsSyncing] = useState(false);
