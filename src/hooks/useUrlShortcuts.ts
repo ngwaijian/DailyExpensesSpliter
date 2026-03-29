@@ -71,6 +71,15 @@ export function useUrlShortcuts({ currentLedger, updateLedger, t, pushToCloud }:
     // --------------------------
     
     const paidByParam = getParam(['paidBy', 'payer', 'paid_by', 'paidby']);
+	
+	    // --- MISSING DECLARATIONS FIX ---
+    const parsedPaidBy = paidByParam;
+    const subCategory = getParam(['subCategory', 'subcat', 'sub']);
+    const locName = getParam(['locName', 'location', 'loc']);
+    const lat = getParam(['lat', 'latitude']);
+    const lng = getParam(['lng', 'longitude']);
+    let shouldClear = false;
+    // --------------------------------
 
     // --- Category Matching ---
     const ledgerCategories = (currentLedger.categories || CATEGORIES).map(c => typeof c === 'string' ? { name: c, subCategories: [] } : c);
