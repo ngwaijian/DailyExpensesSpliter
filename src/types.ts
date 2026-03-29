@@ -80,6 +80,7 @@ export interface Loan {
   installmentAmount: number;
   interestRate: number;
   termMonths: number;
+  frequency?: 'daily' | 'weekly' | 'monthly' | 'yearly';
   currency: string;
   category: Category;
   subCategory?: string;

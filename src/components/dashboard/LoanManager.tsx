@@ -35,9 +35,19 @@ export const LoanManager: React.FC<{
     
     // Also update the loan remaining amount and next installment date
     const newRemaining = Math.max(0, loan.remainingAmount - loan.installmentAmount);
-    // Calculate next installment date (add 1 month)
+// Calculate next installment date based on frequency
     const nextDate = new Date(loan.nextInstallmentDate);
-    nextDate.setMonth(nextDate.getMonth() + 1);
+    const freq = loan.frequency || 'monthly';
+    
+    if (freq === 'daily') {
+      nextDate.setDate(nextDate.getDate() + 1);
+    } else if (freq === 'weekly') {
+      nextDate.setDate(nextDate.getDate() + 7);
+    } else if (freq === 'yearly') {
+      nextDate.setFullYear(nextDate.getFullYear() + 1);
+    } else {
+      nextDate.setMonth(nextDate.getMonth() + 1);
+    }
     
     onEdit({
       ...loan,

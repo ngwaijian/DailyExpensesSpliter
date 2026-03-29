@@ -21,7 +21,8 @@ export const LoanModal: React.FC<LoanModalProps> = ({ isOpen, onClose, onSave, i
   const [remainingAmount, setRemainingAmount] = useState(initialData?.remainingAmount.toString() || '');
   const [installmentAmount, setInstallmentAmount] = useState(initialData?.installmentAmount.toString() || '');
   const [interestRate, setInterestRate] = useState(initialData?.interestRate.toString() || '');
-  const [termMonths, setTermMonths] = useState(initialData?.termMonths.toString() || '');
+const [termMonths, setTermMonths] = useState(initialData?.termMonths.toString() || '');
+  const [frequency, setFrequency] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>(initialData?.frequency || 'monthly');
   const [currency, setCurrency] = useState(initialData?.currency || defaultCurrency);
   const [startDate, setStartDate] = useState(initialData?.startDate || new Date().toISOString().split('T')[0]);
   const [dueDate, setDueDate] = useState(initialData?.dueDate || '');
@@ -48,8 +49,10 @@ export const LoanModal: React.FC<LoanModalProps> = ({ isOpen, onClose, onSave, i
       setRemainingAmount(initialData.remainingAmount.toString() || '');
       setInstallmentAmount(initialData.installmentAmount.toString() || '');
       setInterestRate(initialData.interestRate.toString() || '');
-      setTermMonths(initialData.termMonths.toString() || '');
+setTermMonths(initialData.termMonths.toString() || '');
+      setFrequency(initialData.frequency || 'monthly');
       setCurrency(initialData.currency || 'MYR');
+
       setStartDate(initialData.startDate || '');
       setDueDate(initialData.dueDate || '');
       setNextInstallmentDate(initialData.nextInstallmentDate || '');
@@ -68,7 +71,8 @@ export const LoanModal: React.FC<LoanModalProps> = ({ isOpen, onClose, onSave, i
       setRemainingAmount('');
       setInstallmentAmount('');
       setInterestRate('');
-      setTermMonths('');
+ setTermMonths('');
+      setFrequency('monthly');
       setCurrency(defaultCurrency || 'MYR');
       setStartDate(new Date().toISOString().split('T')[0]);
       setDueDate('');
@@ -201,8 +205,9 @@ export const LoanModal: React.FC<LoanModalProps> = ({ isOpen, onClose, onSave, i
       totalAmount: parseFloat(totalAmount) || 0,
       remainingAmount: parseFloat(remainingAmount) || 0,
       installmentAmount: parseFloat(installmentAmount) || 0,
-      interestRate: parseFloat(interestRate) || 0,
+interestRate: parseFloat(interestRate) || 0,
       termMonths: parseInt(termMonths) || 0,
+      frequency,
       currency,
       category: categoryObj,
       subCategory: subCategory || undefined,
@@ -339,8 +344,37 @@ export const LoanModal: React.FC<LoanModalProps> = ({ isOpen, onClose, onSave, i
             </div>
           </div>
 
+<div className="space-y-1.5">
+            <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">Installment Amount</label>
+            <input 
+              type="number" inputMode="decimal" 
+              pattern="[0-9]*\.?[0-9]*" 
+              value={installmentAmount} 
+              onChange={e => {
+                const val = e.target.value;
+                if (val === '' || /^[0-9]*\.?[0-9]*$/.test(val)) {
+                  setInstallmentAmount(val);
+                }
+              }} 
+              className="w-full p-4 bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all text-gray-900 dark:text-white font-mono font-bold" 
+              placeholder="0.00"
+              required 
+            />
+          </div>
+
           <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">Monthly Installment</label>
+            <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">Frequency</label>
+            <select
+              value={frequency}
+              onChange={e => setFrequency(e.target.value as any)}
+              className="w-full p-4 bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all text-gray-900 dark:text-white font-bold appearance-none"
+            >
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
+              <option value="yearly">Yearly</option>
+            </select>
+          </div>
             <input 
               type="number" inputMode="decimal" 
               pattern="[0-9]*\.?[0-9]*" 
