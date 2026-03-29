@@ -94,6 +94,8 @@ export function useCloudSync({
             const currentLastUpdated = currentLedgerData.lastUpdated || '0';
             const incomingLastUpdated = parsedLedger.lastUpdated || '0';
             if (incomingLastUpdated > currentLastUpdated || typeof overrideGistId === 'string') {
+				// --- NEW LOGIC: Only merge if there are unsynced local changes ---
+              const shouldMerge = unsyncedIds.includes(parsedLedger.id);
               const mergeArrays = <T extends { id: string }>(localArr: T[] = [], cloudArr: T[] = []) => {
                 const map = new Map<string, T>();
                 cloudArr.forEach(item => map.set(item.id, item)); // cloud first
@@ -284,6 +286,10 @@ const pushToCloud = useCallback(async (ledgerId?: string, overrideLedger?: Ledge
               const incomingLastUpdated = newLedger.lastUpdated || '0';
               if (incomingLastUpdated > currentLastUpdated) {
                 const currentLedgerData = updatedLedgers[index];
+				// --- NEW LOGIC: Check for local changes to decide whether to merge or overwrite ---
+                const storedUnsynced = localStorage.getItem(SYNC_KEY);
+                const localUnsyncedIds: string[] = storedUnsynced ? JSON.parse(storedUnsynced) : [];
+                const shouldMerge = localUnsyncedIds.includes(newLedger.id);
                 const mergeArrays = <T extends { id: string }>(localArr: T[] = [], cloudArr: T[] = []) => {
                   const map = new Map<string, T>();
                   cloudArr.forEach(item => map.set(item.id, item)); // cloud first
