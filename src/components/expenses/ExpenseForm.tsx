@@ -139,7 +139,17 @@ export function ExpenseForm({ ledger, onSubmit, onCancel, initialData, onUpdateL
   const [isSponsored, setIsSponsored] = useState(initialData?.isSponsored || false);
   const [isSettled, setIsSettled] = useState(initialData?.isSettled || false);
   const [sponsoredBy, setSponsoredBy] = useState(initialData?.sponsoredBy || '');
-
+// ADD THIS BLOCK RIGHT HERE:
+  // --- Force the form to sync if URL data arrives slightly after render ---
+  useEffect(() => {
+    if (initialData?.isSponsored !== undefined) {
+      setIsSponsored(initialData.isSponsored);
+    }
+    if (initialData?.sponsoredBy !== undefined) {
+      setSponsoredBy(initialData.sponsoredBy);
+    }
+  }, [initialData?.isSponsored, initialData?.sponsoredBy]);
+  // ------------------------------------------------------------------------
   const rates = useMemo(() => getAverageRates(ledger), [ledger]);
 
   const currentMyrEquivalent = useMemo(() => {
