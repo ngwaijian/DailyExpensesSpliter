@@ -408,43 +408,28 @@ const handleResetFilters = () => {
               </div>
             </div>
 
-            <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
-              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1">
-                <Filter className="w-3 h-3" /> {t('list_category')}
-              </label>
-              <select 
-                value={filterCategory}
-                onChange={e => setFilterCategory(e.target.value)}
-                className="w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white text-sm transition-colors"
-              >
-                <option value="All">{t('list_all_categories')}</option>
-                {(ledger.categories || CATEGORIES).map(c => {
-                  const catName = typeof c === 'string' ? c : c.name;
-                  return <option key={catName} value={catName}>{t(`cat_${catName}`, catName)}</option>;
-                })}
-                <option value="Sponsorship">{t('list_sponsorships')}</option>
-                <option value="Settlement">{t('list_settlements')}</option>
-              </select>
-            </div>
-            
-{/* Cashew Style Grids */}
+            {/* Cashew Style Grids - Cleaned Up */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div>
+              <div className="col-span-2 md:col-span-1">
                 <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1">
                   <Filter className="w-3 h-3" /> {t('list_category')}
                 </label>
                 <select 
                   value={filterCategory}
                   onChange={e => setFilterCategory(e.target.value)}
-                  className="w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white text-sm"
+                  className="w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white text-sm transition-colors"
                 >
                   <option value="All">{t('list_all_categories')}</option>
-                  {CATEGORIES.map(c => <option key={c.name} value={c.name}>{t(`cat_${c.name}`, c.name)}</option>)}
+                  {(ledger.categories || CATEGORIES).map(c => {
+                    const catName = typeof c === 'string' ? c : c.name;
+                    return <option key={catName} value={catName}>{t(`cat_${catName}`, catName)}</option>;
+                  })}
+                  <option value="Sponsorship">{t('list_sponsorships')}</option>
+                  <option value="Settlement">{t('list_settlements')}</option>
                 </select>
               </div>
 
-              <div>
+              <div className="col-span-2 md:col-span-1">
                 <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1">
                   <ArrowUpDown className="w-3 h-3" /> Type
                 </label>
@@ -492,6 +477,7 @@ const handleResetFilters = () => {
                 </select>
               </div>
             </div>
+          </div>
 
             <div className="flex-1">
               <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1">
