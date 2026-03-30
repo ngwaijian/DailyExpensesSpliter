@@ -992,10 +992,10 @@ export function Summary({ ledger, onUpdateLedger }: SummaryProps) {
           </div>
         </div>
 
-        <div className="space-y-6 w-full">
+<div className="space-y-6 w-full">
           {view === 'category' ? (
             <>
-              sortedDynamicCats.slice(0, 8).map(([cat, amt], idx) => (
+              {sortedDynamicCats.slice(0, 8).map(([cat, amt], idx) => (
                 <div key={cat} className="group">
                   <div className="flex items-center justify-between gap-4 w-full min-w-0 mb-2">
                     <div className="flex items-center gap-3 min-w-0">
@@ -1024,19 +1024,19 @@ export function Summary({ ledger, onUpdateLedger }: SummaryProps) {
                   <div className="h-1.5 w-full bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
                     <div 
                       className="h-full bg-indigo-500 rounded-full transition-all duration-1000 ease-out"
-                      style={{ width: `${(amt / totalMYR) * 100}%`, opacity: 1 - (idx * 0.08) }}
+                      style={{ width: `${dynamicTotal > 0 ? (amt / dynamicTotal) * 100 : 0}%`, opacity: 1 - (idx * 0.08) }}
                     />
                   </div>
                 </div>
               ))}
-              {sortedCats.length === 0 && (
+              {sortedDynamicCats.length === 0 && (
                 <div className="text-center py-12 bg-gray-50/50 dark:bg-gray-900/20 rounded-3xl border border-dashed border-gray-200 dark:border-gray-700">
                   <PieChartIcon className="w-8 h-8 text-gray-300 mx-auto mb-2" />
                   <p className="text-gray-400 dark:text-gray-500 text-sm font-medium italic">{t('dash_no_data')}</p>
                 </div>
               )}
             </>
-) : (
+          ) : (
             <>
               {sortedPeople.map(([name, stats]) => {
                 const balance = stats.paid - stats.share;
