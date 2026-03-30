@@ -40,6 +40,10 @@ export function Summary({ ledger, onUpdateLedger }: SummaryProps) {
   const [exportRange, setExportRange] = useState<'all' | 'this_month' | 'custom'>('all');
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
+  // --- ADD CASHEW SCOPES ---
+  const [timeRange, setTimeRange] = useState<'thisMonth' | 'lastMonth' | 'thisYear' | 'allTime'>('thisMonth');
+  const [chartType, setChartType] = useState<'expense' | 'income'>('expense');
+  // -------------------------
   const exportMenuRef = useRef<HTMLDivElement>(null);
   const rates = getAverageRates(ledger);
 
@@ -272,6 +276,60 @@ export function Summary({ ledger, onUpdateLedger }: SummaryProps) {
   const sortedThisMonthCats = Object.entries(thisMonthCategoryTotals).sort((a, b) => b[1] - a[1]);
   const sortedPeople = Object.entries(personStats).sort((a, b) => b[1].share - a[1].share);
 
+
+// --- CASHEW STYLE DYNAMIC BREAKDOWN ---
+  const dynamicCategoryTotals: Record<string, number> = {};
+  let dynamicTotal = 0;
+
+  ledger.expenses.forEach(e => {
+    const typeMatch = chartType === 'expense' ? (e.type !== 'income' && e.type !== 'settlement') : (e.type === 'income');
+    if (!typeMatch) return;
+
+    const expDate = new Date(e.date);
+    let timeMatch = false;
+    if (timeRange === 'thisMonth') {
+      timeMatch = expDate.getMonth() === currentMonth && expDate.getFullYear() === currentYear;
+    } else if (timeRange === 'lastMonth') {
+      const lastMonth = new Date(currentYear, currentMonth - 1, 1);
+      timeMatch = expDate.getMonth() === lastMonth.getMonth() && expDate.getFullYear() === lastMonth.getFullYear();
+    } else if (timeRange === 'thisYear') {
+      timeMatch = expDate.getFullYear() === currentYear;
+    } else {
+      timeMatch = true; // allTime
+    }
+
+    if (!timeMatch) return;
+
+    // Apply person filter bounds
+    let personShare = 0;
+    const rate = rates[e.currency] || e.rate || 1;
+    const val = e.amountOriginal * rate;
+
+    if (selectedPerson !== 'All') {
+      if (e.type === 'sponsorship') {
+        if (e.paidBy === selectedPerson) personShare += val;
+        if (e.splitAmong.includes(selectedPerson)) personShare -= val / e.splitAmong.length;
+      } else {
+        const sponsor = e.sponsoredBy || (e.isSponsored ? e.paidBy : null);
+        if (sponsor === selectedPerson) personShare = val;
+        else if (e.splitDetails && e.splitDetails[selectedPerson]) personShare = Number(e.splitDetails[selectedPerson]) * rate;
+        else if (e.splitAmong.includes(selectedPerson)) personShare = val / e.splitAmong.length;
+      }
+    } else {
+      personShare = val;
+    }
+
+    if (Math.abs(personShare) > 0) {
+      const cat = (typeof e.category === 'string' ? e.category : e.category?.name) || 'Other';
+      dynamicCategoryTotals[cat] = (dynamicCategoryTotals[cat] || 0) + Math.abs(personShare);
+      dynamicTotal += Math.abs(personShare);
+    }
+  });
+
+  const sortedDynamicCats = Object.entries(dynamicCategoryTotals).sort((a, b) => b[1] - a[1]);
+  const dynamicChartData = sortedDynamicCats.map(([name, value]) => ({ name, value }));
+  // --------------------------------------
+  
   // Prepare daily chart data
   const last7Days: Record<string, number> = {};
   for (let i = 6; i >= 0; i--) {
@@ -801,18 +859,46 @@ export function Summary({ ledger, onUpdateLedger }: SummaryProps) {
         )}
       </div>
 
-      {/* Category Breakdown Chart */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-6 mb-8">
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-sm transition-all hover:shadow-md">
-          <div className="flex items-center justify-between mb-6">
-            <h4 className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">This Month's Expenses</h4>
-            <div className="text-xs font-bold text-gray-900 dark:text-white">{formatCurrency(thisMonthTotalMYR)}</div>
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-sm transition-all hover:shadow-md">
+          <div className="flex flex-col mb-4 gap-3">
+            <div className="flex items-center justify-between">
+              <h4 className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Analytics Breakdown</h4>
+              <div className="text-xs font-bold text-gray-900 dark:text-white">{formatCurrency(dynamicTotal)}</div>
+            </div>
+            
+            {/* Cashew Style Togglers */}
+            <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-900/50 p-1 rounded-xl">
+              <div className="flex gap-1">
+                {['expense', 'income'].map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setChartType(t as any)}
+                    className={cn(
+                      "px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest rounded-lg transition-all",
+                      chartType === t ? "bg-white dark:bg-gray-700 shadow-sm text-gray-900 dark:text-white" : "text-gray-500"
+                    )}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+              <select 
+                value={timeRange}
+                onChange={e => setTimeRange(e.target.value as any)}
+                className="bg-transparent text-[10px] font-bold uppercase tracking-widest text-gray-500 outline-none"
+              >
+                <option value="thisMonth">This Month</option>
+                <option value="lastMonth">Last Month</option>
+                <option value="thisYear">This Year</option>
+                <option value="allTime">All Time</option>
+              </select>
+            </div>
           </div>
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={chartData}
+                  data={dynamicChartData} /* Swapped to Dynamic Data */
                   cx="50%"
                   cy="50%"
                   innerRadius={70}
@@ -823,7 +909,7 @@ export function Summary({ ledger, onUpdateLedger }: SummaryProps) {
                   animationBegin={0}
                   animationDuration={1000}
                 >
-                  {chartData.map((entry, index) => (
+                  {dynamicChartData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={CATEGORY_HEX_COLORS[entry.name] || COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
@@ -831,12 +917,7 @@ export function Summary({ ledger, onUpdateLedger }: SummaryProps) {
                   contentStyle={{ 
                     backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
                     borderColor: isDarkMode ? '#374151' : '#e5e7eb',
-                    borderRadius: '16px',
-                    border: 'none',
-                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-                    fontSize: '11px',
-                    fontWeight: 600,
-                    color: isDarkMode ? '#ffffff' : '#000000'
+                    borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', fontSize: '11px', fontWeight: 600, color: isDarkMode ? '#ffffff' : '#000000'
                   }}
                   itemStyle={{ padding: '2px 0' }}
                   formatter={(value: number, name: string) => [formatCurrency(value), t(`cat_${name}`, name)]}
@@ -914,7 +995,7 @@ export function Summary({ ledger, onUpdateLedger }: SummaryProps) {
         <div className="space-y-6 w-full">
           {view === 'category' ? (
             <>
-              {sortedCats.slice(0, 8).map(([cat, amt], idx) => (
+              sortedDynamicCats.slice(0, 8).map(([cat, amt], idx) => (
                 <div key={cat} className="group">
                   <div className="flex items-center justify-between gap-4 w-full min-w-0 mb-2">
                     <div className="flex items-center gap-3 min-w-0">
@@ -927,7 +1008,7 @@ export function Summary({ ledger, onUpdateLedger }: SummaryProps) {
                         </span>
                         <div className="flex items-center gap-2">
                           <span className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-wider">
-                            {((amt / totalMYR) * 100).toFixed(1)}%
+                            {(dynamicTotal > 0 ? (amt / dynamicTotal) * 100 : 0).toFixed(1)}%
                           </span>
                           <div className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
                           <span className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-wider">

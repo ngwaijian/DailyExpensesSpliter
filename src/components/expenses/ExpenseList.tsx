@@ -30,6 +30,9 @@ export function ExpenseList({ ledger, onEdit, onView, onDelete, lastUpdatedId, o
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
   const [searchKeyword, setSearchKeyword] = useState<string>('');
+  const [minAmount, setMinAmount] = useState<string>('');
+  const [maxAmount, setMaxAmount] = useState<string>('');
+  const [typeFilter, setTypeFilter] = useState<'All' | 'expense' | 'income'>('All');
   const [showFilters, setShowFilters] = useState(false);
   const [showCategoryManager, setShowCategoryManager] = useState(false);
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
@@ -98,15 +101,18 @@ export function ExpenseList({ ledger, onEdit, onView, onDelete, lastUpdatedId, o
     }
   }, [lastUpdatedId]);
 
-  const handleResetFilters = () => {
+const handleResetFilters = () => {
     setFilterCategory('All');
     setSortOrder('date-desc');
     setStartDate('');
     setEndDate('');
     setSearchKeyword('');
+    setMinAmount('');
+    setMaxAmount('');
+    setTypeFilter('All');
   };
 
-  const activeFilterCount = (filterCategory !== 'All' ? 1 : 0) + (startDate ? 1 : 0) + (endDate ? 1 : 0) + (sortOrder !== 'date-desc' ? 1 : 0) + (searchKeyword ? 1 : 0);
+  const activeFilterCount = (filterCategory !== 'All' ? 1 : 0) + (startDate ? 1 : 0) + (endDate ? 1 : 0) + (sortOrder !== 'date-desc' ? 1 : 0) + (searchKeyword ? 1 : 0) + (minAmount ? 1 : 0) + (maxAmount ? 1 : 0) + (typeFilter !== 'All' ? 1 : 0);
 
   const filteredAndSortedExpenses = useMemo(() => {
     let result = [...ledger.expenses];
@@ -142,6 +148,21 @@ export function ExpenseList({ ledger, onEdit, onView, onDelete, lastUpdatedId, o
       // Append 'T23:59:59.999Z' to endDate to include the entire day
       const endOfDay = `${endDate}T23:59:59.999Z`;
       result = result.filter(e => e.date <= endOfDay);
+    }
+	// Filter by Type
+    if (typeFilter !== 'All') {
+      result = result.filter(e => (e.type || 'expense') === typeFilter);
+    }
+
+    // Filter by Amount Range
+    if (minAmount || maxAmount) {
+      result = result.filter(e => {
+        const rate = rates[e.currency] || e.rate || 1;
+        const myrAmount = e.amountOriginal * rate;
+        if (minAmount && myrAmount < parseFloat(minAmount)) return false;
+        if (maxAmount && myrAmount > parseFloat(maxAmount)) return false;
+        return true;
+      });
     }
 
     // Sort
@@ -407,24 +428,68 @@ export function ExpenseList({ ledger, onEdit, onView, onDelete, lastUpdatedId, o
               </select>
             </div>
             
-            <div className="flex-1 flex flex-col sm:flex-row gap-2">
-              <div className="flex-1">
-                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{t('list_from')}</label>
-                <input 
-                  type="date"
-                  value={startDate}
-                  onChange={e => setStartDate(e.target.value)}
-                  className="w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white text-sm transition-colors"
-                />
+{/* Cashew Style Grids */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1">
+                  <Filter className="w-3 h-3" /> {t('list_category')}
+                </label>
+                <select 
+                  value={filterCategory}
+                  onChange={e => setFilterCategory(e.target.value)}
+                  className="w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white text-sm"
+                >
+                  <option value="All">{t('list_all_categories')}</option>
+                  {CATEGORIES.map(c => <option key={c.name} value={c.name}>{t(`cat_${c.name}`, c.name)}</option>)}
+                </select>
               </div>
-              <div className="flex-1">
+
+              <div>
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1">
+                  <ArrowUpDown className="w-3 h-3" /> Type
+                </label>
+                <select 
+                  value={typeFilter}
+                  onChange={e => setTypeFilter(e.target.value as any)}
+                  className="w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white text-sm"
+                >
+                  <option value="All">All Types</option>
+                  <option value="expense">Expenses Only</option>
+                  <option value="income">Income Only</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{t('list_from')}</label>
+                <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white text-sm" />
+              </div>
+
+              <div>
                 <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{t('list_to')}</label>
-                <input 
-                  type="date"
-                  value={endDate}
-                  onChange={e => setEndDate(e.target.value)}
-                  className="w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white text-sm transition-colors"
-                />
+                <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white text-sm" />
+              </div>
+              
+              {/* Amount Ranges */}
+              <div>
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Min Amount</label>
+                <input type="number" placeholder="0.00" value={minAmount} onChange={e => setMinAmount(e.target.value)} className="w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white text-sm" />
+              </div>
+              
+              <div>
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Max Amount</label>
+                <input type="number" placeholder="9999.00" value={maxAmount} onChange={e => setMaxAmount(e.target.value)} className="w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white text-sm" />
+              </div>
+              
+              <div className="col-span-2">
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1">
+                  <ArrowUpDown className="w-3 h-3" /> {t('list_sort_by')}
+                </label>
+                <select value={sortOrder} onChange={e => setSortOrder(e.target.value as any)} className="w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white text-sm">
+                  <option value="date-desc">{t('list_date_desc')}</option>
+                  <option value="date-asc">{t('list_date_asc')}</option>
+                  <option value="amount-desc">{t('list_amount_desc')}</option>
+                  <option value="amount-asc">{t('list_amount_asc')}</option>
+                </select>
               </div>
             </div>
 
