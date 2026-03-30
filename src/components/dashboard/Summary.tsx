@@ -859,7 +859,9 @@ export function Summary({ ledger, onUpdateLedger }: SummaryProps) {
         )}
       </div>
 
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-sm transition-all hover:shadow-md">
+     {/* Category Breakdown Chart */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-6 mb-8">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-sm transition-all hover:shadow-md">
           <div className="flex flex-col mb-4 gap-3">
             <div className="flex items-center justify-between">
               <h4 className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Analytics Breakdown</h4>
@@ -898,7 +900,7 @@ export function Summary({ ledger, onUpdateLedger }: SummaryProps) {
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={dynamicChartData} /* Swapped to Dynamic Data */
+                  data={dynamicChartData}
                   cx="50%"
                   cy="50%"
                   innerRadius={70}
@@ -926,6 +928,46 @@ export function Summary({ ledger, onUpdateLedger }: SummaryProps) {
             </ResponsiveContainer>
           </div>
         </div>
+
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-sm transition-all hover:shadow-md">
+          <div className="flex items-center justify-between mb-6">
+            <h4 className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Last 7 Days Spending</h4>
+            <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+              <TrendingUp className="w-3 h-3" />
+              Stable
+            </div>
+          </div>
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={dailyData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+                <XAxis 
+                  dataKey="date" 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fontSize: 10, fill: isDarkMode ? '#9ca3af' : '#6b7280', fontWeight: 600 }} 
+                  dy={10}
+                />
+                <YAxis hide />
+                <Tooltip 
+                  cursor={{ fill: isDarkMode ? '#374151' : 'rgba(59, 130, 246, 0.05)', radius: 8 }}
+                  contentStyle={{ 
+                    backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
+                    borderColor: isDarkMode ? '#374151' : '#e5e7eb',
+                    borderRadius: '16px',
+                    border: 'none',
+                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    color: isDarkMode ? '#ffffff' : '#000000'
+                  }}
+                  formatter={(value: number) => [formatCurrency(value), t('dash_spending')]}
+                />
+                <Bar dataKey="value" fill="#6366f1" radius={[6, 6, 6, 6]} barSize={20} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
 
         <div className="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-sm transition-all hover:shadow-md">
           <div className="flex items-center justify-between mb-6">
