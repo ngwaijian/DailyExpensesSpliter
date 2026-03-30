@@ -382,7 +382,7 @@ const handleResetFilters = () => {
       {/* Filter and Sort Controls */}
       {showFilters && (
         <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors duration-200 animate-in slide-in-from-top-2">
-          <div className="flex flex-col gap-4">
+<div className="flex flex-col gap-4">
             {/* Search Input */}
             <div>
               <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1">
@@ -477,26 +477,7 @@ const handleResetFilters = () => {
                 </select>
               </div>
             </div>
-          </div>
-
-            <div className="flex-1">
-              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1">
-                <ArrowUpDown className="w-3 h-3" /> {t('list_sort_by')}
-              </label>
-              <select 
-                value={sortOrder}
-                onChange={e => setSortOrder(e.target.value as any)}
-                className="w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white text-sm transition-colors"
-              >
-                <option value="date-desc">{t('list_date_desc')}</option>
-                <option value="date-asc">{t('list_date_asc')}</option>
-                <option value="amount-desc">{t('list_amount_desc')}</option>
-                <option value="amount-asc">{t('list_amount_asc')}</option>
-              </select>
-            </div>
-          </div>
-          </div>
-          
+          </div> 
           {activeFilterCount > 0 && (
             <div className="mt-4 flex justify-end">
               <button
