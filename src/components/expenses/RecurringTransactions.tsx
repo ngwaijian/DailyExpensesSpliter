@@ -176,11 +176,6 @@ const handleSave = (e: React.FormEvent) => {
     setIsAdding(true);
   };
 
-  const handleDelete = (id: string) => {
-    if (window.confirm(t('app_delete_recurring_confirm') || 'Delete this recurring transaction?')) {
-      onUpdateLedger({ ...ledger, recurringTransactions: recurring.filter(r => r.id !== id) });
-    }
-  };
 
   const resetForm = () => {
     setIsAdding(false);
