@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useStore } from './hooks/useStore';
-import { CATEGORIES, Loan, Category } from './types';
+import { CATEGORIES, Loan, Category, RecurringTransaction } from './types';
 import { useTheme } from './hooks/useTheme';
 import { useLanguage } from './contexts/LanguageContext';
 import { LedgerSelector, PeopleWallet } from './components/ledger-management';
@@ -114,147 +114,154 @@ if (isLoading || !currentLedger) {
     }, 100);
   };
 
-  const handleAddExpense = (data: any) => {
-    const newExpenses = [...currentLedger.expenses];
-    const ledgerCategories = (currentLedger.categories || CATEGORIES).map(c => typeof c === 'string' ? { name: c, subCategories: [] } : c);
-    const categoryObj = ledgerCategories.find(c => c.name === data.category) || { name: data.category, subCategories: [] };
-    
-    // Ensure subCategory is explicitly handled to allow clearing it
-    const expenseData = { 
-      ...data, 
-      category: categoryObj,
-      subCategory: data.subCategory || undefined 
-    };
-    
+const handleAddExpense = (data: any) => {
     let updatedId = '';
-    if (editingExpenseId) {
-      const idx = newExpenses.findIndex(e => e.id === editingExpenseId);
-      if (idx !== -1) {
-        // Explicitly clear subCategory if it's not in expenseData
-        const { subCategory, ...rest } = newExpenses[idx];
-        newExpenses[idx] = { ...rest, ...expenseData };
-        updatedId = editingExpenseId;
+    
+    updateLedger(prev => {
+      const newExpenses = [...prev.expenses];
+      const ledgerCategories = (prev.categories || CATEGORIES).map(c => typeof c === 'string' ? { name: c, subCategories: [] } : c);
+      const categoryObj = ledgerCategories.find(c => c.name === data.category) || { name: data.category, subCategories: [] };
+      
+      const expenseData = { 
+        ...data, 
+        category: categoryObj,
+        subCategory: data.subCategory || undefined 
+      };
+      
+      if (editingExpenseId) {
+        const idx = newExpenses.findIndex(e => e.id === editingExpenseId);
+        if (idx !== -1) {
+          const { subCategory, ...rest } = newExpenses[idx];
+          newExpenses[idx] = { ...rest, ...expenseData };
+          updatedId = editingExpenseId;
+        }
+      } else {
+        updatedId = Date.now().toString();
+        newExpenses.push({ id: updatedId, ...expenseData });
       }
-    } else {
-      updatedId = Date.now().toString();
-      newExpenses.push({ id: updatedId, ...expenseData });
-    }
-    updateLedger({ ...currentLedger, expenses: newExpenses });
+      return { ...prev, expenses: newExpenses };
+    });
+    
     setEditingExpenseId(null);
     setIsMobileFormOpen(false);
     clearShortcuts();
     setLastUpdatedId(updatedId);
     
-    // Clear the lastUpdatedId after a short delay so it doesn't keep jumping back
-    // if the user modifies other expenses later.
-    setTimeout(() => {
-      setLastUpdatedId(null);
-    }, 2000);
+    setTimeout(() => setLastUpdatedId(null), 2000);
   };
 
   const handleLogPayment = (data: any) => {
-    const newExpenses = [...currentLedger.expenses];
-    const ledgerCategories = (currentLedger.categories || CATEGORIES).map(c => typeof c === 'string' ? { name: c, subCategories: [] } : c);
-    const categoryObj = ledgerCategories.find(c => c.name === data.category) || { name: data.category, subCategories: [] };
-    
-    const expenseData = { 
-      ...data, 
-      category: categoryObj,
-      subCategory: data.subCategory || undefined 
-    };
-    
     const updatedId = Date.now().toString();
-    newExpenses.push({ id: updatedId, ...expenseData });
     
-    updateLedger({ ...currentLedger, expenses: newExpenses });
+    updateLedger(prev => {
+      const ledgerCategories = (prev.categories || CATEGORIES).map(c => typeof c === 'string' ? { name: c, subCategories: [] } : c);
+      const categoryObj = ledgerCategories.find(c => c.name === data.category) || { name: data.category, subCategories: [] };
+      
+      const expenseData = { 
+        ...data, 
+        category: categoryObj,
+        subCategory: data.subCategory || undefined 
+      };
+      
+      return {
+        ...prev,
+        expenses: [...prev.expenses, { id: updatedId, ...expenseData }]
+      };
+    });
+    
     setLastUpdatedId(updatedId);
-    
-    setTimeout(() => {
-      setLastUpdatedId(null);
-    }, 2000);
+    setTimeout(() => setLastUpdatedId(null), 2000);
   };
 
   const handleDeleteExpense = (id: string) => {
     if (!confirm(t('app_delete_expense_confirm'))) return;
-    updateLedger({ 
-      ...currentLedger, 
-      expenses: currentLedger.expenses.filter(e => e.id !== id) 
-    });
+    updateLedger(prev => ({ 
+      ...prev, 
+      expenses: prev.expenses.filter(e => e.id !== id) 
+    }));
   };
 
-  const handleAddPerson = (name: string) => {
-    if (currentLedger.users.includes(name)) return;
-    updateLedger({ ...currentLedger, users: [...currentLedger.users, name] });
-  };
-
-  const handleEditPerson = (oldName: string, newName: string) => {
-    const trimmed = newName.trim();
-    if (!trimmed || trimmed === oldName) return;
-    if (currentLedger.users.includes(trimmed)) {
-      alert(t('app_person_exists'));
-      return;
-    }
-
-    updateLedger({
-      ...currentLedger,
-      users: currentLedger.users.map(u => u === oldName ? trimmed : u),
-      expenses: currentLedger.expenses.map(e => ({
-        ...e,
-        paidBy: e.paidBy === oldName ? trimmed : e.paidBy,
-        splitAmong: e.splitAmong.map(u => u === oldName ? trimmed : u),
-        sponsoredBy: e.sponsoredBy === oldName ? trimmed : e.sponsoredBy
-      }))
-    });
-  };
-
-  const handleRemovePerson = (name: string) => {
-    if (!confirm(`${t('app_remove_person_confirm')}${name}?`)) return;
-    updateLedger({ 
-      ...currentLedger, 
-      users: currentLedger.users.filter(u => u !== name),
-      expenses: currentLedger.expenses.map(e => ({
-        ...e,
-        splitAmong: e.splitAmong.filter(u => u !== name)
-      }))
-    });
-  };
-
-  const handleAddExchange = (currency: string, foreignAmount: number, myrSpent: number) => {
-    updateLedger({
-      ...currentLedger,
-      exchanges: [...currentLedger.exchanges, {
-        id: Date.now().toString(),
-        currency, foreignAmount, myrSpent, date: new Date().toISOString()
-      }]
-    });
-  };
-
-  const handleRemoveExchange = (id: string) => {
-    updateLedger({
-      ...currentLedger,
-      exchanges: currentLedger.exchanges.filter(e => e.id !== id)
-    });
-  };
-
+  // --- LOAN HANDLERS ---
   const handleAddLoan = (loan: Loan) => {
-    updateLedger({
-      ...currentLedger,
-      loans: [...(currentLedger.loans || []), loan]
+    updateLedger(prev => ({
+      ...prev,
+      loans: [...(prev.loans || []), loan]
+    }));
+  };
+
+  const handleEditLoan = (loan: Loan) => {
+    updateLedger(prev => ({
+      ...prev,
+      loans: (prev.loans || []).map(l => l.id === loan.id ? loan : l)
+    }));
+  };
+
+  const handleDeleteLoan = (id: string) => {
+    updateLedger(prev => ({
+      ...prev,
+      loans: (prev.loans || []).filter(l => l.id !== id)
+    }));
+  };
+  
+  
+// --- HELPER: Bridge Loans to Recurring Payments ---
+  const createRecurringFromLoan = (loan: Loan): RecurringTransaction => ({
+    id: `recurring_loan_${loan.id}`, // Unique ID linking them together
+    desc: `Installment: ${loan.name}`,
+    amountOriginal: loan.installmentAmount,
+    currency: loan.currency,
+    category: loan.category || { name: '🏦 Bank / Finance', subCategories: [] },
+    subCategory: loan.subCategory,
+    paidBy: loan.paidBy,
+    splitAmong: loan.splitAmong || [loan.paidBy],
+    splitDetails: loan.splitDetails,
+    frequency: 'monthly', // Loans default to monthly installments
+    nextDate: loan.nextInstallmentDate,
+  });
+
+  // --- LOAN HANDLERS ---
+  const handleAddLoan = (loan: Loan) => {
+    updateLedger(prev => {
+      const newRecurring = createRecurringFromLoan(loan);
+      return {
+        ...prev,
+        loans: [...(prev.loans || []), loan],
+        recurringTransactions: [...(prev.recurringTransactions || []), newRecurring]
+      };
     });
   };
 
   const handleEditLoan = (loan: Loan) => {
-    updateLedger({
-      ...currentLedger,
-      loans: (currentLedger.loans || []).map(l => l.id === loan.id ? loan : l)
+    updateLedger(prev => {
+      const loans = (prev.loans || []).map(l => l.id === loan.id ? loan : l);
+      let recurringTransactions = prev.recurringTransactions || [];
+      
+      const recId = `recurring_loan_${loan.id}`;
+      
+      if (loan.status === 'paid_off') {
+        // Automatically remove it from Upcoming Payments when the loan is fully paid
+        recurringTransactions = recurringTransactions.filter(r => r.id !== recId);
+      } else {
+        // Keep the upcoming payment's date & amounts perfectly synced with the loan
+        const exists = recurringTransactions.find(r => r.id === recId);
+        if (exists) {
+          recurringTransactions = recurringTransactions.map(r => r.id === recId ? createRecurringFromLoan(loan) : r);
+        } else {
+          recurringTransactions = [...recurringTransactions, createRecurringFromLoan(loan)];
+        }
+      }
+      
+      return { ...prev, loans, recurringTransactions };
     });
   };
 
   const handleDeleteLoan = (id: string) => {
-    updateLedger({
-      ...currentLedger,
-      loans: (currentLedger.loans || []).filter(l => l.id !== id)
-    });
+    updateLedger(prev => ({
+      ...prev,
+      loans: (prev.loans || []).filter(l => l.id !== id),
+      // Automatically clean up the Upcoming Payment if the loan is deleted
+      recurringTransactions: (prev.recurringTransactions || []).filter(r => r.id !== `recurring_loan_${id}`)
+    }));
   };
 
   const toggleTheme = () => {

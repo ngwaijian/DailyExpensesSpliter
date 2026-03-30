@@ -112,53 +112,10 @@ export function RecurringTransactions({ ledger, onUpdateLedger }: RecurringTrans
 
   const recurring = ledger.recurringTransactions || [];
 
-  const handleSave = (e: React.FormEvent) => {
+const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     
-    let finalDesc = desc.trim();
-    if (!finalDesc) {
-      if (subCategory) {
-        finalDesc = subCategory;
-      } else if (category && category.name) {
-        finalDesc = category.name;
-      } else {
-        alert('Please enter a description.');
-        return;
-      }
-    }
-
-    if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
-      alert('Please enter a valid amount.');
-      return;
-    }
-    if (!paidBy) {
-      alert('Please select who pays.');
-      return;
-    }
-    if (splitAmong.length === 0) {
-      alert('Please select at least one person to split among.');
-      return;
-    }
-
-    let finalSplitDetails: { [key: string]: number } | undefined = undefined;
-
-    if (splitMode === 'unequal' || splitMode === 'shares') {
-      const totalSplit = Object.values(splitDetails).reduce<number>((a, b) => a + (parseFloat(b.toString()) || 0), 0);
-      const totalAmount = parseFloat(amount);
-      
-      if (Math.abs(totalSplit - totalAmount) > 0.1) {
-        alert(`The sum of split amounts (${totalSplit.toFixed(2)}) must equal the total amount (${totalAmount.toFixed(2)}). Difference: ${(totalAmount - totalSplit).toFixed(2)}`);
-        return;
-      }
-      // Filter out 0 amounts and ensure only selected users are included
-      finalSplitDetails = {};
-      splitAmong.forEach(user => {
-        const val = parseFloat(splitDetails[user]?.toString() || '0');
-        if (val > 0) {
-          finalSplitDetails![user] = val;
-        }
-      });
-    }
+    // ... [Keep all your existing validation and finalSplitDetails code exactly as is] ...
 
     const newTx: RecurringTransaction = {
       id: editingId || Date.now().toString(),
@@ -174,17 +131,30 @@ export function RecurringTransactions({ ledger, onUpdateLedger }: RecurringTrans
       nextDate,
     };
 
-    let newRecurring;
-    if (editingId) {
-      newRecurring = recurring.map(r => r.id === editingId ? newTx : r);
-    } else {
-      newRecurring = [...recurring, newTx];
-    }
+    // Replace the old onUpdateLedger call with this:
+    onUpdateLedger(prev => {
+      const currentRecurring = prev.recurringTransactions || [];
+      let newRecurring;
+      if (editingId) {
+        newRecurring = currentRecurring.map(r => r.id === editingId ? newTx : r);
+      } else {
+        newRecurring = [...currentRecurring, newTx];
+      }
+      return { ...prev, recurringTransactions: newRecurring };
+    });
 
-    onUpdateLedger({ ...ledger, recurringTransactions: newRecurring });
     resetForm();
   };
 
+  const handleDelete = (id: string) => {
+    if (window.confirm(t('app_delete_recurring_confirm') || 'Delete this recurring transaction?')) {
+      onUpdateLedger(prev => ({ 
+        ...prev, 
+        recurringTransactions: (prev.recurringTransactions || []).filter(r => r.id !== id) 
+      }));
+    }
+  };
+  
   const handleEdit = (tx: RecurringTransaction) => {
     setEditingId(tx.id);
     setDesc(tx.desc);

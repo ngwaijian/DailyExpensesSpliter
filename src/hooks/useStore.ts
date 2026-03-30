@@ -214,16 +214,30 @@ const setAppData = useCallback((value: React.SetStateAction<AppData>) => {
     setUnsyncedLedgerIds(prev => prev.includes(currentLedgerId) ? prev : [...prev, currentLedgerId]);
   }, [history, currentLedgerId, setAppData, setUnsyncedLedgerIds]);
 
-  const updateLedger = useCallback((updatedLedger: Ledger) => {
+const updateLedger = useCallback((updater: Ledger | ((prev: Ledger) => Ledger), ledgerIdToUpdate?: string) => {
     const now = new Date().toISOString();
-    const ledgerWithTimestamp = { ...updatedLedger, lastUpdated: now };
     saveToHistory(appData);
-    setAppData(prev => ({
-      ...prev,
-      ledgers: prev.ledgers.map(t => t.id === updatedLedger.id ? ledgerWithTimestamp : t)
-    }));
-    setUnsyncedLedgerIds(prev => prev.includes(updatedLedger.id) ? prev : [...prev, updatedLedger.id]);
-  }, [appData, saveToHistory, setAppData, setUnsyncedLedgerIds]);
+    
+    setAppData(prevAppData => {
+      // Determine which ledger to update
+      const targetId = ledgerIdToUpdate || (typeof updater === 'function' ? currentLedgerId : updater.id);
+      const existingLedger = prevAppData.ledgers.find(t => t.id === targetId);
+      
+      if (!existingLedger) return prevAppData;
+      
+      // Apply the update to the most recent DB state
+      const updatedLedger = typeof updater === 'function' ? updater(existingLedger) : updater;
+      const ledgerWithTimestamp = { ...updatedLedger, lastUpdated: now };
+      
+      return {
+        ...prevAppData,
+        ledgers: prevAppData.ledgers.map(t => t.id === targetId ? ledgerWithTimestamp : t)
+      };
+    });
+    
+    const idToSync = ledgerIdToUpdate || (typeof updater === 'function' ? currentLedgerId : updater.id);
+    setUnsyncedLedgerIds(prevIds => prevIds.includes(idToSync) ? prevIds : [...prevIds, idToSync]);
+  }, [appData, currentLedgerId, saveToHistory, setAppData, setUnsyncedLedgerIds]);
 
   const addLedger = useCallback((name: string) => {
     saveToHistory(appData);
