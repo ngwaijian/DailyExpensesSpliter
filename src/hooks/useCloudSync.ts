@@ -335,8 +335,11 @@ const pushToCloud = useCallback(async (ledgerId?: string, overrideLedger?: Ledge
     }
   }, [githubToken, currentLedgerId, setAppData, setCurrentLedgerId]);
 
-  const createGistForLedger = useCallback(async () => {
-    if (!githubToken || !currentLedger) return;
+const createGistForLedger = useCallback(async () => {
+    // ADDED: Trim the token to remove accidental spaces/newlines from pasting
+    const token = githubToken?.trim(); 
+    
+    if (!token || !currentLedger) return;
     setIsSyncing(true);
     setSyncError(null);
     try {
@@ -350,7 +353,8 @@ const pushToCloud = useCallback(async (ledgerId?: string, overrideLedger?: Ledge
       const res = await customFetch(`https://api.github.com/gists`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${githubToken}`,
+          // UPDATED: Use the trimmed token here
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(payload)
