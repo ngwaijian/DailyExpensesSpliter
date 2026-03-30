@@ -398,7 +398,10 @@ export function ExpenseList({ ledger, onEdit, onView, onDelete, lastUpdatedId, o
                 className="w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white text-sm transition-colors"
               >
                 <option value="All">{t('list_all_categories')}</option>
-                {CATEGORIES.map(c => <option key={c.name} value={c.name}>{t(`cat_${c.name}`, c.name)}</option>)}
+                {(ledger.categories || CATEGORIES).map(c => {
+                  const catName = typeof c === 'string' ? c : c.name;
+                  return <option key={catName} value={catName}>{t(`cat_${catName}`, catName)}</option>;
+                })}
                 <option value="Sponsorship">{t('list_sponsorships')}</option>
                 <option value="Settlement">{t('list_settlements')}</option>
               </select>
