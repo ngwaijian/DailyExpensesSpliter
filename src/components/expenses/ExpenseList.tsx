@@ -34,6 +34,48 @@ export function ExpenseList({ ledger, onEdit, onView, onDelete, lastUpdatedId, o
   const [showCategoryManager, setShowCategoryManager] = useState(false);
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
 
+// --- ADDED: Quick Edit State & Handler ---
+  const [editingUpcoming, setEditingUpcoming] = useState<{
+    id: string;
+    type: 'loan' | 'recurring';
+    amount: number;
+    nextDate: string;
+    name: string;
+    currency: string;
+  } | null>(null);
+
+  const handleSaveQuickEdit = () => {
+    if (!editingUpcoming) return;
+    
+    onUpdateLedger(prev => {
+      let updated = { ...prev };
+      
+      if (editingUpcoming.type === 'loan') {
+        updated.loans = (updated.loans || []).map(l => 
+          l.id === editingUpcoming.id 
+            ? { ...l, installmentAmount: editingUpcoming.amount, nextInstallmentDate: editingUpcoming.nextDate } 
+            : l
+        );
+        // Sync the bridged recurring transaction we made earlier!
+        updated.recurringTransactions = (updated.recurringTransactions || []).map(r => 
+          r.id === `recurring_loan_${editingUpcoming.id}`
+            ? { ...r, amountOriginal: editingUpcoming.amount, nextDate: editingUpcoming.nextDate }
+            : r
+        );
+      } else {
+        updated.recurringTransactions = (updated.recurringTransactions || []).map(r => 
+          r.id === editingUpcoming.id 
+            ? { ...r, amountOriginal: editingUpcoming.amount, nextDate: editingUpcoming.nextDate } 
+            : r
+        );
+      }
+      return updated;
+    });
+    
+    setEditingUpcoming(null);
+  };
+  // -----------------------------------------
+  
   useEffect(() => {
     if (lastUpdatedId) {
       setHighlightedId(lastUpdatedId);
@@ -235,10 +277,16 @@ export function ExpenseList({ ledger, onEdit, onView, onDelete, lastUpdatedId, o
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="font-semibold text-amber-700 dark:text-amber-400">
+                <div className="flex items-center gap-2">
+                  <div className="font-semibold text-amber-700 dark:text-amber-400 mr-2">
                     {formatCurrency(rt.amountOriginal, rt.currency)}
                   </div>
+                  <button 
+                    onClick={() => setEditingUpcoming({ id: rt.id, type: 'recurring', amount: rt.amountOriginal, nextDate: rt.nextDate.split('T')[0], name: rt.desc, currency: rt.currency })}
+                    className="p-1.5 text-amber-600 dark:text-amber-400 hover:bg-amber-200 dark:hover:bg-amber-900/40 rounded-lg transition-colors"
+                  >
+                    <Edit2 size={14} />
+                  </button>
                   <button onClick={() => handleMarkAsPaid({ id: rt.id, desc: rt.desc, amountOriginal: rt.amountOriginal, currency: rt.currency, paidBy: rt.paidBy, type: 'recurring', nextDate: rt.nextDate, splitAmong: rt.splitAmong, splitDetails: rt.splitDetails, category: rt.category, subCategory: rt.subCategory })} className="px-3 py-1 bg-amber-500 text-white rounded-lg text-xs font-medium hover:bg-amber-600">Pay</button>
                 </div>
               </div>
@@ -261,10 +309,16 @@ export function ExpenseList({ ledger, onEdit, onView, onDelete, lastUpdatedId, o
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="font-semibold text-amber-700 dark:text-amber-400">
+                <div className="flex items-center gap-2">
+                  <div className="font-semibold text-amber-700 dark:text-amber-400 mr-2">
                     {formatCurrency(l.installmentAmount, l.currency)}
                   </div>
+                  <button 
+                    onClick={() => setEditingUpcoming({ id: l.id, type: 'loan', amount: l.installmentAmount, nextDate: l.nextInstallmentDate.split('T')[0], name: l.name, currency: l.currency })}
+                    className="p-1.5 text-amber-600 dark:text-amber-400 hover:bg-amber-200 dark:hover:bg-amber-900/40 rounded-lg transition-colors"
+                  >
+                    <Edit2 size={14} />
+                  </button>
                   <button onClick={() => handleMarkAsPaid({ id: l.id, desc: l.name, amountOriginal: l.installmentAmount, currency: l.currency, paidBy: l.paidBy, type: 'loan', nextDate: l.nextInstallmentDate, splitAmong: l.splitAmong, splitDetails: l.splitDetails, category: l.category, subCategory: l.subCategory })} className="px-3 py-1 bg-amber-500 text-white rounded-lg text-xs font-medium hover:bg-amber-600">Pay</button>
                 </div>
               </div>
@@ -557,6 +611,59 @@ export function ExpenseList({ ledger, onEdit, onView, onDelete, lastUpdatedId, o
           </AnimatePresence>
         </div>
       )}
+	  
+	  {/* --- QUICK EDIT MODAL --- */}
+      {editingUpcoming && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white dark:bg-gray-800 rounded-3xl w-full max-w-sm overflow-hidden shadow-xl animate-in zoom-in-95">
+            <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+              <div>
+                <h3 className="font-bold text-gray-900 dark:text-white">Quick Edit</h3>
+                <p className="text-xs text-gray-500 truncate max-w-[200px]">{editingUpcoming.name}</p>
+              </div>
+              <button onClick={() => setEditingUpcoming(null)} className="p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-5 space-y-4">
+              <div>
+                <label className="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">
+                  Amount ({editingUpcoming.currency})
+                </label>
+                <input 
+                  type="number" 
+                  step="0.01"
+                  value={editingUpcoming.amount}
+                  onChange={(e) => setEditingUpcoming({ ...editingUpcoming, amount: parseFloat(e.target.value) || 0 })}
+                  className="w-full p-3 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl text-lg font-bold text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 outline-none transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">
+                  Next Date
+                </label>
+                <input 
+                  type="date" 
+                  value={editingUpcoming.nextDate}
+                  onChange={(e) => setEditingUpcoming({ ...editingUpcoming, nextDate: e.target.value })}
+                  className="w-full p-3 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl text-sm font-medium text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 outline-none transition-colors"
+                />
+              </div>
+              
+              <button 
+                onClick={handleSaveQuickEdit}
+                className="w-full py-3 mt-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold transition-all active:scale-95"
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ------------------------ */}
+
     </div>
   );
 }
+	  
