@@ -511,6 +511,14 @@ export function ExpenseList({ ledger, onEdit, onView, onDelete, lastUpdatedId, o
                           </>
                         )}
                       </div>
+
+                      {/* ADDED: Show Memo if it exists */}
+                      {exp.memo && (
+                        <div className="mt-1 flex items-start gap-1 text-[11px] text-gray-500 dark:text-gray-400 italic">
+                          <span className="opacity-60 mt-[1px]">✎</span>
+                          <span className="line-clamp-2">{exp.memo}</span>
+                        </div>
+                      )}
                     </div>
 
                     <div className="text-right shrink-0 flex flex-col items-end gap-1">

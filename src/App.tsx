@@ -181,28 +181,6 @@ const handleAddExpense = (data: any) => {
     }));
   };
 
-  // --- LOAN HANDLERS ---
-  const handleAddLoan = (loan: Loan) => {
-    updateLedger(prev => ({
-      ...prev,
-      loans: [...(prev.loans || []), loan]
-    }));
-  };
-
-  const handleEditLoan = (loan: Loan) => {
-    updateLedger(prev => ({
-      ...prev,
-      loans: (prev.loans || []).map(l => l.id === loan.id ? loan : l)
-    }));
-  };
-
-  const handleDeleteLoan = (id: string) => {
-    updateLedger(prev => ({
-      ...prev,
-      loans: (prev.loans || []).filter(l => l.id !== id)
-    }));
-  };
-  
   
 // --- HELPER: Bridge Loans to Recurring Payments ---
   const createRecurringFromLoan = (loan: Loan): RecurringTransaction => ({
