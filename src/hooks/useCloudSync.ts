@@ -393,10 +393,12 @@ const pushToCloud = useCallback(async (ledgerId?: string, overrideLedger?: Ledge
     return () => window.removeEventListener('online', handleOnline);
   }, [needsSync, pushToCloud, fetchFromCloud, currentLedger?.gistId]);
 
-  // Initial sync on mount/credential change if online
+// Initial sync on mount/credential change if online
   useEffect(() => {
-	  if (!isInitialized) return; // <--- ADD THIS
-    if (navigator.onLine && githubToken && !isSyncing) {
+    if (!isInitialized) return; 
+    
+    // ADDED: Check token length to prevent 401s while actively typing the token
+    if (navigator.onLine && githubToken && githubToken.length >= 40 && !isSyncing) {
       if (unsyncedLedgerIds.length > 0) {
         // Push all unsynced ledgers
         unsyncedLedgerIds.forEach(id => {
@@ -408,12 +410,14 @@ const pushToCloud = useCallback(async (ledgerId?: string, overrideLedger?: Ledge
         fetchAllLedgersFromCloud();
       }
     }
-  }, [githubToken, isInitialized]); // <--- ADD isInitialized
+  }, [githubToken, isInitialized]); 
 
   // Auto-push on data change (debounced)
   useEffect(() => {
-	  if (!isInitialized) return; // <--- ADD THIS
-    if (needsSync && githubToken && currentLedger?.gistId && !isSyncing && isOnline) {
+    if (!isInitialized) return; 
+    
+    // ADDED: Check token length here as well
+    if (needsSync && githubToken && githubToken.length >= 40 && currentLedger?.gistId && !isSyncing && isOnline) {
       const timer = setTimeout(() => {
         pushToCloud(currentLedgerId);
       }, 2000); // 2 second debounce
