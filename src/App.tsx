@@ -173,6 +173,61 @@ const handleAddExpense = (data: any) => {
     setTimeout(() => setLastUpdatedId(null), 2000);
   };
 
+// --- PEOPLE & EXCHANGE HANDLERS (Paste these back here!) ---
+  const handleAddPerson = (name: string) => {
+    if (currentLedger.users.includes(name)) return;
+    updateLedger(prev => ({ ...prev, users: [...prev.users, name] }));
+  };
+
+  const handleEditPerson = (oldName: string, newName: string) => {
+    const trimmed = newName.trim();
+    if (!trimmed || trimmed === oldName) return;
+    if (currentLedger.users.includes(trimmed)) {
+      alert(t('app_person_exists'));
+      return;
+    }
+
+    updateLedger(prev => ({
+      ...prev,
+      users: prev.users.map(u => u === oldName ? trimmed : u),
+      expenses: prev.expenses.map(e => ({
+        ...e,
+        paidBy: e.paidBy === oldName ? trimmed : e.paidBy,
+        splitAmong: e.splitAmong.map(u => u === oldName ? trimmed : u),
+        sponsoredBy: e.sponsoredBy === oldName ? trimmed : e.sponsoredBy
+      }))
+    }));
+  };
+
+  const handleRemovePerson = (name: string) => {
+    if (!confirm(`${t('app_remove_person_confirm')}${name}?`)) return;
+    updateLedger(prev => ({ 
+      ...prev, 
+      users: prev.users.filter(u => u !== name),
+      expenses: prev.expenses.map(e => ({
+        ...e,
+        splitAmong: e.splitAmong.filter(u => u !== name)
+      }))
+    }));
+  };
+
+  const handleAddExchange = (currency: string, foreignAmount: number, myrSpent: number) => {
+    updateLedger(prev => ({
+      ...prev,
+      exchanges: [...prev.exchanges, {
+        id: Date.now().toString(),
+        currency, foreignAmount, myrSpent, date: new Date().toISOString()
+      }]
+    }));
+  };
+
+  const handleRemoveExchange = (id: string) => {
+    updateLedger(prev => ({
+      ...prev,
+      exchanges: prev.exchanges.filter(e => e.id !== id)
+    }));
+  };
+
   const handleDeleteExpense = (id: string) => {
     if (!confirm(t('app_delete_expense_confirm'))) return;
     updateLedger(prev => ({ 
