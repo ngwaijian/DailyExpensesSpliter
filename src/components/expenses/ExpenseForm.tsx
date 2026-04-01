@@ -138,7 +138,9 @@ export function ExpenseForm({ ledger, onSubmit, onCancel, initialData, onUpdateL
   );
   const [isSponsored, setIsSponsored] = useState(initialData?.isSponsored || false);
   const [isSettled, setIsSettled] = useState(initialData?.isSettled || false);
-  const [sponsoredBy, setSponsoredBy] = useState(initialData?.sponsoredBy || '');
+const [sponsoredBy, setSponsoredBy] = useState(initialData?.sponsoredBy || '');
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurringFrequency, setRecurringFrequency] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('monthly');
 // ADD THIS BLOCK RIGHT HERE:
   // --- Force the form to sync if URL data arrives slightly after render ---
   useEffect(() => {
@@ -262,7 +264,7 @@ export function ExpenseForm({ ledger, onSubmit, onCancel, initialData, onUpdateL
       }
     }
 
-    onSubmit({
+onSubmit({
       desc: finalDesc,
       memo: memo.trim() || undefined,
       amountOriginal: parseFloat(finalAmount),
@@ -278,6 +280,7 @@ export function ExpenseForm({ ledger, onSubmit, onCancel, initialData, onUpdateL
       type,
       splitDetails: finalSplitDetails,
       goalId: goalId || undefined,
+      recurringFrequency: (!initialData && isRecurring && type === 'expense') ? recurringFrequency : undefined,
       location: locationName ? {
         name: locationName,
         ...locationCoords
@@ -324,9 +327,11 @@ export function ExpenseForm({ ledger, onSubmit, onCancel, initialData, onUpdateL
       setSplitAmong(defaultPaidBy ? [defaultPaidBy] : []);
       setLocationName('');
       setLocationCoords(undefined);
-      setIsSponsored(false);
+setIsSponsored(false);
       setIsSettled(false);
       setSponsoredBy('');
+      setIsRecurring(false);
+      setRecurringFrequency('monthly');
       setType('expense');
       setSplitMode('equal');
       setSplitDetails({});
@@ -879,9 +884,41 @@ export function ExpenseForm({ ledger, onSubmit, onCancel, initialData, onUpdateL
                   </div>
                 )}
                 
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 ml-6">
+<p className="text-xs text-gray-500 dark:text-gray-400 mt-2 ml-6">
                   {t('form_sponsored_desc')}
                 </p>
+
+                {!initialData && (
+                  <>
+                    <label className="flex items-center gap-2 mt-4 cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        checked={isRecurring}
+                        onChange={e => setIsRecurring(e.target.checked)}
+                        className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+                      />
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        {t('form_make_recurring', 'Make this a recurring payment')}
+                      </span>
+                    </label>
+                    
+                    {isRecurring && (
+                      <div className="mt-3 ml-6 animate-in fade-in slide-in-from-top-1">
+                        <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Frequency</label>
+                        <select 
+                          value={recurringFrequency}
+                          onChange={e => setRecurringFrequency(e.target.value as any)}
+                          className="w-full p-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white transition-colors text-sm"
+                        >
+                          <option value="daily">Daily</option>
+                          <option value="weekly">Weekly</option>
+                          <option value="monthly">Monthly</option>
+                          <option value="yearly">Yearly</option>
+                        </select>
+                      </div>
+                    )}
+                  </>
+                )}
               </>
             )}
           </div>

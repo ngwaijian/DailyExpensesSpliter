@@ -94,9 +94,10 @@ export function useCloudSync({
             const currentLastUpdated = currentLedgerData.lastUpdated || '0';
             const incomingLastUpdated = parsedLedger.lastUpdated || '0';
             if (incomingLastUpdated > currentLastUpdated || typeof overrideGistId === 'string') {
-				// --- NEW LOGIC: Only merge if there are unsynced local changes ---
+			// --- NEW LOGIC: Only merge if there are unsynced local changes ---
               const shouldMerge = unsyncedIds.includes(parsedLedger.id);
-              const mergeArrays = <T extends { id: string }>(localArr: T[] = [], cloudArr: T[] = []) => {
+              const resolveArray = <T extends { id: string }>(localArr: T[] = [], cloudArr: T[] = []) => {
+                if (!shouldMerge) return cloudArr; // Trust cloud completely if no local changes
                 const map = new Map<string, T>();
                 cloudArr.forEach(item => map.set(item.id, item)); // cloud first
                 localArr.forEach(item => map.set(item.id, item)); // local overwrites
@@ -107,13 +108,13 @@ export function useCloudSync({
                 ...parsedLedger,
                 lastUpdated: incomingLastUpdated > currentLastUpdated ? incomingLastUpdated : currentLastUpdated,
                 lastSynced: incomingLastUpdated,
-                users: Array.from(new Set([...(currentLedgerData.users || []), ...(parsedLedger.users || [])])),
-                expenses: mergeArrays(currentLedgerData.expenses, parsedLedger.expenses),
-                exchanges: mergeArrays(currentLedgerData.exchanges, parsedLedger.exchanges),
-                goals: mergeArrays(currentLedgerData.goals, parsedLedger.goals),
-                recurringTransactions: mergeArrays(currentLedgerData.recurringTransactions, parsedLedger.recurringTransactions),
-                loans: mergeArrays(currentLedgerData.loans, parsedLedger.loans),
-                budgets: mergeArrays(currentLedgerData.budgets, parsedLedger.budgets),
+                users: shouldMerge ? Array.from(new Set([...(currentLedgerData.users || []), ...(parsedLedger.users || [])])) : (parsedLedger.users || []),
+                expenses: resolveArray(currentLedgerData.expenses, parsedLedger.expenses),
+                exchanges: resolveArray(currentLedgerData.exchanges, parsedLedger.exchanges),
+                goals: resolveArray(currentLedgerData.goals, parsedLedger.goals),
+                recurringTransactions: resolveArray(currentLedgerData.recurringTransactions, parsedLedger.recurringTransactions),
+                loans: resolveArray(currentLedgerData.loans, parsedLedger.loans),
+                budgets: resolveArray(currentLedgerData.budgets, parsedLedger.budgets),
               };
               return { ...prev, ledgers: prev.ledgers.map(t => t.id === parsedLedger.id ? mergedLedger : t) };
             }
@@ -287,10 +288,12 @@ const pushToCloud = useCallback(async (ledgerId?: string, overrideLedger?: Ledge
               if (incomingLastUpdated > currentLastUpdated) {
                 const currentLedgerData = updatedLedgers[index];
 				// --- NEW LOGIC: Check for local changes to decide whether to merge or overwrite ---
+                // --- NEW LOGIC: Check for local changes to decide whether to merge or overwrite ---
                 const storedUnsynced = localStorage.getItem(SYNC_KEY);
                 const localUnsyncedIds: string[] = storedUnsynced ? JSON.parse(storedUnsynced) : [];
                 const shouldMerge = localUnsyncedIds.includes(newLedger.id);
-                const mergeArrays = <T extends { id: string }>(localArr: T[] = [], cloudArr: T[] = []) => {
+                const resolveArray = <T extends { id: string }>(localArr: T[] = [], cloudArr: T[] = []) => {
+                  if (!shouldMerge) return cloudArr; // Trust cloud completely if no local changes
                   const map = new Map<string, T>();
                   cloudArr.forEach(item => map.set(item.id, item)); // cloud first
                   localArr.forEach(item => map.set(item.id, item)); // local overwrites
@@ -301,13 +304,13 @@ const pushToCloud = useCallback(async (ledgerId?: string, overrideLedger?: Ledge
                   ...newLedger,
                   lastUpdated: incomingLastUpdated > currentLastUpdated ? incomingLastUpdated : currentLastUpdated,
                   lastSynced: incomingLastUpdated,
-                  users: Array.from(new Set([...(currentLedgerData.users || []), ...(newLedger.users || [])])),
-                  expenses: mergeArrays(currentLedgerData.expenses, newLedger.expenses),
-                  exchanges: mergeArrays(currentLedgerData.exchanges, newLedger.exchanges),
-                  goals: mergeArrays(currentLedgerData.goals, newLedger.goals),
-                  recurringTransactions: mergeArrays(currentLedgerData.recurringTransactions, newLedger.recurringTransactions),
-                  loans: mergeArrays(currentLedgerData.loans, newLedger.loans),
-                  budgets: mergeArrays(currentLedgerData.budgets, newLedger.budgets),
+                  users: shouldMerge ? Array.from(new Set([...(currentLedgerData.users || []), ...(newLedger.users || [])])) : (newLedger.users || []),
+                  expenses: resolveArray(currentLedgerData.expenses, newLedger.expenses),
+                  exchanges: resolveArray(currentLedgerData.exchanges, newLedger.exchanges),
+                  goals: resolveArray(currentLedgerData.goals, newLedger.goals),
+                  recurringTransactions: resolveArray(currentLedgerData.recurringTransactions, newLedger.recurringTransactions),
+                  loans: resolveArray(currentLedgerData.loans, newLedger.loans),
+                  budgets: resolveArray(currentLedgerData.budgets, newLedger.budgets),
                 };
               }
             } else {

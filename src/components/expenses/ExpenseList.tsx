@@ -216,10 +216,10 @@ const upcomingRecurring = useMemo(() => {
     });
   }, [ledger.loans]);
 
-  const handleMarkAsPaid = (item: { id: string, desc: string, amountOriginal: number, currency: string, paidBy: string, type: 'loan' | 'recurring', nextDate: string, splitAmong?: string[], splitDetails?: { [userName: string]: number }, category?: Category, subCategory?: string }) => {
+const handleMarkAsPaid = (item: { id: string, desc: string, amountOriginal: number, currency: string, paidBy: string, type: 'loan' | 'recurring', nextDate: string, splitAmong?: string[], splitDetails?: { [userName: string]: number }, category?: Category, subCategory?: string }) => {
     const newExpense: Expense = {
       id: Date.now().toString(),
-      desc: item.desc,
+      desc: item.type === 'recurring' ? `${item.desc} (recurring)` : item.desc,
       amountOriginal: item.amountOriginal,
       currency: item.currency,
       category: item.category || { name: '🏠 Rent & Bills' }, // Default category
