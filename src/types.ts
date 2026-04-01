@@ -34,6 +34,7 @@ export interface Expense {
   splitDetails?: { [userName: string]: number }; // Optional: specific amount for each person
   isSettled?: boolean; // If true, this expense won't affect user balances (just for recording)
   goalId?: string; // Optional link to a goal
+  updatedAt?: number; // <-- ADD THIS
 }
 
 export interface Goal {
@@ -62,6 +63,7 @@ export interface RecurringTransaction {
   endDate?: string;
   /** When set, "Pay" from upcoming applies this goal to the logged expense. */
   goalId?: string;
+  updatedAt?: number; // <-- ADD THIS
 }
 
 export interface Budget {
@@ -93,6 +95,7 @@ export interface Loan {
   splitAmong: string[];
   splitDetails?: { [userName: string]: number };
   status: 'active' | 'paid_off';
+  updatedAt?: number; // <-- ADD THIS
 }
 
 export interface Ledger {

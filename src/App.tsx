@@ -114,65 +114,45 @@ if (isLoading || !currentLedger) {
     }, 100);
   };
 
-const handleAddExpense = (data: any) => {
-    const editId = editingExpenseId;
-    const { recurringFrequency, ...restData } = data;
-    const highlightExpenseId = editId || Date.now().toString();
+  const handleAddExpense = (data: any) => {
+    const newExpenses = [...currentLedger.expenses];
+    const ledgerCategories = (currentLedger.categories || CATEGORIES).map(c => typeof c === 'string' ? { name: c, subCategories: [] } : c);
+    const categoryObj = ledgerCategories.find(c => c.name === data.category) || { name: data.category, subCategories: [] };
+    
+    // Ensure subCategory is explicitly handled to allow clearing it
+    const expenseData = { 
+      ...data, 
+      category: categoryObj,
+      subCategory: data.subCategory || undefined 
+    };
+    
+    let updatedId = '';
+    const nowTimestamp = Date.now(); // <-- Get current time
 
-    updateLedger(prev => {
-      const ledgerCategories = (prev.categories || CATEGORIES).map(c => typeof c === 'string' ? { name: c, subCategories: [] } : c);
-      const categoryObj = ledgerCategories.find(c => c.name === data.category) || { name: data.category, subCategories: [] };
-
-      const expenseData = {
-        ...restData,
-        category: categoryObj,
-        subCategory: restData.subCategory || undefined,
-      };
-
-      const newExpenses = [...prev.expenses];
-
-      if (editId) {
-        const idx = newExpenses.findIndex(e => e.id === editId);
-        if (idx !== -1) {
-          const { subCategory: _s, ...rest } = newExpenses[idx];
-          newExpenses[idx] = { ...rest, ...expenseData };
-        }
-      } else {
-        newExpenses.push({ id: highlightExpenseId, ...expenseData });
+    if (editingExpenseId) {
+      const idx = newExpenses.findIndex(e => e.id === editingExpenseId);
+      if (idx !== -1) {
+        // Explicitly clear subCategory if it's not in expenseData
+        const { subCategory, ...rest } = newExpenses[idx];
+        // <-- ADD updatedAt HERE
+        newExpenses[idx] = { ...rest, ...expenseData, updatedAt: nowTimestamp }; 
+        updatedId = editingExpenseId;
       }
-
-      let next = { ...prev, expenses: newExpenses };
-
-      if (recurringFrequency) {
-        const expenseDate = new Date(expenseData.date);
-        const nextDate = new Date(expenseDate);
-        if (recurringFrequency === 'daily') nextDate.setDate(nextDate.getDate() + 1);
-        else if (recurringFrequency === 'weekly') nextDate.setDate(nextDate.getDate() + 7);
-        else if (recurringFrequency === 'monthly') nextDate.setMonth(nextDate.getMonth() + 1);
-        else if (recurringFrequency === 'yearly') nextDate.setFullYear(nextDate.getFullYear() + 1);
-
-        const newRecurring: RecurringTransaction = {
-          id: Date.now().toString() + '_rec',
-          desc: expenseData.desc,
-          amountOriginal: expenseData.amountOriginal,
-          currency: expenseData.currency,
-          category: categoryObj,
-          subCategory: expenseData.subCategory,
-          paidBy: expenseData.paidBy,
-          splitAmong: expenseData.splitAmong,
-          splitDetails: expenseData.splitDetails,
-          frequency: recurringFrequency,
-          nextDate: nextDate.toISOString().split('T')[0],
-          ...(expenseData.goalId ? { goalId: expenseData.goalId } : {}),
-        };
-        next = {
-          ...next,
-          recurringTransactions: [...(next.recurringTransactions || []), newRecurring],
-        };
-      }
-
-      return next;
-    });
+    } else {
+      updatedId = Date.now().toString();
+      // <-- ADD updatedAt HERE
+      newExpenses.push({ id: updatedId, ...expenseData, updatedAt: nowTimestamp }); 
+    }
+    updateLedger({ ...currentLedger, expenses: newExpenses });
+    setEditingExpenseId(null);
+    setIsMobileFormOpen(false);
+    clearShortcuts();
+    setLastUpdatedId(updatedId);
+    
+    setTimeout(() => {
+      setLastUpdatedId(null);
+    }, 2000);
+  };
 
     setEditingExpenseId(null);
     setIsMobileFormOpen(false);
@@ -185,26 +165,28 @@ const handleAddExpense = (data: any) => {
   };
 
   const handleLogPayment = (data: any) => {
+    const newExpenses = [...currentLedger.expenses];
+    const ledgerCategories = (currentLedger.categories || CATEGORIES).map(c => typeof c === 'string' ? { name: c, subCategories: [] } : c);
+    const categoryObj = ledgerCategories.find(c => c.name === data.category) || { name: data.category, subCategories: [] };
+    
+    const expenseData = { 
+      ...data, 
+      category: categoryObj,
+      subCategory: data.subCategory || undefined 
+    };
+    
     const updatedId = Date.now().toString();
+    const nowTimestamp = Date.now(); // <-- Get current time
     
-    updateLedger(prev => {
-      const ledgerCategories = (prev.categories || CATEGORIES).map(c => typeof c === 'string' ? { name: c, subCategories: [] } : c);
-      const categoryObj = ledgerCategories.find(c => c.name === data.category) || { name: data.category, subCategories: [] };
-      
-      const expenseData = { 
-        ...data, 
-        category: categoryObj,
-        subCategory: data.subCategory || undefined 
-      };
-      
-      return {
-        ...prev,
-        expenses: [...prev.expenses, { id: updatedId, ...expenseData }]
-      };
-    });
+    // <-- ADD updatedAt HERE
+    newExpenses.push({ id: updatedId, ...expenseData, updatedAt: nowTimestamp }); 
     
+    updateLedger({ ...currentLedger, expenses: newExpenses });
     setLastUpdatedId(updatedId);
-    setTimeout(() => setLastUpdatedId(null), 2000);
+    
+    setTimeout(() => {
+      setLastUpdatedId(null);
+    }, 2000);
   };
 
 // --- PEOPLE & EXCHANGE HANDLERS (Paste these back here!) ---
@@ -288,37 +270,18 @@ const handleAddExpense = (data: any) => {
 
   // --- LOAN HANDLERS ---
   const handleAddLoan = (loan: Loan) => {
-    updateLedger(prev => {
-      const newRecurring = createRecurringFromLoan(loan);
-      return {
-        ...prev,
-        loans: [...(prev.loans || []), loan],
-        recurringTransactions: [...(prev.recurringTransactions || []), newRecurring]
-      };
+    updateLedger({
+      ...currentLedger,
+      // We take the new loan data and inject the current timestamp into it
+      loans: [...(currentLedger.loans || []), { ...loan, updatedAt: Date.now() }]
     });
   };
 
   const handleEditLoan = (loan: Loan) => {
-    updateLedger(prev => {
-      const loans = (prev.loans || []).map(l => l.id === loan.id ? loan : l);
-      let recurringTransactions = prev.recurringTransactions || [];
-      
-      const recId = `recurring_loan_${loan.id}`;
-      
-      if (loan.status === 'paid_off') {
-        // Automatically remove it from Upcoming Payments when the loan is fully paid
-        recurringTransactions = recurringTransactions.filter(r => r.id !== recId);
-      } else {
-        // Keep the upcoming payment's date & amounts perfectly synced with the loan
-        const exists = recurringTransactions.find(r => r.id === recId);
-        if (exists) {
-          recurringTransactions = recurringTransactions.map(r => r.id === recId ? createRecurringFromLoan(loan) : r);
-        } else {
-          recurringTransactions = [...recurringTransactions, createRecurringFromLoan(loan)];
-        }
-      }
-      
-      return { ...prev, loans, recurringTransactions };
+    updateLedger({
+      ...currentLedger,
+      // We find the loan being edited and inject the new timestamp into it
+      loans: (currentLedger.loans || []).map(l => l.id === loan.id ? { ...loan, updatedAt: Date.now() } : l)
     });
   };
 

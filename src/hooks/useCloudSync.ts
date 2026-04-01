@@ -96,11 +96,32 @@ export function useCloudSync({
             if (incomingLastUpdated > currentLastUpdated || typeof overrideGistId === 'string') {
 			// --- NEW LOGIC: Only merge if there are unsynced local changes ---
               const shouldMerge = unsyncedIds.includes(parsedLedger.id);
-              const resolveArray = <T extends { id: string }>(localArr: T[] = [], cloudArr: T[] = []) => {
+              const resolveArray = <T extends { id: string, updatedAt?: number }>(localArr: T[] = [], cloudArr: T[] = []) => {
                 if (!shouldMerge) return cloudArr; // Trust cloud completely if no local changes
+                
                 const map = new Map<string, T>();
-                cloudArr.forEach(item => map.set(item.id, item)); // cloud first
-                localArr.forEach(item => map.set(item.id, item)); // local overwrites
+                
+                // 1. Put all cloud items in the map first
+                cloudArr.forEach(item => map.set(item.id, item)); 
+                
+                // 2. Iterate through local items and merge intelligently
+                localArr.forEach(localItem => {
+                  const cloudItem = map.get(localItem.id);
+                  if (cloudItem) {
+                    // Item exists in both places. Compare timestamps!
+                    const localTime = localItem.updatedAt || 0;
+                    const cloudTime = cloudItem.updatedAt || 0;
+                    
+                    // Only overwrite the cloud item if the local edit is actually newer
+                    if (localTime >= cloudTime) {
+                      map.set(localItem.id, localItem);
+                    }
+                  } else {
+                    // Item only exists locally (e.g., created offline). Add it.
+                    map.set(localItem.id, localItem);
+                  }
+                });
+                
                 return Array.from(map.values());
               };
 
@@ -292,11 +313,32 @@ const pushToCloud = useCallback(async (ledgerId?: string, overrideLedger?: Ledge
                 const storedUnsynced = localStorage.getItem(SYNC_KEY);
                 const localUnsyncedIds: string[] = storedUnsynced ? JSON.parse(storedUnsynced) : [];
                 const shouldMerge = localUnsyncedIds.includes(newLedger.id);
-                const resolveArray = <T extends { id: string }>(localArr: T[] = [], cloudArr: T[] = []) => {
+                const resolveArray = <T extends { id: string, updatedAt?: number }>(localArr: T[] = [], cloudArr: T[] = []) => {
                   if (!shouldMerge) return cloudArr; // Trust cloud completely if no local changes
+                  
                   const map = new Map<string, T>();
-                  cloudArr.forEach(item => map.set(item.id, item)); // cloud first
-                  localArr.forEach(item => map.set(item.id, item)); // local overwrites
+                  
+                  // 1. Put all cloud items in the map first
+                  cloudArr.forEach(item => map.set(item.id, item)); 
+                  
+                  // 2. Iterate through local items and merge intelligently
+                  localArr.forEach(localItem => {
+                    const cloudItem = map.get(localItem.id);
+                    if (cloudItem) {
+                      // Item exists in both places. Compare timestamps!
+                      const localTime = localItem.updatedAt || 0;
+                      const cloudTime = cloudItem.updatedAt || 0;
+                      
+                      // Only overwrite the cloud item if the local edit is actually newer
+                      if (localTime >= cloudTime) {
+                        map.set(localItem.id, localItem);
+                      }
+                    } else {
+                      // Item only exists locally (e.g., created offline). Add it.
+                      map.set(localItem.id, localItem);
+                    }
+                  });
+                  
                   return Array.from(map.values());
                 };
 
