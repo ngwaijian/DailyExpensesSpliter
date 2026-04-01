@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Ledger, RecurringTransaction, CATEGORIES, Category } from '../../types';
-import { Repeat, Plus, Edit2, Trash2, Calendar, Tag } from 'lucide-react';
+import { Repeat, Plus, Edit2, Trash2, Calendar, DollarSign, X } from 'lucide-react';
 import { formatCurrency } from '../../utils/currency';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { cn } from '../../lib/utils';
+import { motion } from 'framer-motion';
 
 interface RecurringTransactionsProps {
   ledger: Ledger;
@@ -15,6 +16,8 @@ export function RecurringTransactions({ ledger, onUpdateLedger }: RecurringTrans
   const ledgerCategories = (ledger.categories || CATEGORIES).map(c => typeof c === 'string' ? { name: c, subCategories: [] } : c);
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  
+  const formRef = useRef<HTMLFormElement>(null);
 
   const [desc, setDesc] = useState('');
   const [amount, setAmount] = useState('');
@@ -32,8 +35,7 @@ export function RecurringTransactions({ ledger, onUpdateLedger }: RecurringTrans
   const [splitShares, setSplitShares] = useState<{ [key: string]: number }>({});
   const [errors, setErrors] = useState<{ [key: string]: boolean }>({});
 
-  // Update splitDetails when amount changes in equal or shares mode
-  React.useEffect(() => {
+  useEffect(() => {
     if (splitMode === 'equal' && amount && !isNaN(parseFloat(amount)) && splitAmong.length > 0) {
       const total = parseFloat(amount);
       const perPerson = total / splitAmong.length;
@@ -74,9 +76,11 @@ export function RecurringTransactions({ ledger, onUpdateLedger }: RecurringTrans
   }, [amount, splitAmong, splitMode, splitShares]);
 
   const toggleUser = (user: string) => {
-    setSplitAmong(prev => 
-      prev.includes(user) ? prev.filter(u => u !== user) : [...prev, user]
-    );
+    if (splitAmong.includes(user)) {
+      setSplitAmong(splitAmong.filter(u => u !== user));
+    } else {
+      setSplitAmong([...splitAmong, user]);
+    }
   };
 
   const selectAll = () => setSplitAmong(ledger.users);
@@ -103,8 +107,7 @@ export function RecurringTransactions({ ledger, onUpdateLedger }: RecurringTrans
     setSplitDetails({});
   };
 
-  // Update paidBy if it's empty and users become available
-  React.useEffect(() => {
+  useEffect(() => {
     if (!paidBy && ledger.users.length > 0) {
       setPaidBy(defaultPaidBy);
     }
@@ -112,10 +115,47 @@ export function RecurringTransactions({ ledger, onUpdateLedger }: RecurringTrans
 
   const recurring = ledger.recurringTransactions || [];
 
-const handleSave = (e: React.FormEvent) => {
+  const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // ... [Keep all your existing validation and finalSplitDetails code exactly as is] ...
+    let finalDesc = desc.trim();
+    if (!finalDesc) {
+      if (subCategory) finalDesc = subCategory;
+      else if (category && category.name) finalDesc = category.name;
+      else { alert('Please enter a description.'); return; }
+    }
+
+    if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
+      alert('Please enter a valid amount.');
+      return;
+    }
+    if (!paidBy) {
+      alert('Please select who pays.');
+      return;
+    }
+    if (splitAmong.length === 0) {
+      alert('Please select at least one person to split among.');
+      return;
+    }
+
+    let finalSplitDetails: { [key: string]: number } | undefined = undefined;
+
+    if (splitMode === 'unequal' || splitMode === 'shares') {
+      const totalSplit = Object.values(splitDetails).reduce<number>((a, b) => a + (parseFloat(b.toString()) || 0), 0);
+      const totalAmount = parseFloat(amount);
+      
+      if (Math.abs(totalSplit - totalAmount) > 0.1) {
+        alert(`Split amounts (${totalSplit.toFixed(2)}) must equal total amount (${totalAmount.toFixed(2)}). Update splits!`);
+        return;
+      }
+      finalSplitDetails = {};
+      splitAmong.forEach(user => {
+        const val = parseFloat(splitDetails[user]?.toString() || '0');
+        if (val > 0) {
+          finalSplitDetails![user] = val;
+        }
+      });
+    }
 
     const newTx: RecurringTransaction = {
       id: editingId || Date.now().toString(),
@@ -131,30 +171,17 @@ const handleSave = (e: React.FormEvent) => {
       nextDate,
     };
 
-    // Replace the old onUpdateLedger call with this:
-    onUpdateLedger(prev => {
-      const currentRecurring = prev.recurringTransactions || [];
-      let newRecurring;
-      if (editingId) {
-        newRecurring = currentRecurring.map(r => r.id === editingId ? newTx : r);
-      } else {
-        newRecurring = [...currentRecurring, newTx];
-      }
-      return { ...prev, recurringTransactions: newRecurring };
-    });
+    let newRecurring;
+    if (editingId) {
+      newRecurring = recurring.map(r => r.id === editingId ? newTx : r);
+    } else {
+      newRecurring = [...recurring, newTx];
+    }
 
+    onUpdateLedger({ ...ledger, recurringTransactions: newRecurring });
     resetForm();
   };
 
-  const handleDelete = (id: string) => {
-    if (window.confirm(t('app_delete_recurring_confirm') || 'Delete this recurring transaction?')) {
-      onUpdateLedger(prev => ({ 
-        ...prev, 
-        recurringTransactions: (prev.recurringTransactions || []).filter(r => r.id !== id) 
-      }));
-    }
-  };
-  
   const handleEdit = (tx: RecurringTransaction) => {
     setEditingId(tx.id);
     setDesc(tx.desc);
@@ -164,7 +191,7 @@ const handleSave = (e: React.FormEvent) => {
     setSubCategory(tx.subCategory || '');
     setPaidBy(tx.paidBy);
     setSplitAmong(tx.splitAmong || [tx.paidBy]);
-    if (tx.splitDetails) {
+    if (tx.splitDetails && Object.keys(tx.splitDetails).length > 0) {
       setSplitMode('unequal');
       setSplitDetails(tx.splitDetails);
     } else {
@@ -174,8 +201,17 @@ const handleSave = (e: React.FormEvent) => {
     setFrequency(tx.frequency);
     setNextDate(tx.nextDate);
     setIsAdding(true);
+
+    setTimeout(() => {
+      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
   };
 
+  const handleDelete = (id: string) => {
+    if (window.confirm(t('app_delete_recurring_confirm') || 'Delete this recurring transaction?')) {
+      onUpdateLedger({ ...ledger, recurringTransactions: recurring.filter(r => r.id !== id) });
+    }
+  };
 
   const resetForm = () => {
     setIsAdding(false);
@@ -213,405 +249,225 @@ const handleSave = (e: React.FormEvent) => {
       </div>
 
       {isAdding && (
-        <form onSubmit={handleSave} className="mb-6 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-2xl border border-gray-100 dark:border-gray-600">
-          {ledger.users.length === 0 ? (
-            <div className="text-center py-4">
-              <p className="text-sm text-amber-600 dark:text-amber-400 mb-3">
-                {t('form_add_people_first') || "Please add people to the group first."}
-              </p>
-              <button
-                type="button"
-                onClick={resetForm}
-                className="px-4 py-2 bg-gray-200 dark:bg-gray-600 rounded-xl text-sm font-medium"
-              >
-                {t('form_cancel') || "Cancel"}
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Description</label>
-                <input
-                  type="text"
-                  value={desc}
-                  onChange={e => setDesc(e.target.value)}
-                  className="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white"
-                  placeholder="e.g. Monthly Rent"
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Category</label>
-                  <select
-                    value={category.name}
-                    onChange={e => {
-                      setCategory(ledgerCategories.find(c => c.name === e.target.value) || ledgerCategories[0]);
-                      setSubCategory('');
-                    }}
-                    className="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white"
+        <form ref={formRef} onSubmit={handleSave} className="mb-6 space-y-4 p-5 bg-gray-50/50 dark:bg-gray-900/20 rounded-2xl border border-gray-100 dark:border-gray-700">
+          <div className="flex justify-between items-center mb-2">
+            <h4 className="text-sm font-bold text-gray-700 dark:text-gray-300">
+              {editingId ? 'Edit Recurring Payment' : 'New Recurring Payment'}
+            </h4>
+            <button type="button" onClick={resetForm} className="text-gray-400 hover:text-gray-600"><X size={18}/></button>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-12 gap-3 md:gap-4">
+            {/* Amount */}
+            <div className="col-span-2 md:col-span-12 lg:col-span-7 lg:order-2">
+              <label className="hidden lg:block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Amount</label>
+              <div className="flex flex-col lg:flex-row lg:rounded-xl lg:bg-gray-50 lg:dark:bg-gray-700 lg:border lg:border-gray-200 lg:dark:border-gray-600 focus-within:ring-2 focus-within:ring-blue-500 overflow-hidden transition-colors">
+                <div className="relative border-b lg:border-b-0 lg:border-r border-gray-200 dark:border-gray-600 bg-gray-100 dark:bg-gray-800 flex justify-center lg:justify-start">
+                  <select 
+                    value={currency}
+                    onChange={e => setCurrency(e.target.value)}
+                    className="h-full pl-3 pr-8 py-2.5 bg-transparent outline-none uppercase appearance-none font-medium text-gray-700 dark:text-gray-300 text-sm text-center lg:text-left"
                   >
-                    {ledgerCategories.map(c => (
-                      <option key={c.name} value={c.name}>{c.name}</option>
-                    ))}
+                    {Array.from(new Set(['MYR', ...ledger.exchanges.map(e => e.currency)])).map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
-                {category.subCategories && category.subCategories.length > 0 && (
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Sub-category</label>
-                    <select
-                      value={subCategory}
-                      onChange={e => setSubCategory(e.target.value)}
-                      className="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white"
-                    >
-                      <option value="">None</option>
-                      {category.subCategories.map(sub => (
-                        <option key={sub} value={sub}>{sub}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Frequency</label>
-                  <select
-                    value={frequency}
-                    onChange={e => setFrequency(e.target.value as any)}
-                    className="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white"
-                  >
-                    <option value="daily">Daily</option>
-                    <option value="weekly">Weekly</option>
-                    <option value="monthly">Monthly</option>
-                    <option value="yearly">Yearly</option>
-                  </select>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Amount</label>
-                  <div className="flex rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 focus-within:ring-2 focus-within:ring-blue-500 overflow-hidden transition-colors">
-                    <div className="relative border-r border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
-                      <select 
-                        value={currency}
-                        onChange={e => setCurrency(e.target.value)}
-                        className="h-full pl-3 pr-8 py-2.5 bg-transparent outline-none uppercase appearance-none font-medium text-gray-700 dark:text-gray-300 text-sm"
-                      >
-                        {Array.from(new Set(['MYR', ...ledger.exchanges.map(e => e.currency)])).map(c => (
-                          <option key={c} value={c}>{c}</option>
-                        ))}
-                      </select>
-                      <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                      </div>
-                    </div>
-                    <input
-                      type="number"
-                      inputMode="decimal"
-                      value={amount}
-                      onChange={e => {
-                        const val = e.target.value;
-                        if (val === '' || /^\d*\.?\d*$/.test(val)) {
-                          setAmount(val);
-                        }
-                      }}
-                      className="flex-1 p-2.5 bg-transparent outline-none text-sm text-gray-900 dark:text-white"
-                      placeholder="0.00"
-                      required
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Next Date</label>
+                <div className="relative flex-1 flex items-center bg-white dark:bg-gray-800 py-4 lg:py-0">
+                  <div className="absolute left-3 pointer-events-none hidden lg:block"><DollarSign className="w-4 h-4 text-gray-400" /></div>
                   <input
-                    type="date"
-                    value={nextDate}
-                    onChange={e => setNextDate(e.target.value)}
-                    className="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white"
+                    type="number" inputMode="decimal"
+                    value={amount}
+                    onChange={e => {
+                      const val = e.target.value;
+                      if (val === '' || /^\d*\.?\d*$/.test(val)) setAmount(val);
+                    }}
+                    className="w-full p-3 lg:pl-10 pr-4 bg-transparent border-none outline-none font-mono font-semibold text-gray-900 dark:text-white placeholder-gray-300 dark:placeholder-gray-600 text-center lg:text-left text-4xl lg:text-lg"
+                    placeholder="0.00"
                     required
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-1 gap-4">
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Paid By</label>
-                  <select
-                    value={paidBy}
-                    onChange={e => setPaidBy(e.target.value)}
-                    className="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white"
-                  >
-                    {ledger.users.map(u => (
-                      <option key={u} value={u}>{u}</option>
-                    ))}
-                  </select>
-                </div>
+            </div>
 
-                <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">
-                      {t('form_split_among') || 'Split Among'}
-                    </label>
-                    <div className="text-xs space-x-2 text-blue-600 dark:text-blue-400 font-medium">
-                      <button type="button" onClick={selectAll} className="hover:underline">{t('form_all') || 'All'}</button>
-                      <button type="button" onClick={selectNone} className="hover:underline">{t('form_none') || 'None'}</button>
+            {/* Description */}
+            <div className="col-span-2 md:col-span-7 lg:order-1">
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Description</label>
+              <input 
+                type="text" value={desc} onChange={e => setDesc(e.target.value)}
+                placeholder="e.g. Netflix, Rent"
+                className="w-full p-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white placeholder-gray-400 min-h-[42px]"
+                required
+              />
+            </div>
+
+            {/* Date & Frequency */}
+            <div className="col-span-2 md:col-span-5 lg:order-3">
+              <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Next Payment & Frequency</label>
+              <div className="flex gap-3">
+                <input 
+                  type="date" value={nextDate} onChange={e => setNextDate(e.target.value)}
+                  className="w-full flex-1 p-3 bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-600 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white text-sm"
+                  required
+                />
+                <select 
+                  value={frequency} onChange={e => setFrequency(e.target.value as any)}
+                  className="w-full flex-1 p-3 bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-600 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white text-sm"
+                >
+                  <option value="daily">Daily</option>
+                  <option value="weekly">Weekly</option>
+                  <option value="monthly">Monthly</option>
+                  <option value="yearly">Yearly</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Category Grid */}
+            <div className="col-span-2 md:col-span-12 lg:order-4">
+              <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Category</label>
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-3">
+                {ledgerCategories.map(c => (
+                  <button
+                    key={c.name} type="button"
+                    onClick={() => { setCategory(c); setSubCategory(''); }}
+                    className={cn(
+                      "flex flex-col items-center justify-center p-3 rounded-2xl border transition-all gap-1.5 group relative overflow-hidden",
+                      category.name === c.name ? "bg-blue-50 dark:bg-blue-900/30 border-blue-500 text-blue-700 dark:text-blue-400 shadow-sm" : "bg-white dark:bg-gray-700/30 border-gray-100 dark:border-gray-700 text-gray-500 hover:border-gray-300"
+                    )}
+                  >
+                    <span className={cn("text-2xl transition-transform", category.name === c.name ? "scale-110" : "group-hover:scale-110")}>{c.name.split(' ')[0]}</span>
+                    <span className="text-[10px] font-bold uppercase tracking-tight text-center truncate w-full">{c.name.split(' ').slice(1).join(' ')}</span>
+                  </button>
+                ))}
+              </div>
+              {category.subCategories && category.subCategories.length > 0 && (
+                <div className="mt-4">
+                  <div className="flex gap-2 flex-wrap">
+                    {category.subCategories.map(sub => (
+                      <button
+                        key={sub} type="button" onClick={() => setSubCategory(sub)}
+                        className={cn("px-4 py-2 rounded-xl border text-[11px] font-bold uppercase tracking-tight transition-all", subCategory === sub ? "bg-blue-100 dark:bg-blue-900/40 border-blue-500 text-blue-700" : "bg-white dark:bg-gray-700/30 border-gray-100 text-gray-500 hover:border-gray-300")}
+                      >{sub}</button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+            <div>
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Paid By</label>
+              <select 
+                value={paidBy} onChange={e => setPaidBy(e.target.value)} 
+                className="w-full p-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white"
+              >
+                {ledger.users.map(u => <option key={u} value={u}>{u}</option>)}
+              </select>
+            </div>
+            
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <label className="block text-xs font-medium text-gray-500">Split Among</label>
+                <div className="text-xs space-x-2 text-blue-600 dark:text-blue-400 font-medium">
+                  <button type="button" onClick={selectAll} className="hover:underline">All</button>
+                  <button type="button" onClick={selectNone} className="hover:underline">None</button>
+                </div>
+              </div>
+              <div className={cn("flex flex-wrap gap-2 p-2 rounded-xl border", errors.splitAmong ? "border-red-500" : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50")}>
+                {ledger.users.map(user => (
+                  <button
+                    key={user} type="button" onClick={() => toggleUser(user)}
+                    className={cn("px-3 py-1.5 rounded-full text-sm font-bold border transition-colors", splitAmong.includes(user) ? "bg-blue-100 border-blue-200 text-blue-800 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-300" : "bg-gray-50 border-gray-200 text-gray-500 dark:bg-gray-700 dark:border-gray-600 hover:bg-gray-100")}
+                  >{user}</button>
+                ))}
+              </div>
+
+              {/* Split Mode */}
+              {splitAmong.length > 0 && (
+                <div className="mt-4 border-t border-gray-100 dark:border-gray-700 pt-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <label className="text-xs font-medium text-gray-500">Split Method</label>
+                    <div className="flex bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
+                      {['equal', 'shares', 'unequal'].map(mode => (
+                        <button key={mode} type="button" onClick={() => setSplitMode(mode as any)} className={cn("px-3 py-1.5 text-xs font-bold rounded-md capitalize transition-colors", splitMode === mode ? "bg-white dark:bg-gray-600 shadow-sm text-gray-900 dark:text-white" : "text-gray-500")}>
+                          {mode}
+                        </button>
+                      ))}
                     </div>
                   </div>
-                  <div className={cn(
-                    "flex flex-wrap gap-2 p-2 rounded-xl border",
-                    errors.splitAmong ? "border-red-500 dark:border-red-500" : "border-transparent"
-                  )}>
-                    {ledger.users.map(user => (
-                      <button
-                        key={user}
-                        type="button"
-                        onClick={() => {
-                          if (errors.splitAmong) setErrors(prev => ({ ...prev, splitAmong: false }));
-                          toggleUser(user);
-                        }}
-                        className={cn(
-                          "px-3 py-1.5 rounded-full text-sm border transition-colors",
-                          splitAmong.includes(user) 
-                            ? "bg-blue-100 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-300" 
-                            : "bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600"
-                        )}
-                      >
-                        {user}
-                      </button>
-                    ))}
-                    {ledger.users.length === 0 && <span className="text-sm text-gray-400 italic">{t('form_add_people_first') || 'Add people first'}</span>}
-                  </div>
 
-                  {/* Split Mode Toggle */}
-                  {splitAmong.length > 0 && (
-                    <div className="mt-4 border-t border-gray-100 dark:border-gray-700 pt-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <label className="text-xs font-medium text-gray-500 dark:text-gray-400">{t('form_split_method') || 'Split Method'}</label>
-                        <div className="flex bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
-                          <button
-                            type="button"
-                            onClick={() => setSplitMode('equal')}
-                            className={cn(
-                              "px-3 py-1 text-xs font-medium rounded-md transition-colors",
-                              splitMode === 'equal' ? "bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm" : "text-gray-500 dark:text-gray-400"
-                            )}
-                          >
-                            {t('form_equally') || 'Equally'}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSplitMode('shares');
-                              const newShares = { ...splitShares };
-                              splitAmong.forEach(u => { if (newShares[u] === undefined) newShares[u] = 1; });
-                              setSplitShares(newShares);
-                            }}
-                            className={cn(
-                              "px-3 py-1 text-xs font-medium rounded-md transition-colors",
-                              splitMode === 'shares' ? "bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm" : "text-gray-500 dark:text-gray-400"
-                            )}
-                          >
-                            {t('form_shares') || 'Shares'}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSplitMode('unequal');
-                              setSplitDetails({});
-                            }}
-                            className={cn(
-                              "px-3 py-1 text-xs font-medium rounded-md transition-colors",
-                              splitMode === 'unequal' ? "bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm" : "text-gray-500 dark:text-gray-400"
-                            )}
-                          >
-                            {t('form_split_unequally') || 'Unequally'}
-                          </button>
+                  {splitMode === 'shares' && (
+                    <div className="space-y-2 animate-in slide-in-from-top-2">
+                      {splitAmong.map(user => (
+                        <div key={user} className="flex items-center gap-2">
+                          <span className="text-sm font-bold text-gray-700 dark:text-gray-300 w-20 truncate">{user}</span>
+                          <div className="flex-1 flex items-center bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+                            <button type="button" onClick={() => setSplitShares(p => ({...p, [user]: Math.max(0, (p[user]??1)-1)}))} className="px-4 py-2 font-bold">-</button>
+                            <input type="number" value={splitShares[user]??1} onChange={e => setSplitShares(p => ({...p, [user]: parseFloat(e.target.value)||0}))} className="w-12 text-center bg-transparent border-x border-gray-200 dark:border-gray-700 outline-none text-sm font-bold" />
+                            <button type="button" onClick={() => setSplitShares(p => ({...p, [user]: (p[user]??1)+1}))} className="px-4 py-2 font-bold">+</button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {splitMode === 'unequal' && (
+                    <div className="space-y-2 animate-in slide-in-from-top-2">
+                      {splitAmong.map(user => (
+                        <div key={user} className="flex items-center gap-2">
+                          <span className="text-sm font-bold text-gray-700 dark:text-gray-300 w-20 truncate">{user}</span>
+                          <div className="flex-1 flex items-center bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl px-3">
+                            <span className="text-gray-400 font-bold text-sm">{currency}</span>
+                            <input type="number" inputMode="decimal" value={splitDetails[user] ?? ''} onChange={e => setSplitDetails(p => ({...p, [user]: e.target.value}))} className="flex-1 p-2 bg-transparent outline-none font-mono font-bold text-sm" placeholder="0.00" />
+                          </div>
+                        </div>
+                      ))}
+                      <div className="flex justify-between items-center pt-2">
+                        <div className="flex gap-2">
+                          <button type="button" onClick={handleSplitRemaining} className="text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-1 rounded">Split Remaining</button>
+                          <button type="button" onClick={handleClearSplit} className="text-[10px] font-bold bg-gray-100 text-gray-600 px-2 py-1 rounded">Clear</button>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          <span className={cn("font-bold", Object.values(splitDetails).reduce<number>((a, b) => a + (parseFloat(b.toString()) || 0), 0).toFixed(2) === (parseFloat(amount) || 0).toFixed(2) ? "text-blue-600" : "text-red-500")}>
+                            {Object.values(splitDetails).reduce<number>((a, b) => a + (parseFloat(b.toString()) || 0), 0).toFixed(2)} / {amount || '0.00'}
+                          </span>
                         </div>
                       </div>
-
-                      {splitMode === 'shares' && (() => {
-                        const totalShares = splitAmong.reduce((sum, u) => sum + (splitShares[u] ?? 1), 0);
-                        const maxShares = splitAmong.length;
-                        const remainingShares = Math.max(0, maxShares - totalShares);
-                        
-                        return (
-                          <div className="space-y-2 animate-in slide-in-from-top-2">
-                            <div className="text-xs text-gray-500 dark:text-gray-400 mb-3 bg-gray-50 dark:bg-gray-700/50 p-2 rounded-lg flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
-                              <span>{(t('form_assign_shares') || 'Assign up to {maxShares} shares').replace('{maxShares}', maxShares.toString())}</span>
-                              <span className={cn("font-bold", remainingShares > 0 ? "text-orange-500" : "text-blue-600")}>
-                                {(t('form_remaining_shares') || '{remainingShares} remaining').replace('{remainingShares}', remainingShares.toString())}
-                              </span>
-                            </div>
-                            {splitAmong.map(user => (
-                              <div key={user} className="flex items-center gap-2">
-                                <span className="text-sm text-gray-700 dark:text-gray-300 w-20 truncate">{user}</span>
-                                <div className="flex-1 flex items-center gap-3">
-                                  <div className="flex items-center bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden">
-                                    <button 
-                                      type="button"
-                                      onClick={() => setSplitShares(prev => ({ ...prev, [user]: Math.max(0, (prev[user] ?? 1) - 1) }))}
-                                      className="px-3 py-1.5 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                                    >-</button>
-                                    <input
-                                      type="number" inputMode="decimal"
-                                      pattern="[0-9]*\.?[0-9]*"
-                                      value={splitShares[user] ?? 1}
-                                      onChange={e => {
-                                        const valStr = e.target.value;
-                                        if (valStr === '') {
-                                          setSplitShares(prev => ({ ...prev, [user]: 0 }));
-                                          return;
-                                        }
-                                        const val = parseFloat(valStr);
-                                        if (!isNaN(val)) {
-                                          const currentVal = splitShares[user] ?? 1;
-                                          const maxAllowed = currentVal + remainingShares;
-                                          setSplitShares(prev => ({ ...prev, [user]: Math.min(Math.max(0, val), maxAllowed) }));
-                                        }
-                                      }}
-                                      className="w-12 text-center bg-transparent text-sm font-medium outline-none text-gray-900 dark:text-white"
-                                    />
-                                    <button 
-                                      type="button"
-                                      onClick={() => {
-                                        if (remainingShares > 0) {
-                                          setSplitShares(prev => ({ ...prev, [user]: (prev[user] ?? 1) + 1 }));
-                                        }
-                                      }}
-                                      disabled={remainingShares <= 0}
-                                      className="px-3 py-1.5 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
-                                    >+</button>
-                                  </div>
-                                  <span className="text-sm font-medium text-blue-600 dark:text-blue-400 ml-auto">
-                                    {currency} {(parseFloat(splitDetails[user]?.toString() || '0')).toFixed(2)}
-                                  </span>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        );
-                      })()}
-
-                      {splitMode === 'unequal' && (
-                        <div className="space-y-2 animate-in slide-in-from-top-2">
-                          {splitAmong.map(user => (
-                            <div key={user} className="flex items-center gap-2">
-                              <span className="text-sm text-gray-700 dark:text-gray-300 w-20 truncate">{user}</span>
-                              <div className="flex-1 relative">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-medium pointer-events-none">{currency}</span>
-                                <input
-                                  type="number" inputMode="decimal"
-                                  pattern="[0-9]*\.?[0-9]*"
-                                  value={splitDetails[user] ?? ''}
-                                  onChange={e => {
-                                    setSplitDetails(prev => ({
-                                      ...prev,
-                                      [user]: e.target.value
-                                    }));
-                                  }}
-                                  className="w-full pl-12 pr-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-colors"
-                                  placeholder="0.00"
-                                />
-                              </div>
-                            </div>
-                          ))}
-                          <div className="flex justify-between items-center pt-2 border-t border-gray-100 dark:border-gray-700 mt-2">
-                            <div className="flex gap-2">
-                              <button
-                                type="button"
-                                onClick={handleSplitRemaining}
-                                className="text-[10px] sm:text-xs font-medium bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 px-2 py-1 rounded hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
-                              >
-                                {t('form_split_remaining') || 'Split Remaining'}
-                              </button>
-                              <button
-                                type="button"
-                                onClick={handleClearSplit}
-                                className="text-[10px] sm:text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400 px-2 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                              >
-                                {t('form_clear') || 'Clear'}
-                              </button>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs font-medium text-gray-500">{t('form_total') || 'Total'}</span>
-                              <span className={cn(
-                                "text-sm font-bold",
-                                Object.values(splitDetails).reduce<number>((a, b) => a + (parseFloat(b.toString()) || 0), 0).toFixed(2) === (parseFloat(amount) || 0).toFixed(2) 
-                                  ? "text-blue-600" 
-                                  : "text-red-500"
-                              )}>
-                                {Object.values(splitDetails).reduce<number>((a, b) => a + (parseFloat(b.toString()) || 0), 0).toFixed(2)} / {amount || '0.00'}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      )}
                     </div>
                   )}
                 </div>
-              </div>
-              <div className="flex gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={resetForm}
-                  className="flex-1 py-2.5 px-4 bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-800 dark:text-white rounded-xl text-sm font-medium transition-colors"
-                >
-                  {t('form_cancel') || "Cancel"}
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-medium transition-colors"
-                >
-                  {editingId ? (t('form_update') || 'Update') : (t('form_save') || 'Save')}
-                </button>
-              </div>
+              )}
             </div>
-          )}
+          </div>
+
+          <div className="flex gap-3 pt-2 items-center">
+            <button type="button" onClick={resetForm} className="px-5 py-3 rounded-xl font-medium text-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">Cancel</button>
+            <button type="submit" className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 shadow-lg transition-all">{editingId ? 'Update Recurring' : 'Save Recurring'}</button>
+          </div>
         </form>
       )}
 
+      {/* Existing List Map (Unchanged visuals for list) */}
       <div className="space-y-4">
         {recurring.map(tx => (
           <div key={tx.id} className="p-4 bg-gray-50 dark:bg-gray-700/30 rounded-2xl border border-gray-100 dark:border-gray-700 group flex justify-between items-center">
             <div>
-              <h4 className="font-semibold text-gray-800 dark:text-white flex items-center gap-2">
-                {tx.desc}
-              </h4>
+              <h4 className="font-semibold text-gray-800 dark:text-white flex items-center gap-2">{tx.desc}</h4>
               <div className="text-sm text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-2">
-                <span className="font-medium text-blue-600 dark:text-blue-400">
-                  {formatCurrency(tx.amountOriginal, tx.currency)}
-                </span>
-                <span className="capitalize bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-md text-xs">
-                  {tx.frequency}
-                </span>
+                <span className="font-medium text-blue-600 dark:text-blue-400">{formatCurrency(tx.amountOriginal, tx.currency)}</span>
+                <span className="capitalize bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-md text-xs">{tx.frequency}</span>
               </div>
-              <div className="text-xs text-gray-400 dark:text-gray-500 mt-2 flex items-center gap-1.5 flex-wrap">
-                <span className="text-blue-500 dark:text-blue-400 font-medium">{tx.paidBy}</span>
-                {tx.splitAmong && tx.splitAmong.length > 0 && (
-                  <>
-                    <span className="text-gray-300 dark:text-gray-600">→</span>
-                    <span className="text-gray-500 dark:text-gray-400 truncate max-w-[120px]" title={tx.splitAmong.join(', ')}>
-                      {tx.splitAmong.join(', ')}
-                    </span>
-                  </>
-                )}
-                <span>•</span>
-                <Calendar className="w-3 h-3 ml-1" />
-                Next: {new Date(tx.nextDate).toLocaleDateString('en-GB')}
+              <div className="text-xs text-gray-400 mt-2 flex items-center gap-1.5">
+                <span className="text-blue-500 font-medium">{tx.paidBy}</span>
+                {tx.splitAmong?.length > 0 && <><span>→</span><span className="truncate max-w-[120px]">{tx.splitAmong.join(', ')}</span></>}
+                <span>•</span><Calendar className="w-3 h-3 ml-1" />Next: {new Date(tx.nextDate).toLocaleDateString()}
               </div>
             </div>
             <div className="flex flex-col items-end gap-2">
-              <button onClick={() => handleEdit(tx)} className="p-1.5 text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">
-                <Edit2 className="w-4 h-4" />
-              </button>
-              <button onClick={() => handleDelete(tx.id)} className="p-1.5 text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors">
-                <Trash2 className="w-4 h-4" />
-              </button>
+              <button onClick={() => handleEdit(tx)} className="p-1.5 text-gray-400 hover:text-blue-500"><Edit2 className="w-4 h-4" /></button>
+              <button onClick={() => handleDelete(tx.id)} className="p-1.5 text-gray-400 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
             </div>
           </div>
         ))}
-        {recurring.length === 0 && !isAdding && (
-          <div className="text-center py-8 text-gray-400 dark:text-gray-500 italic">
-            No recurring transactions yet.
-          </div>
-        )}
       </div>
     </div>
   );
