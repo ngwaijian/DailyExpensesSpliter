@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Ledger, Budget, CATEGORIES } from '../../types';
+import { Ledger, Budget, CATEGORIES, LedgerUpdater } from '../../types';
 import { Wallet, Plus, Edit2, Trash2, AlertCircle, PieChart, TrendingUp } from 'lucide-react';
 import { formatCurrency, getAverageRates } from '../../utils/currency';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -7,7 +7,7 @@ import { cn } from '../../lib/utils';
 
 interface BudgetManagerProps {
   ledger: Ledger;
-  onUpdateLedger: (ledger: Ledger) => void;
+  onUpdateLedger: (updater: LedgerUpdater) => void;
 }
 
 export function BudgetManager({ ledger, onUpdateLedger }: BudgetManagerProps) {
@@ -70,14 +70,13 @@ export function BudgetManager({ ledger, onUpdateLedger }: BudgetManagerProps) {
       period,
     };
 
-    let newBudgets;
-    if (editingId) {
-      newBudgets = budgets.map(b => b.id === editingId ? newBudget : b);
-    } else {
-      newBudgets = [...budgets, newBudget];
-    }
-
-    onUpdateLedger({ ...ledger, budgets: newBudgets });
+    onUpdateLedger(prev => {
+      const prevBudgets = prev.budgets || [];
+      const newBudgets = editingId
+        ? prevBudgets.map(b => (b.id === editingId ? newBudget : b))
+        : [...prevBudgets, newBudget];
+      return { ...prev, budgets: newBudgets };
+    });
     resetForm();
   };
 
@@ -93,7 +92,10 @@ export function BudgetManager({ ledger, onUpdateLedger }: BudgetManagerProps) {
 
   const handleDelete = (id: string) => {
     if (confirm(t('app_delete_budget_confirm') || 'Delete this budget?')) {
-      onUpdateLedger({ ...ledger, budgets: budgets.filter(b => b.id !== id) });
+      onUpdateLedger(prev => ({
+        ...prev,
+        budgets: (prev.budgets || []).filter(b => b.id !== id),
+      }));
     }
   };
 

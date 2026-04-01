@@ -1,10 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { Ledger, CATEGORIES, Category } from '../types';
-import { db } from '../lib/db';
+import { Ledger, CATEGORIES, Category, LedgerUpdater } from '../types';
 
 interface UseUrlShortcutsProps {
   currentLedger: Ledger | null;
-  updateLedger: (ledger: Ledger) => void;
+  updateLedger: (updater: LedgerUpdater) => void;
   t: (key: string, fallback?: string) => string;
   pushToCloud: (id?: string, overrideLedger?: Ledger) => Promise<void>;
 }
@@ -211,18 +210,14 @@ const newExpense = {
           sponsoredBy: isSponsoredParam ? (sponsoredByParam || paidBy) : undefined,
         };
         
-        const updatedLedgerData = {
-          ...currentLedger,
-          expenses: [newExpense, ...currentLedger.expenses],
-          lastUpdated: new Date().toISOString()
-        };
-        
         const saveAndExit = async () => {
           hasProcessedShortcut.current = true;
           
           try {
-            // Asynchronous failsafe for IndexedDB to ensure data is written before the tab closes
-            await db.ledgers.put(updatedLedgerData);
+            updateLedger(prev => ({
+              ...prev,
+              expenses: [newExpense, ...prev.expenses],
+            }));
             
             // Also update local storage as fallback
             try {
@@ -236,14 +231,15 @@ const newExpense = {
               }
             } catch(e) {}
             
-            updateLedger(updatedLedgerData);
             window.history.replaceState({}, '', window.location.pathname);
             setIsAutoSaved(true);
             
-            // Push to cloud in the background without triggering a system alert
-            pushToCloud(currentLedger.id, updatedLedgerData).catch((err) => {
-              console.error('Background sync error:', err);
-            });
+            const id = currentLedger.id;
+            setTimeout(() => {
+              pushToCloud(id).catch((err) => {
+                console.error('Background sync error:', err);
+              });
+            }, 0);
           } catch (e) {
             console.error('Failsafe sync error:', e);
             alert('Failed to save expense to database. Please try again.');

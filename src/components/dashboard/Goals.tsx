@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Ledger, Goal } from '../../types';
+import { Ledger, Goal, LedgerUpdater } from '../../types';
 import { Target, Plus, Edit2, Trash2, CheckCircle2 } from 'lucide-react';
 import { formatCurrency, getAverageRates } from '../../utils/currency';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -7,13 +7,13 @@ import { cn } from '../../lib/utils';
 
 interface GoalsProps {
   ledger: Ledger;
-  onUpdateLedger: (ledger: Ledger) => void;
+  onUpdateLedger: (updater: LedgerUpdater) => void;
 }
 
 interface GoalItemProps {
   goal: Goal;
   ledger: Ledger;
-  onUpdateLedger: (ledger: Ledger) => void;
+  onUpdateLedger: (updater: LedgerUpdater) => void;
   onEdit: (goal: Goal) => void;
   onDelete: (id: string) => void;
   t: (key: string) => string;
@@ -108,14 +108,13 @@ export function Goals({ ledger, onUpdateLedger }: GoalsProps) {
       currency,
     };
 
-    let newGoals;
-    if (editingId) {
-      newGoals = goals.map(g => g.id === editingId ? newGoal : g);
-    } else {
-      newGoals = [...goals, newGoal];
-    }
-
-    onUpdateLedger({ ...ledger, goals: newGoals });
+    onUpdateLedger(prev => {
+      const g = prev.goals || [];
+      const newGoals = editingId
+        ? g.map(goal => (goal.id === editingId ? newGoal : goal))
+        : [...g, newGoal];
+      return { ...prev, goals: newGoals };
+    });
     resetForm();
   };
 
@@ -130,7 +129,7 @@ export function Goals({ ledger, onUpdateLedger }: GoalsProps) {
 
   const handleDelete = (id: string) => {
     if (confirm(t('app_delete_goal_confirm') || 'Delete this goal?')) {
-      onUpdateLedger({ ...ledger, goals: goals.filter(g => g.id !== id) });
+      onUpdateLedger(prev => ({ ...prev, goals: (prev.goals || []).filter(g => g.id !== id) }));
     }
   };
 

@@ -117,6 +117,9 @@ export interface AppData {
   ledgers: Ledger[];
 }
 
+/** Matches `updateLedger` in useStore — prefer the function form so edits merge with latest DB state (reliable cloud sync). */
+export type LedgerUpdater = Ledger | ((prev: Ledger) => Ledger);
+
 export interface Category {
   name: string;
   subCategories?: string[];

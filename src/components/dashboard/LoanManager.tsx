@@ -181,7 +181,6 @@ const progress = loan.totalAmount > 0 ? ((loan.totalAmount - loan.remainingAmoun
         initialData={editingLoan}
         users={ledger.users}
         defaultCurrency={ledger.expenses[0]?.currency || 'MYR'}
-        categories={ledger.categories || []}
       />
     </div>
   );

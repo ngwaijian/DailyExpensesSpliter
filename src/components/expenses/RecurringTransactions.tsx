@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Ledger, RecurringTransaction, CATEGORIES, Category } from '../../types';
+import { Ledger, RecurringTransaction, CATEGORIES, Category, LedgerUpdater } from '../../types';
 import { Repeat, Plus, Edit2, Trash2, Calendar, DollarSign, X, Target } from 'lucide-react';
 import { formatCurrency } from '../../utils/currency';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -8,7 +8,7 @@ import { motion } from 'framer-motion';
 
 interface RecurringTransactionsProps {
   ledger: Ledger;
-  onUpdateLedger: (ledger: Ledger) => void;
+  onUpdateLedger: (updater: LedgerUpdater) => void;
 }
 
 export function RecurringTransactions({ ledger, onUpdateLedger }: RecurringTransactionsProps) {
@@ -178,14 +178,13 @@ export function RecurringTransactions({ ledger, onUpdateLedger }: RecurringTrans
       ...(linkToGoal && goalId ? { goalId } : {}),
     };
 
-    let newRecurring;
-    if (editingId) {
-      newRecurring = recurring.map(r => r.id === editingId ? newTx : r);
-    } else {
-      newRecurring = [...recurring, newTx];
-    }
-
-    onUpdateLedger({ ...ledger, recurringTransactions: newRecurring });
+    onUpdateLedger(prev => {
+      const list = prev.recurringTransactions || [];
+      const newRecurring = editingId
+        ? list.map(r => (r.id === editingId ? newTx : r))
+        : [...list, newTx];
+      return { ...prev, recurringTransactions: newRecurring };
+    });
     resetForm();
   };
 
@@ -218,7 +217,10 @@ export function RecurringTransactions({ ledger, onUpdateLedger }: RecurringTrans
 
   const handleDelete = (id: string) => {
     if (window.confirm(t('app_delete_recurring_confirm') || 'Delete this recurring transaction?')) {
-      onUpdateLedger({ ...ledger, recurringTransactions: recurring.filter(r => r.id !== id) });
+      onUpdateLedger(prev => ({
+        ...prev,
+        recurringTransactions: (prev.recurringTransactions || []).filter(r => r.id !== id),
+      }));
     }
   };
 

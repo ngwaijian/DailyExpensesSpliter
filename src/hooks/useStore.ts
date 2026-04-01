@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { AppData, Ledger, CATEGORIES } from '../types';
+import { AppData, Ledger, CATEGORIES, LedgerUpdater } from '../types';
 import { GITHUB_TOKEN } from '../config';
 import { useCloudSync } from './useCloudSync';
 import { db } from '../lib/db';
@@ -214,7 +214,7 @@ const setAppData = useCallback((value: React.SetStateAction<AppData>) => {
     setUnsyncedLedgerIds(prev => prev.includes(currentLedgerId) ? prev : [...prev, currentLedgerId]);
   }, [history, currentLedgerId, setAppData, setUnsyncedLedgerIds]);
 
-const updateLedger = useCallback((updater: Ledger | ((prev: Ledger) => Ledger), ledgerIdToUpdate?: string) => {
+const updateLedger = useCallback((updater: LedgerUpdater, ledgerIdToUpdate?: string) => {
     const now = new Date().toISOString();
     saveToHistory(appData);
     

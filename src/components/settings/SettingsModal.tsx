@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Settings, Cloud, CloudOff, RefreshCw, Save, Globe, Share2, Copy } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { Ledger } from '../../types';
+import { Ledger, LedgerUpdater } from '../../types';
 import { cn } from '../../lib/utils';
 
 interface SettingsModalProps {
@@ -10,7 +10,7 @@ interface SettingsModalProps {
   githubToken: string;
   setGithubToken: (val: string) => void;
   currentLedger: Ledger;
-  onUpdateLedger: (ledger: Ledger) => void;
+  onUpdateLedger: (updater: LedgerUpdater) => void;
   createGistForLedger: () => void;
   onSync: () => void;
   onPush: () => void;

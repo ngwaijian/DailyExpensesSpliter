@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Ledger, Expense, CATEGORIES, Category } from '../../types';
+import { Ledger, Expense, CATEGORIES, Category, LedgerUpdater } from '../../types';
 import { CATEGORY_COLORS, CATEGORY_SLEDGER_COLORS } from '../../constants';
 import { getAverageRates, formatCurrency } from '../../utils/currency';
 import { Edit2, Trash2, Calendar, User, MapPin, Gift, Handshake, Filter, ArrowUpDown, X, Search, Tag, RotateCcw, Settings, Clock } from 'lucide-react';
@@ -7,7 +7,6 @@ import { cn } from '../../lib/utils';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useTheme } from '../../hooks/useTheme';
 import { CategoryManager } from '../settings/CategoryManager';
-import { useStore } from '../../hooks/useStore';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface ExpenseListProps {
@@ -16,7 +15,7 @@ interface ExpenseListProps {
   onView: (id: string) => void;
   onDelete: (id: string) => void;
   lastUpdatedId?: string | null;
-  onUpdateLedger: (ledger: Ledger) => void;
+  onUpdateLedger: (updater: LedgerUpdater) => void;
   undo: () => void;
   canUndo: boolean;
 }
@@ -217,45 +216,55 @@ const upcomingRecurring = useMemo(() => {
   }, [ledger.loans]);
 
 const handleMarkAsPaid = (item: { id: string, desc: string, amountOriginal: number, currency: string, paidBy: string, type: 'loan' | 'recurring', nextDate: string, splitAmong?: string[], splitDetails?: { [userName: string]: number }, category?: Category, subCategory?: string, goalId?: string }) => {
-    const newExpense: Expense = {
-      id: Date.now().toString(),
-      desc: item.type === 'recurring' ? `${item.desc} (recurring)` : item.desc,
-      amountOriginal: item.amountOriginal,
-      currency: item.currency,
-      category: item.category || { name: '🏠 Rent & Bills' }, // Default category
-      subCategory: item.subCategory,
-      date: new Date().toISOString().split('T')[0],
-      paidBy: item.paidBy,
-      splitAmong: item.splitAmong || [item.paidBy],
-      splitDetails: item.splitDetails,
-      type: 'expense',
-      ...(item.type === 'recurring' && item.goalId ? { goalId: item.goalId } : {}),
-    };
+    onUpdateLedger(prev => {
+      const newExpense: Expense = {
+        id: Date.now().toString(),
+        desc: item.type === 'recurring' ? `${item.desc} (recurring)` : item.desc,
+        amountOriginal: item.amountOriginal,
+        currency: item.currency,
+        category: item.category || { name: '🏠 Rent & Bills' },
+        subCategory: item.subCategory,
+        date: new Date().toISOString().split('T')[0],
+        paidBy: item.paidBy,
+        splitAmong: item.splitAmong || [item.paidBy],
+        splitDetails: item.splitDetails,
+        type: 'expense',
+        ...(item.type === 'recurring' && item.goalId ? { goalId: item.goalId } : {}),
+      };
 
-    const updatedLedger = { ...ledger, expenses: [...ledger.expenses, newExpense] };
+      let next: Ledger = { ...prev, expenses: [...prev.expenses, newExpense] };
 
-    if (item.type === 'loan') {
-      updatedLedger.loans = ledger.loans?.map(l => {
-        if (l.id === item.id) {
-          const nextDate = new Date(l.nextInstallmentDate);
-          nextDate.setMonth(nextDate.getMonth() + 1);
-          return { ...l, remainingAmount: l.remainingAmount - l.installmentAmount, nextInstallmentDate: nextDate.toISOString().split('T')[0] };
-        }
-        return l;
-      });
-    } else {
-      updatedLedger.recurringTransactions = ledger.recurringTransactions?.map(rt => {
-        if (rt.id === item.id) {
-          const nextDate = new Date(rt.nextDate);
-          if (rt.frequency === 'monthly') nextDate.setMonth(nextDate.getMonth() + 1);
-          else if (rt.frequency === 'weekly') nextDate.setDate(nextDate.getDate() + 7);
-          return { ...rt, nextDate: nextDate.toISOString().split('T')[0] };
-        }
-        return rt;
-      });
-    }
+      if (item.type === 'loan') {
+        next = {
+          ...next,
+          loans: prev.loans?.map(l => {
+            if (l.id === item.id) {
+              const nextDate = new Date(l.nextInstallmentDate);
+              nextDate.setMonth(nextDate.getMonth() + 1);
+              return { ...l, remainingAmount: l.remainingAmount - l.installmentAmount, nextInstallmentDate: nextDate.toISOString().split('T')[0] };
+            }
+            return l;
+          }),
+        };
+      } else {
+        next = {
+          ...next,
+          recurringTransactions: (prev.recurringTransactions || []).map(rt => {
+            if (rt.id === item.id) {
+              const nextDate = new Date(rt.nextDate);
+              if (rt.frequency === 'daily') nextDate.setDate(nextDate.getDate() + 1);
+              else if (rt.frequency === 'weekly') nextDate.setDate(nextDate.getDate() + 7);
+              else if (rt.frequency === 'monthly') nextDate.setMonth(nextDate.getMonth() + 1);
+              else if (rt.frequency === 'yearly') nextDate.setFullYear(nextDate.getFullYear() + 1);
+              return { ...rt, nextDate: nextDate.toISOString().split('T')[0] };
+            }
+            return rt;
+          }),
+        };
+      }
 
-    onUpdateLedger(updatedLedger);
+      return next;
+    });
   };
 
   if (ledger.expenses.length === 0 && upcomingRecurring.length === 0 && upcomingLoans.length === 0) {

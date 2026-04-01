@@ -115,68 +115,69 @@ if (isLoading || !currentLedger) {
   };
 
 const handleAddExpense = (data: any) => {
-    const newExpenses = [...currentLedger.expenses];
-    const ledgerCategories = (currentLedger.categories || CATEGORIES).map(c => typeof c === 'string' ? { name: c, subCategories: [] } : c);
-    const categoryObj = ledgerCategories.find(c => c.name === data.category) || { name: data.category, subCategories: [] };
-    
-    // Extract recurring data before formatting the expense
+    const editId = editingExpenseId;
     const { recurringFrequency, ...restData } = data;
-    
-    const expenseData = { 
-      ...restData, 
-      category: categoryObj,
-      subCategory: restData.subCategory || undefined 
-    };
-    
-    let updatedId = '';
-    if (editingExpenseId) {
-      const idx = newExpenses.findIndex(e => e.id === editingExpenseId);
-      if (idx !== -1) {
-        const { subCategory, ...rest } = newExpenses[idx];
-        newExpenses[idx] = { ...rest, ...expenseData };
-        updatedId = editingExpenseId;
-      }
-    } else {
-      updatedId = Date.now().toString();
-      newExpenses.push({ id: updatedId, ...expenseData });
-    }
+    const highlightExpenseId = editId || Date.now().toString();
 
-    let updatedLedger = { ...currentLedger, expenses: newExpenses };
+    updateLedger(prev => {
+      const ledgerCategories = (prev.categories || CATEGORIES).map(c => typeof c === 'string' ? { name: c, subCategories: [] } : c);
+      const categoryObj = ledgerCategories.find(c => c.name === data.category) || { name: data.category, subCategories: [] };
 
-    // Automatically create the recurring template
-    if (recurringFrequency) {
-      const expenseDate = new Date(expenseData.date);
-      const nextDate = new Date(expenseDate);
-      if (recurringFrequency === 'daily') nextDate.setDate(nextDate.getDate() + 1);
-      else if (recurringFrequency === 'weekly') nextDate.setDate(nextDate.getDate() + 7);
-      else if (recurringFrequency === 'monthly') nextDate.setMonth(nextDate.getMonth() + 1);
-      else if (recurringFrequency === 'yearly') nextDate.setFullYear(nextDate.getFullYear() + 1);
-
-      const newRecurring: RecurringTransaction = {
-        id: Date.now().toString() + '_rec',
-        desc: expenseData.desc,
-        amountOriginal: expenseData.amountOriginal,
-        currency: expenseData.currency,
+      const expenseData = {
+        ...restData,
         category: categoryObj,
-        subCategory: expenseData.subCategory,
-        paidBy: expenseData.paidBy,
-        splitAmong: expenseData.splitAmong,
-        splitDetails: expenseData.splitDetails,
-        frequency: recurringFrequency,
-        nextDate: nextDate.toISOString().split('T')[0],
-        ...(expenseData.goalId ? { goalId: expenseData.goalId } : {}),
+        subCategory: restData.subCategory || undefined,
       };
-      updatedLedger = {
-        ...updatedLedger,
-        recurringTransactions: [...(updatedLedger.recurringTransactions || []), newRecurring]
-      };
-    }
 
-    updateLedger(updatedLedger);
+      const newExpenses = [...prev.expenses];
+
+      if (editId) {
+        const idx = newExpenses.findIndex(e => e.id === editId);
+        if (idx !== -1) {
+          const { subCategory: _s, ...rest } = newExpenses[idx];
+          newExpenses[idx] = { ...rest, ...expenseData };
+        }
+      } else {
+        newExpenses.push({ id: highlightExpenseId, ...expenseData });
+      }
+
+      let next = { ...prev, expenses: newExpenses };
+
+      if (recurringFrequency) {
+        const expenseDate = new Date(expenseData.date);
+        const nextDate = new Date(expenseDate);
+        if (recurringFrequency === 'daily') nextDate.setDate(nextDate.getDate() + 1);
+        else if (recurringFrequency === 'weekly') nextDate.setDate(nextDate.getDate() + 7);
+        else if (recurringFrequency === 'monthly') nextDate.setMonth(nextDate.getMonth() + 1);
+        else if (recurringFrequency === 'yearly') nextDate.setFullYear(nextDate.getFullYear() + 1);
+
+        const newRecurring: RecurringTransaction = {
+          id: Date.now().toString() + '_rec',
+          desc: expenseData.desc,
+          amountOriginal: expenseData.amountOriginal,
+          currency: expenseData.currency,
+          category: categoryObj,
+          subCategory: expenseData.subCategory,
+          paidBy: expenseData.paidBy,
+          splitAmong: expenseData.splitAmong,
+          splitDetails: expenseData.splitDetails,
+          frequency: recurringFrequency,
+          nextDate: nextDate.toISOString().split('T')[0],
+          ...(expenseData.goalId ? { goalId: expenseData.goalId } : {}),
+        };
+        next = {
+          ...next,
+          recurringTransactions: [...(next.recurringTransactions || []), newRecurring],
+        };
+      }
+
+      return next;
+    });
+
     setEditingExpenseId(null);
     setIsMobileFormOpen(false);
     clearShortcuts();
-    setLastUpdatedId(updatedId);
+    setLastUpdatedId(highlightExpenseId);
     
     setTimeout(() => {
       setLastUpdatedId(null);

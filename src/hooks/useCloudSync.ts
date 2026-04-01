@@ -419,7 +419,11 @@ const createGistForLedger = useCallback(async () => {
     }
   }, [githubToken, isInitialized]); 
 
-  // Auto-push on data change (debounced)
+  // Auto-push on data change (debounced).
+  // Include currentLedger.lastUpdated so we re-schedule a push whenever local data changes
+  // while still unsynced. Otherwise needsSync stays true and this effect never re-runs after
+  // the first edit — e.g. "Pay" on upcoming payments would stay local-only until something
+  // else toggles sync state.
   useEffect(() => {
     if (!isInitialized) return; 
     
@@ -430,7 +434,7 @@ const createGistForLedger = useCallback(async () => {
       }, 2000); // 2 second debounce
       return () => clearTimeout(timer);
     }
-  }, [needsSync, githubToken, currentLedgerId, currentLedger?.gistId, isSyncing, pushToCloud, isOnline]);
+  }, [needsSync, githubToken, currentLedgerId, currentLedger?.gistId, currentLedger?.lastUpdated, isSyncing, pushToCloud, isOnline, isInitialized]);
 
   // Background polling (Auto-pull)
   useEffect(() => {

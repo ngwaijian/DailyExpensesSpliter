@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Ledger } from '../../types';
+import { Ledger, LedgerUpdater } from '../../types';
 import { getAverageRates, formatCurrency } from '../../utils/currency';
 import { TrendingUp, Download, FileText, Table, Users, PieChart as PieChartIcon, List, Calendar, Target, Wallet } from 'lucide-react';
 import { cn } from '../../lib/utils';
@@ -11,7 +11,7 @@ import { useTheme } from '../../hooks/useTheme';
 
 interface SummaryProps {
   ledger: Ledger;
-  onUpdateLedger?: (ledger: Ledger) => void;
+  onUpdateLedger?: (updater: LedgerUpdater) => void;
 }
 
 const CATEGORY_HEX_COLORS: { [key: string]: string } = {
@@ -400,7 +400,7 @@ export function Summary({ ledger, onUpdateLedger }: SummaryProps) {
   const handleSaveBudget = () => {
     if (!onUpdateLedger) return;
     const budget = parseFloat(tempBudget);
-    onUpdateLedger({ ...ledger, monthlyBudget: isNaN(budget) ? undefined : budget });
+    onUpdateLedger(prev => ({ ...prev, monthlyBudget: isNaN(budget) ? undefined : budget }));
     setIsEditingBudget(false);
   };
 

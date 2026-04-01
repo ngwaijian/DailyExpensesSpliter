@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Ledger, CATEGORIES } from '../../types';
+import { Ledger, CATEGORIES, LedgerUpdater } from '../../types';
 import { CATEGORY_COLORS, CATEGORY_SLEDGER_COLORS } from '../../constants';
 import { Calendar, Tag, DollarSign, Users, X, Calculator, MapPin, Loader2, Search, ArrowLeft } from 'lucide-react';
 import { cn } from '../../lib/utils';
@@ -18,7 +18,7 @@ interface ExpenseFormProps {
   onSubmit: (expenseData: any) => void;
   onCancel: () => void;
   initialData?: any;
-  onUpdateLedger: (ledger: Ledger) => void;
+  onUpdateLedger: (updater: LedgerUpdater) => void;
   isMobileModal?: boolean;
   onCloseMobile?: () => void;
   defaultType?: 'expense' | 'income' | 'sponsorship' | 'settlement';

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Ledger, Category } from '../../types';
+import { Ledger, Category, LedgerUpdater } from '../../types';
 import { CATEGORIES } from '../../types';
 import { Tag, Plus, X, Edit2, Check, Trash2, ChevronUp, ChevronDown, ChevronRight } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -7,7 +7,11 @@ import { cn } from '../../lib/utils';
 
 interface CategoryManagerProps {
   ledger: Ledger;
-  onUpdateLedger: (ledger: Ledger) => void;
+  onUpdateLedger: (updater: LedgerUpdater) => void;
+}
+
+function categoriesFromLedger(l: Ledger): Category[] {
+  return (l.categories || CATEGORIES).map(c => (typeof c === 'string' ? { name: c, subCategories: [] } : c));
 }
 
 export function CategoryManager({ ledger, onUpdateLedger }: CategoryManagerProps) {
@@ -19,18 +23,23 @@ export function CategoryManager({ ledger, onUpdateLedger }: CategoryManagerProps
   const [expandedCategory, setExpandedCategory] = useState<number | null>(null);
   const [newSubCategory, setNewSubCategory] = useState('');
 
-  const categories: Category[] = (ledger.categories || CATEGORIES).map(c => typeof c === 'string' ? { name: c, subCategories: [] } : c);
+  const categories: Category[] = categoriesFromLedger(ledger);
 
   const handleAdd = () => {
     if (!newCategory.trim()) return;
-    const updatedCategories = [...categories, { name: newCategory.trim(), subCategories: [] }];
-    onUpdateLedger({ ...ledger, categories: updatedCategories });
+    const name = newCategory.trim();
+    onUpdateLedger(prev => ({
+      ...prev,
+      categories: [...categoriesFromLedger(prev), { name, subCategories: [] }],
+    }));
     setNewCategory('');
   };
 
   const handleRemove = (index: number) => {
-    const updatedCategories = categories.filter((_, i) => i !== index);
-    onUpdateLedger({ ...ledger, categories: updatedCategories });
+    onUpdateLedger(prev => ({
+      ...prev,
+      categories: categoriesFromLedger(prev).filter((_, i) => i !== index),
+    }));
   };
 
   const startEditing = (index: number) => {
@@ -40,50 +49,59 @@ export function CategoryManager({ ledger, onUpdateLedger }: CategoryManagerProps
 
   const handleSaveEdit = () => {
     if (!editValue.trim() || editingIndex === null) return;
-    const updatedCategories = [...categories];
-    updatedCategories[editingIndex] = { ...updatedCategories[editingIndex], name: editValue.trim() };
-    onUpdateLedger({ ...ledger, categories: updatedCategories });
+    const idx = editingIndex;
+    const trimmed = editValue.trim();
+    onUpdateLedger(prev => {
+      const cats = [...categoriesFromLedger(prev)];
+      cats[idx] = { ...cats[idx], name: trimmed };
+      return { ...prev, categories: cats };
+    });
     setEditingIndex(null);
   };
 
   const handleMove = (index: number, direction: 'up' | 'down') => {
     const newIndex = direction === 'up' ? index - 1 : index + 1;
-    if (newIndex < 0 || newIndex >= categories.length) return;
-    
-    const updatedCategories = [...categories];
-    const [movedItem] = updatedCategories.splice(index, 1);
-    updatedCategories.splice(newIndex, 0, movedItem);
-    onUpdateLedger({ ...ledger, categories: updatedCategories });
+    onUpdateLedger(prev => {
+      const updatedCategories = [...categoriesFromLedger(prev)];
+      if (newIndex < 0 || newIndex >= updatedCategories.length) return prev;
+      const [movedItem] = updatedCategories.splice(index, 1);
+      updatedCategories.splice(newIndex, 0, movedItem);
+      return { ...prev, categories: updatedCategories };
+    });
   };
 
   const handleAddSubCategory = (catIndex: number) => {
     if (!newSubCategory.trim()) return;
-    const updatedCategories = [...categories];
-    const subs = updatedCategories[catIndex].subCategories || [];
-    if (!subs.includes(newSubCategory.trim())) {
+    const sub = newSubCategory.trim();
+    onUpdateLedger(prev => {
+      const updatedCategories = [...categoriesFromLedger(prev)];
+      const subs = updatedCategories[catIndex].subCategories || [];
+      if (subs.includes(sub)) return prev;
       updatedCategories[catIndex] = {
         ...updatedCategories[catIndex],
-        subCategories: [...subs, newSubCategory.trim()]
+        subCategories: [...subs, sub],
       };
-      onUpdateLedger({ ...ledger, categories: updatedCategories });
-    }
+      return { ...prev, categories: updatedCategories };
+    });
     setNewSubCategory('');
   };
 
   const handleRemoveSubCategory = (catIndex: number, subIndex: number) => {
-    const updatedCategories = [...categories];
-    const subs = [...(updatedCategories[catIndex].subCategories || [])];
-    subs.splice(subIndex, 1);
-    updatedCategories[catIndex] = {
-      ...updatedCategories[catIndex],
-      subCategories: subs
-    };
-    onUpdateLedger({ ...ledger, categories: updatedCategories });
+    onUpdateLedger(prev => {
+      const updatedCategories = [...categoriesFromLedger(prev)];
+      const subs = [...(updatedCategories[catIndex].subCategories || [])];
+      subs.splice(subIndex, 1);
+      updatedCategories[catIndex] = {
+        ...updatedCategories[catIndex],
+        subCategories: subs,
+      };
+      return { ...prev, categories: updatedCategories };
+    });
   };
 
   const handleReset = () => {
     if (confirm('Reset categories to default? This will remove all custom categories.')) {
-      onUpdateLedger({ ...ledger, categories: CATEGORIES });
+      onUpdateLedger(prev => ({ ...prev, categories: CATEGORIES }));
     }
   };
 
