@@ -39,7 +39,11 @@ export function ExpenseForm({ ledger, onSubmit, onCancel, initialData, onUpdateL
   const [type, setType] = useState<'expense' | 'income' | 'sponsorship' | 'settlement'>(initialData?.type || defaultType || 'expense');
   const [desc, setDesc] = useState(initialData?.desc || '');
   const [memo, setMemo] = useState(initialData?.memo || '');
-  const [amount, setAmount] = useState(initialData?.amountOriginal || '');
+  const [amount, setAmount] = useState<string>(() => {
+    const a = initialData?.amountOriginal;
+    if (a === undefined || a === null) return '';
+    return String(a);
+  });
   const [currency, setCurrency] = useState(initialData?.currency || 'MYR');
   const ledgerCategories = (ledger.categories || CATEGORIES).map(c => typeof c === 'string' ? { name: c, subCategories: [] } : c);
   const initialCategory = initialData?.category 
@@ -297,7 +301,11 @@ onSubmit({
     if (initialData) {
       setDesc(initialData.desc || '');
       setMemo(initialData.memo || '');
-      setAmount(initialData.amountOriginal || '');
+      setAmount(
+        initialData.amountOriginal === undefined || initialData.amountOriginal === null
+          ? ''
+          : String(initialData.amountOriginal)
+      );
       setCurrency(initialData.currency || 'MYR');
       setCategory(initialData.category || ledgerCategories[0].name);
       setSubCategory(initialData.subCategory || '');
@@ -529,14 +537,16 @@ setIsSponsored(false);
                 </div>
                 <input 
                   id="amount-input"
-                  type="number" 
+                  type="text"
                   inputMode="decimal"
+                  autoComplete="off"
+                  spellCheck={false}
                   value={amount}
                   onChange={e => {
                     if (errors.amount) setErrors(prev => ({ ...prev, amount: false }));
                     const val = e.target.value;
                     
-                    // Allow numbers, decimal point, and math operators
+                    // Allow numbers, decimal point, and math operators (number input type cannot)
                     if (val === '' || /^[0-9+\-*/().\s,.]*$/.test(val)) {
                       setAmount(val);
                     }

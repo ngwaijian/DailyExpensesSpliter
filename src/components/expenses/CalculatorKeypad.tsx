@@ -3,8 +3,8 @@ import { X } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 interface CalculatorKeypadProps {
-  amount: string | number;
-  setAmount: React.Dispatch<React.SetStateAction<string | number>>;
+  amount: string;
+  setAmount: React.Dispatch<React.SetStateAction<string>>;
   setShowCalculator: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
