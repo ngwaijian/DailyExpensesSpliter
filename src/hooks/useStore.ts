@@ -362,6 +362,44 @@ const updateLedger = useCallback((updater: LedgerUpdater, ledgerIdToUpdate?: str
     updateLedger(updatedLedger);
   }, [appData.ledgers, githubToken, updateLedger]);
 
+  const importLedgersFromBackup = useCallback(
+    (data: AppData) => {
+      saveToHistory(appData);
+      const existingIds = new Set(appData.ledgers.map((l) => l.id));
+      const now = new Date().toISOString();
+
+      const incoming = data.ledgers.map((L, i) => {
+        let id = L.id;
+        if (existingIds.has(id)) {
+          id = `ledger_import_${Date.now()}_${i}_${Math.random().toString(36).slice(2, 8)}`;
+        }
+        while (existingIds.has(id)) {
+          id = `ledger_import_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+        }
+        existingIds.add(id);
+
+        const { gistId: _g, lastSynced: _ls, ...stripped } = L;
+
+        return {
+          ...stripped,
+          id,
+          lastUpdated: L.lastUpdated || now,
+          users: L.users?.length ? L.users : ['Me'],
+          expenses: Array.isArray(L.expenses) ? L.expenses : [],
+          exchanges: Array.isArray(L.exchanges) ? L.exchanges : [],
+        } satisfies Ledger;
+      });
+
+      setAppData((prev) => ({ ledgers: [...prev.ledgers, ...incoming] }));
+      const newIds = incoming.map((l) => l.id);
+      setUnsyncedLedgerIds((prev) => [...new Set([...prev, ...newIds])]);
+      if (incoming.length > 0) {
+        setCurrentLedgerId(incoming[0].id);
+      }
+    },
+    [appData, saveToHistory, setAppData, setUnsyncedLedgerIds, setCurrentLedgerId]
+  );
+
   const fetchArchive = useCallback(async (gistId: string): Promise<Ledger> => {
     if (!githubToken) throw new Error("GitHub token required to fetch archive.");
     
@@ -405,6 +443,7 @@ const updateLedger = useCallback((updater: LedgerUpdater, ledgerIdToUpdate?: str
     pushToCloud,
     createGistForLedger,
     fetchAllLedgersFromCloud,
+    importLedgersFromBackup,
     getLedgerCategories,
     archiveYear,
     fetchArchive,

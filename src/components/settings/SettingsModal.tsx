@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { Settings, Cloud, CloudOff, RefreshCw, Save, Globe, Share2, Copy } from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import { Settings, Cloud, CloudOff, RefreshCw, Save, Globe, Share2, Copy, Upload } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { Ledger, LedgerUpdater } from '../../types';
+import type { AppData, Ledger, LedgerUpdater } from '../../types';
 import { cn } from '../../lib/utils';
+import { normalizeImportedData, parseBackupJsonText } from '../../lib/backupImport';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -19,19 +20,22 @@ interface SettingsModalProps {
   needsSync: boolean;
   syncError?: string | null;
   isOnline: boolean;
+  onImportBackup: (data: AppData) => void;
 }
 
 export function SettingsModal({ 
   isOpen, onClose, 
   githubToken, setGithubToken, 
   currentLedger, onUpdateLedger, createGistForLedger,
-  onSync, onPush, fetchAllLedgersFromCloud, isSyncing, needsSync, syncError, isOnline
+  onSync, onPush, fetchAllLedgersFromCloud, isSyncing, needsSync, syncError, isOnline,
+  onImportBackup
 }: SettingsModalProps) {
   const { language, setLanguage, t } = useLanguage();
   const [copied, setCopied] = useState(false);
   const [pin, setPin] = useState('');
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [pinError, setPinError] = useState(false);
+  const backupFileInputRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen) return null;
 
@@ -62,6 +66,44 @@ export function SettingsModal({
     setPin('');
     setPinError(false);
     onClose();
+  };
+
+  const handleImportBackupFile: React.ChangeEventHandler<HTMLInputElement> = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const text = String(reader.result ?? '');
+        const parsed = parseBackupJsonText(text);
+        if (parsed === null) {
+          window.alert('Could not parse JSON. Check that the file is valid UTF-8 JSON.');
+          return;
+        }
+        const appData = normalizeImportedData(parsed);
+        if (!appData || appData.ledgers.length === 0) {
+          window.alert(
+            'Invalid backup format. Expected { "ledgers": [ ... ] } or a single ledger object with id, name, expenses, users, and exchanges.'
+          );
+          return;
+        }
+        onImportBackup(appData);
+        window.alert(
+          `Import complete. Added ${appData.ledgers.length} group(s), ${appData.ledgers.reduce((n, l) => n + (l.expenses?.length ?? 0), 0)} expense(s). You can Push to sync if cloud is configured.`
+        );
+      } catch (err) {
+        console.error(err);
+        window.alert('Import failed. See console for details.');
+      } finally {
+        e.target.value = '';
+      }
+    };
+    reader.onerror = () => {
+      window.alert('Failed to read file.');
+      e.target.value = '';
+    };
+    reader.readAsText(file, 'UTF-8');
   };
 
   const handleCopyLink = () => {
@@ -152,6 +194,33 @@ export function SettingsModal({
             <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1 italic">
               Note: This syncs your data to GitHub Gists. It is separate from the application's source code repository.
             </p>
+          </div>
+
+          <div className="pt-4 border-t border-gray-100 dark:border-gray-700">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+              <Upload className="w-4 h-4" />
+              Import Cashew / JSON backup
+            </h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+              Upload <code className="text-[10px] bg-gray-100 dark:bg-gray-900 px-1 rounded">cashew_migrated.json</code> from{' '}
+              <code className="text-[10px] bg-gray-100 dark:bg-gray-900 px-1 rounded">node scripts/migrate-cashew.js</code>, or any export in the same shape as <code className="text-[10px] bg-gray-100 dark:bg-gray-900 px-1 rounded">AppData</code>.
+            </p>
+            <input
+              ref={backupFileInputRef}
+              type="file"
+              accept=".json,application/json"
+              className="hidden"
+              onChange={handleImportBackupFile}
+            />
+            <button
+              type="button"
+              onClick={() => backupFileInputRef.current?.click()}
+              disabled={isSyncing}
+              className="w-full flex items-center justify-center gap-2 bg-emerald-100 dark:bg-emerald-900/30 hover:bg-emerald-200 dark:hover:bg-emerald-800/50 text-emerald-800 dark:text-emerald-300 py-2.5 rounded-xl font-medium transition-colors disabled:opacity-50 mb-1"
+            >
+              <Upload className="w-4 h-4" />
+              Choose JSON file…
+            </button>
           </div>
 
           <div className="pt-4 border-t border-gray-100 dark:border-gray-700">

@@ -27,7 +27,7 @@ function App() {
     isSyncing, needsSync, syncError, isOnline,
     githubToken, setGithubToken, 
     fetchFromCloud, pushToCloud, createGistForLedger: createGistForLedger, fetchAllLedgersFromCloud: fetchAllLedgersFromCloud,
-    undo, canUndo, isLoading // <-- ADD THIS HERE
+    undo, canUndo, isLoading, importLedgersFromBackup
   } = useStore();
 
   const { theme, setTheme, resolvedTheme } = useTheme();
@@ -593,6 +593,7 @@ const handleAddExpense = (data: any) => {
         needsSync={needsSync}
         syncError={syncError}
         isOnline={isOnline}
+        onImportBackup={importLedgersFromBackup}
       />
 
       <ExpenseDetailsModal
