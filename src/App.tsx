@@ -134,13 +134,11 @@ if (isLoading || !currentLedger) {
       if (idx !== -1) {
         // Explicitly clear subCategory if it's not in expenseData
         const { subCategory, ...rest } = newExpenses[idx];
-        // <-- ADD updatedAt HERE
         newExpenses[idx] = { ...rest, ...expenseData, updatedAt: nowTimestamp }; 
         updatedId = editingExpenseId;
       }
     } else {
       updatedId = Date.now().toString();
-      // <-- ADD updatedAt HERE
       newExpenses.push({ id: updatedId, ...expenseData, updatedAt: nowTimestamp }); 
     }
     updateLedger({ ...currentLedger, expenses: newExpenses });
@@ -148,16 +146,6 @@ if (isLoading || !currentLedger) {
     setIsMobileFormOpen(false);
     clearShortcuts();
     setLastUpdatedId(updatedId);
-    
-    setTimeout(() => {
-      setLastUpdatedId(null);
-    }, 2000);
-  };
-
-    setEditingExpenseId(null);
-    setIsMobileFormOpen(false);
-    clearShortcuts();
-    setLastUpdatedId(highlightExpenseId);
     
     setTimeout(() => {
       setLastUpdatedId(null);
@@ -178,7 +166,6 @@ if (isLoading || !currentLedger) {
     const updatedId = Date.now().toString();
     const nowTimestamp = Date.now(); // <-- Get current time
     
-    // <-- ADD updatedAt HERE
     newExpenses.push({ id: updatedId, ...expenseData, updatedAt: nowTimestamp }); 
     
     updateLedger({ ...currentLedger, expenses: newExpenses });
@@ -189,10 +176,17 @@ if (isLoading || !currentLedger) {
     }, 2000);
   };
 
-// --- PEOPLE & EXCHANGE HANDLERS (Paste these back here!) ---
+  const handleDeleteExpense = (id: string) => {
+    if (!confirm(t('app_delete_expense_confirm'))) return;
+    updateLedger({ 
+      ...currentLedger, 
+      expenses: currentLedger.expenses.filter(e => e.id !== id) 
+    });
+  };
+
   const handleAddPerson = (name: string) => {
     if (currentLedger.users.includes(name)) return;
-    updateLedger(prev => ({ ...prev, users: [...prev.users, name] }));
+    updateLedger({ ...currentLedger, users: [...currentLedger.users, name] });
   };
 
   const handleEditPerson = (oldName: string, newName: string) => {
@@ -203,76 +197,50 @@ if (isLoading || !currentLedger) {
       return;
     }
 
-    updateLedger(prev => ({
-      ...prev,
-      users: prev.users.map(u => u === oldName ? trimmed : u),
-      expenses: prev.expenses.map(e => ({
+    updateLedger({
+      ...currentLedger,
+      users: currentLedger.users.map(u => u === oldName ? trimmed : u),
+      expenses: currentLedger.expenses.map(e => ({
         ...e,
         paidBy: e.paidBy === oldName ? trimmed : e.paidBy,
         splitAmong: e.splitAmong.map(u => u === oldName ? trimmed : u),
         sponsoredBy: e.sponsoredBy === oldName ? trimmed : e.sponsoredBy
       }))
-    }));
+    });
   };
 
   const handleRemovePerson = (name: string) => {
     if (!confirm(`${t('app_remove_person_confirm')}${name}?`)) return;
-    updateLedger(prev => ({ 
-      ...prev, 
-      users: prev.users.filter(u => u !== name),
-      expenses: prev.expenses.map(e => ({
+    updateLedger({ 
+      ...currentLedger, 
+      users: currentLedger.users.filter(u => u !== name),
+      expenses: currentLedger.expenses.map(e => ({
         ...e,
         splitAmong: e.splitAmong.filter(u => u !== name)
       }))
-    }));
+    });
   };
 
   const handleAddExchange = (currency: string, foreignAmount: number, myrSpent: number) => {
-    updateLedger(prev => ({
-      ...prev,
-      exchanges: [...prev.exchanges, {
+    updateLedger({
+      ...currentLedger,
+      exchanges: [...currentLedger.exchanges, {
         id: Date.now().toString(),
         currency, foreignAmount, myrSpent, date: new Date().toISOString()
       }]
-    }));
+    });
   };
 
   const handleRemoveExchange = (id: string) => {
-    updateLedger(prev => ({
-      ...prev,
-      exchanges: prev.exchanges.filter(e => e.id !== id)
-    }));
+    updateLedger({
+      ...currentLedger,
+      exchanges: currentLedger.exchanges.filter(e => e.id !== id)
+    });
   };
 
-  const handleDeleteExpense = (id: string) => {
-    if (!confirm(t('app_delete_expense_confirm'))) return;
-    updateLedger(prev => ({ 
-      ...prev, 
-      expenses: prev.expenses.filter(e => e.id !== id) 
-    }));
-  };
-
-  
-// --- HELPER: Bridge Loans to Recurring Payments ---
-  const createRecurringFromLoan = (loan: Loan): RecurringTransaction => ({
-    id: `recurring_loan_${loan.id}`, // Unique ID linking them together
-    desc: `Installment: ${loan.name}`,
-    amountOriginal: loan.installmentAmount,
-    currency: loan.currency,
-    category: loan.category || { name: '🏦 Bank / Finance', subCategories: [] },
-    subCategory: loan.subCategory,
-    paidBy: loan.paidBy,
-    splitAmong: loan.splitAmong || [loan.paidBy],
-    splitDetails: loan.splitDetails,
-    frequency: 'monthly', // Loans default to monthly installments
-    nextDate: loan.nextInstallmentDate,
-  });
-
-  // --- LOAN HANDLERS ---
   const handleAddLoan = (loan: Loan) => {
     updateLedger({
       ...currentLedger,
-      // We take the new loan data and inject the current timestamp into it
       loans: [...(currentLedger.loans || []), { ...loan, updatedAt: Date.now() }]
     });
   };
@@ -280,18 +248,15 @@ if (isLoading || !currentLedger) {
   const handleEditLoan = (loan: Loan) => {
     updateLedger({
       ...currentLedger,
-      // We find the loan being edited and inject the new timestamp into it
       loans: (currentLedger.loans || []).map(l => l.id === loan.id ? { ...loan, updatedAt: Date.now() } : l)
     });
   };
 
   const handleDeleteLoan = (id: string) => {
-    updateLedger(prev => ({
-      ...prev,
-      loans: (prev.loans || []).filter(l => l.id !== id),
-      // Automatically clean up the Upcoming Payment if the loan is deleted
-      recurringTransactions: (prev.recurringTransactions || []).filter(r => r.id !== `recurring_loan_${id}`)
-    }));
+    updateLedger({
+      ...currentLedger,
+      loans: (currentLedger.loans || []).filter(l => l.id !== id)
+    });
   };
 
   const toggleTheme = () => {
