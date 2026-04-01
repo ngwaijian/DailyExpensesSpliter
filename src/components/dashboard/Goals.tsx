@@ -29,21 +29,8 @@ function GoalItem({ goal, ledger, onUpdateLedger, onEdit, onDelete, t }: GoalIte
     return sum + (amountInMYR / goalRateToMYR);
   }, 0) || 0;
   const totalCurrentAmount = goal.currentAmount + linkedExpensesTotal;
-  const [localAmount, setLocalAmount] = useState(goal.currentAmount.toString());
   const progress = Math.min(100, Math.max(0, (totalCurrentAmount / goal.targetAmount) * 100));
   const isCompleted = progress >= 100;
-
-  React.useEffect(() => {
-    setLocalAmount(goal.currentAmount.toString());
-  }, [goal.currentAmount]);
-
-  const handleBlur = () => {
-    const val = parseFloat(localAmount) || 0;
-    if (val !== goal.currentAmount) {
-      const updatedGoals = (ledger.goals || []).map(g => g.id === goal.id ? { ...g, currentAmount: val } : g);
-      onUpdateLedger({ ...ledger, goals: updatedGoals });
-    }
-  };
 
   return (
     <div className="p-4 bg-gray-50 dark:bg-gray-700/30 rounded-2xl border border-gray-100 dark:border-gray-700 group">
@@ -66,7 +53,12 @@ function GoalItem({ goal, ledger, onUpdateLedger, onEdit, onDelete, t }: GoalIte
           </div>
         </div>
         <div className="flex items-center gap-1">
-          <button onClick={() => onEdit(goal)} className="p-1.5 text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">
+          <button
+            type="button"
+            title={t('goal_edit_manual_hint') || 'Edit goal (name, target, manual progress)'}
+            onClick={() => onEdit(goal)}
+            className="p-1.5 text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
+          >
             <Edit2 className="w-4 h-4" />
           </button>
           <button onClick={() => onDelete(goal.id)} className="p-1.5 text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors">
@@ -84,26 +76,7 @@ function GoalItem({ goal, ledger, onUpdateLedger, onEdit, onDelete, t }: GoalIte
           style={{ width: `${progress}%` }}
         />
       </div>
-      <div className="flex justify-between items-center mt-1">
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-gray-500 dark:text-gray-400">Manual Entry:</span>
-          <input
-            type="number"
-            inputMode="decimal"
-            pattern="[0-9]*\.?[0-9]*"
-            value={localAmount}
-            onChange={(e) => {
-              const val = e.target.value;
-              if (val === '' || /^\d*\.?\d*$/.test(val)) {
-                setLocalAmount(val);
-              }
-            }}
-            onBlur={handleBlur}
-            onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
-            className="w-16 p-1 bg-transparent border-b border-gray-300 dark:border-gray-600 hover:border-blue-300 focus:border-blue-500 focus:bg-white dark:focus:bg-gray-800 outline-none transition-all font-medium text-gray-700 dark:text-gray-300 text-xs"
-            placeholder="0.00"
-          />
-        </div>
+      <div className="flex justify-end items-center mt-1">
         <div className="text-right text-xs text-gray-400 dark:text-gray-500 font-medium">
           {progress.toFixed(1)}%
         </div>
@@ -218,7 +191,9 @@ export function Goals({ ledger, onUpdateLedger }: GoalsProps) {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Current Amount</label>
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                  {editingId ? (t('goal_manual_amount_label') || 'Manual progress (base)') : (t('goal_current_amount_label') || 'Current Amount')}
+                </label>
                 <input
                   type="number" inputMode="decimal"
                   pattern="[0-9]*\.?[0-9]*"
