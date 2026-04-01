@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Ledger, RecurringTransaction, CATEGORIES, Category } from '../../types';
-import { Repeat, Plus, Edit2, Trash2, Calendar, DollarSign, X } from 'lucide-react';
+import { Repeat, Plus, Edit2, Trash2, Calendar, DollarSign, X, Target } from 'lucide-react';
 import { formatCurrency } from '../../utils/currency';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { cn } from '../../lib/utils';
@@ -34,6 +34,8 @@ export function RecurringTransactions({ ledger, onUpdateLedger }: RecurringTrans
   const [splitDetails, setSplitDetails] = useState<{ [key: string]: number | string }>({});
   const [splitShares, setSplitShares] = useState<{ [key: string]: number }>({});
   const [errors, setErrors] = useState<{ [key: string]: boolean }>({});
+  const [linkToGoal, setLinkToGoal] = useState(false);
+  const [goalId, setGoalId] = useState('');
 
   useEffect(() => {
     if (splitMode === 'equal' && amount && !isNaN(parseFloat(amount)) && splitAmong.length > 0) {
@@ -137,6 +139,10 @@ export function RecurringTransactions({ ledger, onUpdateLedger }: RecurringTrans
       alert('Please select at least one person to split among.');
       return;
     }
+    if (linkToGoal && ledger.goals && ledger.goals.length > 0 && !goalId) {
+      alert(t('form_goal_required', 'Please choose a goal, or turn off "Link payments to a goal".'));
+      return;
+    }
 
     let finalSplitDetails: { [key: string]: number } | undefined = undefined;
 
@@ -169,6 +175,7 @@ export function RecurringTransactions({ ledger, onUpdateLedger }: RecurringTrans
       splitDetails: finalSplitDetails,
       frequency,
       nextDate,
+      ...(linkToGoal && goalId ? { goalId } : {}),
     };
 
     let newRecurring;
@@ -200,6 +207,8 @@ export function RecurringTransactions({ ledger, onUpdateLedger }: RecurringTrans
     }
     setFrequency(tx.frequency);
     setNextDate(tx.nextDate);
+    setLinkToGoal(!!tx.goalId);
+    setGoalId(tx.goalId || '');
     setIsAdding(true);
 
     setTimeout(() => {
@@ -229,6 +238,8 @@ export function RecurringTransactions({ ledger, onUpdateLedger }: RecurringTrans
     setErrors({});
     setFrequency('monthly');
     setNextDate(new Date().toISOString().split('T')[0]);
+    setLinkToGoal(false);
+    setGoalId('');
   };
 
   return (
@@ -439,6 +450,44 @@ export function RecurringTransactions({ ledger, onUpdateLedger }: RecurringTrans
             </div>
           </div>
 
+          {ledger.goals && ledger.goals.length > 0 && (
+            <div className="rounded-2xl border border-gray-100 dark:border-gray-700 bg-white/60 dark:bg-gray-800/40 p-4 space-y-3">
+              <label className="flex items-start gap-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={linkToGoal}
+                  onChange={e => {
+                    const on = e.target.checked;
+                    setLinkToGoal(on);
+                    if (!on) setGoalId('');
+                  }}
+                  className="mt-1 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                  {t('form_link_recurring_goal', 'Link payments to a goal')}
+                  <span className="block text-xs font-normal text-gray-500 dark:text-gray-400 mt-0.5">
+                    {t('form_link_recurring_goal_hint', 'When you mark this recurring as paid, the expense will count toward the goal you choose.')}
+                  </span>
+                </span>
+              </label>
+              {linkToGoal && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{t('form_goal_select', 'Goal')}</label>
+                  <select
+                    value={goalId}
+                    onChange={e => setGoalId(e.target.value)}
+                    className="w-full p-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white text-sm"
+                  >
+                    <option value="">-- {t('form_goal_placeholder', 'Select a goal')} --</option>
+                    {ledger.goals.map(g => (
+                      <option key={g.id} value={g.id}>{g.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="flex gap-3 pt-2 items-center">
             <button type="button" onClick={resetForm} className="px-5 py-3 rounded-xl font-medium text-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">Cancel</button>
             <button type="submit" className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 shadow-lg transition-all">{editingId ? 'Update Recurring' : 'Save Recurring'}</button>
@@ -448,10 +497,18 @@ export function RecurringTransactions({ ledger, onUpdateLedger }: RecurringTrans
 
       {/* Existing List Map (Unchanged visuals for list) */}
       <div className="space-y-4">
-        {recurring.map(tx => (
+        {recurring.map(tx => {
+          const linkedGoal = tx.goalId ? ledger.goals?.find(g => g.id === tx.goalId) : undefined;
+          return (
           <div key={tx.id} className="p-4 bg-gray-50 dark:bg-gray-700/30 rounded-2xl border border-gray-100 dark:border-gray-700 group flex justify-between items-center">
             <div>
-              <h4 className="font-semibold text-gray-800 dark:text-white flex items-center gap-2">{tx.desc}</h4>
+              <h4 className="font-semibold text-gray-800 dark:text-white flex items-center gap-2 flex-wrap">{tx.desc}</h4>
+              {linkedGoal && (
+                <div className="text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-1 flex items-center gap-1">
+                  <Target className="w-3 h-3 shrink-0" />
+                  {linkedGoal.name}
+                </div>
+              )}
               <div className="text-sm text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-2">
                 <span className="font-medium text-blue-600 dark:text-blue-400">{formatCurrency(tx.amountOriginal, tx.currency)}</span>
                 <span className="capitalize bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-md text-xs">{tx.frequency}</span>
@@ -467,7 +524,8 @@ export function RecurringTransactions({ ledger, onUpdateLedger }: RecurringTrans
               <button onClick={() => handleDelete(tx.id)} className="p-1.5 text-gray-400 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
             </div>
           </div>
-        ))}
+        );
+        })}
       </div>
     </div>
   );

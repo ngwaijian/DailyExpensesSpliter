@@ -152,7 +152,7 @@ const handleAddExpense = (data: any) => {
       else if (recurringFrequency === 'monthly') nextDate.setMonth(nextDate.getMonth() + 1);
       else if (recurringFrequency === 'yearly') nextDate.setFullYear(nextDate.getFullYear() + 1);
 
-      const newRecurring = {
+      const newRecurring: RecurringTransaction = {
         id: Date.now().toString() + '_rec',
         desc: expenseData.desc,
         amountOriginal: expenseData.amountOriginal,
@@ -164,6 +164,7 @@ const handleAddExpense = (data: any) => {
         splitDetails: expenseData.splitDetails,
         frequency: recurringFrequency,
         nextDate: nextDate.toISOString().split('T')[0],
+        ...(expenseData.goalId ? { goalId: expenseData.goalId } : {}),
       };
       updatedLedger = {
         ...updatedLedger,

@@ -216,7 +216,7 @@ const upcomingRecurring = useMemo(() => {
     });
   }, [ledger.loans]);
 
-const handleMarkAsPaid = (item: { id: string, desc: string, amountOriginal: number, currency: string, paidBy: string, type: 'loan' | 'recurring', nextDate: string, splitAmong?: string[], splitDetails?: { [userName: string]: number }, category?: Category, subCategory?: string }) => {
+const handleMarkAsPaid = (item: { id: string, desc: string, amountOriginal: number, currency: string, paidBy: string, type: 'loan' | 'recurring', nextDate: string, splitAmong?: string[], splitDetails?: { [userName: string]: number }, category?: Category, subCategory?: string, goalId?: string }) => {
     const newExpense: Expense = {
       id: Date.now().toString(),
       desc: item.type === 'recurring' ? `${item.desc} (recurring)` : item.desc,
@@ -228,7 +228,8 @@ const handleMarkAsPaid = (item: { id: string, desc: string, amountOriginal: numb
       paidBy: item.paidBy,
       splitAmong: item.splitAmong || [item.paidBy],
       splitDetails: item.splitDetails,
-      type: 'expense'
+      type: 'expense',
+      ...(item.type === 'recurring' && item.goalId ? { goalId: item.goalId } : {}),
     };
 
     const updatedLedger = { ...ledger, expenses: [...ledger.expenses, newExpense] };
@@ -310,7 +311,7 @@ const handleMarkAsPaid = (item: { id: string, desc: string, amountOriginal: numb
                   >
                     <Edit2 size={14} />
                   </button>
-                  <button onClick={() => handleMarkAsPaid({ id: rt.id, desc: rt.desc, amountOriginal: rt.amountOriginal, currency: rt.currency, paidBy: rt.paidBy, type: 'recurring', nextDate: rt.nextDate, splitAmong: rt.splitAmong, splitDetails: rt.splitDetails, category: rt.category, subCategory: rt.subCategory })} className="px-3 py-1 bg-amber-500 text-white rounded-lg text-xs font-medium hover:bg-amber-600">Pay</button>
+                  <button onClick={() => handleMarkAsPaid({ id: rt.id, desc: rt.desc, amountOriginal: rt.amountOriginal, currency: rt.currency, paidBy: rt.paidBy, type: 'recurring', nextDate: rt.nextDate, splitAmong: rt.splitAmong, splitDetails: rt.splitDetails, category: rt.category, subCategory: rt.subCategory, goalId: rt.goalId })} className="px-3 py-1 bg-amber-500 text-white rounded-lg text-xs font-medium hover:bg-amber-600">Pay</button>
                 </div>
               </div>
             ))}

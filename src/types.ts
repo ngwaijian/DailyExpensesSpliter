@@ -60,6 +60,8 @@ export interface RecurringTransaction {
   frequency: 'daily' | 'weekly' | 'monthly' | 'yearly';
   nextDate: string;
   endDate?: string;
+  /** When set, "Pay" from upcoming applies this goal to the logged expense. */
+  goalId?: string;
 }
 
 export interface Budget {
