@@ -189,28 +189,30 @@ const handleResetFilters = () => {
     return result;
   }, [ledger.expenses, filterCategory, sortOrder, startDate, endDate, rates]);
 
-  const upcomingRecurring = useMemo(() => {
+const upcomingRecurring = useMemo(() => {
     if (!ledger.recurringTransactions) return [];
     const now = new Date();
-    const threeDaysFromNow = new Date();
-    threeDaysFromNow.setDate(now.getDate() + 3);
+    const twoDaysFromNow = new Date();
+    twoDaysFromNow.setDate(now.getDate() + 2);
     
     return ledger.recurringTransactions.filter(rt => {
       const nextDate = new Date(rt.nextDate);
-      return nextDate >= now && nextDate <= threeDaysFromNow;
+      // Remove the >= now check so it stays visible if it's overdue (until paid)
+      return nextDate <= twoDaysFromNow;
     });
   }, [ledger.recurringTransactions]);
 
   const upcomingLoans = useMemo(() => {
     if (!ledger.loans) return [];
     const now = new Date();
-    const threeDaysFromNow = new Date();
-    threeDaysFromNow.setDate(now.getDate() + 3);
+    const twoDaysFromNow = new Date();
+    twoDaysFromNow.setDate(now.getDate() + 2);
     
     return ledger.loans.filter(l => {
       if (l.status === 'paid_off') return false;
       const nextDate = new Date(l.nextInstallmentDate);
-      return nextDate >= now && nextDate <= threeDaysFromNow;
+      // Remove the >= now check so it stays visible if it's overdue (until paid)
+      return nextDate <= twoDaysFromNow;
     });
   }, [ledger.loans]);
 
