@@ -95,13 +95,14 @@ export function useStore() {
   const isLoading = ledgers === undefined || settings === undefined || !isInitialized;
   // ... existing code
 
-  // For useCloudSync compatibility, we still write SYNC_KEY to localStorage
+// For useCloudSync compatibility, we still write SYNC_KEY to localStorage
   // because useCloudSync reads it directly in setInterval to avoid stale closures.
   useEffect(() => {
-    if (isInitialized) {
+    // FIX: Wait for settings to load from DB to prevent overwriting the SYNC_KEY with an empty array on mount
+    if (isInitialized && settings !== undefined) {
       localStorage.setItem(SYNC_KEY, JSON.stringify(unsyncedLedgerIds));
     }
-  }, [unsyncedLedgerIds, isInitialized]);
+  }, [unsyncedLedgerIds, isInitialized, settings]);
 
   // Sync across tabs
   useEffect(() => {

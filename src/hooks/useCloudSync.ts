@@ -108,14 +108,15 @@ export function useCloudSync({
                 localArr.forEach(localItem => {
                   const cloudItem = map.get(localItem.id);
                   if (cloudItem) {
-                    // Item exists in both places. Compare timestamps!
-                    const localTime = localItem.updatedAt || 0;
-                    const cloudTime = cloudItem.updatedAt || 0;
-                    
-                    // Only overwrite the cloud item if the local edit is actually newer
-                    if (localTime >= cloudTime) {
-                      map.set(localItem.id, localItem);
-                    }
+                      // Item exists in both places. Compare timestamps!
+                      const localTime = localItem.updatedAt || 0;
+                      const cloudTime = cloudItem.updatedAt || 0;
+                      
+                      // FIX: Use strictly greater (>) instead of (>=). 
+                      // This prevents stale local items from overwriting newer cloud items when both lack timestamps (0 > 0 is false).
+                      if (localTime > cloudTime) {
+                        map.set(localItem.id, localItem);
+                      }
                   } else {
                     // Item only exists locally (e.g., created offline). Add it.
                     map.set(localItem.id, localItem);
@@ -325,14 +326,15 @@ const pushToCloud = useCallback(async (ledgerId?: string, overrideLedger?: Ledge
                   localArr.forEach(localItem => {
                     const cloudItem = map.get(localItem.id);
                     if (cloudItem) {
-                      // Item exists in both places. Compare timestamps!
-                      const localTime = localItem.updatedAt || 0;
-                      const cloudTime = cloudItem.updatedAt || 0;
-                      
-                      // Only overwrite the cloud item if the local edit is actually newer
-                      if (localTime >= cloudTime) {
-                        map.set(localItem.id, localItem);
-                      }
+                        // Item exists in both places. Compare timestamps!
+                    const localTime = localItem.updatedAt || 0;
+                    const cloudTime = cloudItem.updatedAt || 0;
+                    
+                    // FIX: Use strictly greater (>) instead of (>=). 
+                    // This prevents stale local items from overwriting newer cloud items when both lack timestamps (0 > 0 is false).
+                    if (localTime > cloudTime) {
+                      map.set(localItem.id, localItem);
+                    }
                     } else {
                       // Item only exists locally (e.g., created offline). Add it.
                       map.set(localItem.id, localItem);
