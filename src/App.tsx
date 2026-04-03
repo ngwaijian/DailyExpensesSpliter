@@ -57,9 +57,11 @@ function App() {
     shortcutLocName,
     shortcutLat,
     shortcutLng,
-	    shortcutIsSponsored, // <-- ADD THIS
+	  shortcutIsSponsored, // <-- ADD THIS
     shortcutSponsoredBy, // <-- ADD THIS
     isAutoSaved,
+    autoSavedExpenseId,
+    dismissAutoSave,
     clearShortcuts
   } = useUrlShortcuts({ currentLedger: isLoading ? null : currentLedger,updateLedger, t, pushToCloud });
 
@@ -87,9 +89,34 @@ if (isLoading || !currentLedger) {
           </div>
           <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">Expense Saved!</h2>
           <p className="text-gray-600 dark:text-gray-400 mb-6">You can safely close this tab or return to the app.</p>
-          <button onClick={() => window.location.href = '/'} className="w-full py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-800 dark:text-white rounded-xl font-medium transition-colors">
-            View Expenses
-          </button>
+          <div className="space-y-3">
+            <button 
+              onClick={() => {
+                // Dismiss the success screen
+                dismissAutoSave();
+                
+                // Trigger the edit mode for the saved expense
+                if (autoSavedExpenseId) {
+                  setEditingExpenseId(autoSavedExpenseId);
+                  setActiveTab('expenses');
+                  setIsMobileFormOpen(true);
+                  // Scroll to form slightly after render
+                  setTimeout(() => {
+                    formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  }, 100);
+                }
+              }} 
+              className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-colors"
+            >
+              Edit Expense
+            </button>
+            <button 
+              onClick={() => window.location.href = '/'} 
+              className="w-full py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-800 dark:text-white rounded-xl font-medium transition-colors"
+            >
+              View Expenses
+            </button>
+          </div>
         </div>
       </div>
     );

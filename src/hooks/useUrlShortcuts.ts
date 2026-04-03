@@ -23,6 +23,8 @@ const [shortcutLat, setShortcutLat] = useState<number | null>(null);
   const [shortcutIsSponsored, setShortcutIsSponsored] = useState<boolean>(false);
   const [shortcutSponsoredBy, setShortcutSponsoredBy] = useState<string | null>(null);
   const [isAutoSaved, setIsAutoSaved] = useState(false);
+  const [autoSavedExpenseId, setAutoSavedExpenseId] = useState<string | null>(null);
+  const dismissAutoSave = () => { setIsAutoSaved(false); setAutoSavedExpenseId(null); };
   const hasProcessedShortcut = useRef(false);
 
   useEffect(() => {
@@ -232,6 +234,7 @@ const newExpense = {
             } catch(e) {}
             
             window.history.replaceState({}, '', window.location.pathname);
+            setAutoSavedExpenseId(newExpense.id);
             setIsAutoSaved(true);
             
             const id = currentLedger.id;
@@ -359,9 +362,11 @@ if (isSponsoredParam) {
     shortcutLocName,
     shortcutLat,
     shortcutLng,
-shortcutIsSponsored,
+    shortcutIsSponsored, // <-- ADD THIS LINE
     shortcutSponsoredBy,
     isAutoSaved,
+    autoSavedExpenseId,
+    dismissAutoSave,
     clearShortcuts
   };
 }
