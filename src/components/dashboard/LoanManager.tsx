@@ -83,7 +83,11 @@ export const LoanManager: React.FC<{
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-4">
           {loans.map(loan => {
 const progress = loan.totalAmount > 0 ? ((loan.totalAmount - loan.remainingAmount) / loan.totalAmount) * 100 : 0;
-            const isOverdue = loan.nextInstallmentDate && new Date(loan.nextInstallmentDate) < new Date() && loan.status === 'active';
+const isOverdue = loan.nextInstallmentDate && new Date(loan.nextInstallmentDate) < new Date() && loan.status === 'active';
+
+// Calculate paid terms and total terms based on amounts
+const totalTerms = loan.termMonths || (loan.installmentAmount > 0 ? Math.ceil(loan.totalAmount / loan.installmentAmount) : 0);
+const termsPaid = loan.installmentAmount > 0 ? Math.round((loan.totalAmount - loan.remainingAmount) / loan.installmentAmount) : 0;
             
             return (
               <div key={loan.id} className={cn(
@@ -147,17 +151,18 @@ const progress = loan.totalAmount > 0 ? ((loan.totalAmount - loan.remainingAmoun
                       />
                     </div>
                     <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-1.5">
-                        <Calendar className={cn("w-3 h-3", isOverdue ? "text-red-500" : "text-gray-400")} />
-<span className={cn("text-[10px] font-bold", isOverdue ? "text-red-500" : "text-gray-500")}>
-                          {loan.status === 'paid_off' ? 'Paid Off' : `Next: ${new Date(loan.nextInstallmentDate).toLocaleDateString('en-GB')}`}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Clock className="w-3 h-3 text-gray-400" />
-                        <span className="text-[10px] font-black text-gray-900 dark:text-white">{progress.toFixed(0)}%</span>
-                      </div>
-                    </div>
+  <div className="flex items-center gap-1.5">
+    <Calendar className={cn("w-3 h-3", isOverdue ? "text-red-500" : "text-gray-400")} />
+    <span className={cn("text-[10px] font-bold", isOverdue ? "text-red-500" : "text-gray-500")}>
+      {loan.status === 'paid_off' ? 'Paid Off' : `Next: ${new Date(loan.nextInstallmentDate).toLocaleDateString('en-GB')}`}
+    </span>
+  </div>
+  <div className="flex items-center gap-1.5">
+    <Clock className="w-3 h-3 text-gray-400" />
+    <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400">{termsPaid}/{totalTerms} terms</span>
+    <span className="text-[10px] font-black text-gray-900 dark:text-white ml-1">{progress.toFixed(0)}%</span>
+  </div>
+</div>
                   </div>
                   
                   {loan.status !== 'paid_off' && (
